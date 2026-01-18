@@ -1,0 +1,159 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+
+function InvoiceDocumentPreview({ data, totals, zoom = 1 }) {
+
+    // Helper to render placeholder or value
+    const RenderField = ({ value, placeholder, className = "" }) => {
+        if (!value) {
+            return <span className={`bg-blue-50/50 px-1 border-b border-blue-200 text-slate-400 italic transition-colors hover:bg-blue-100 ${className}`}>{placeholder}</span>;
+        }
+        return <span className={`font-medium text-slate-900 border-b border-transparent hover:border-indigo-200 hover:bg-indigo-50 transition-all px-0.5 rounded ${className}`}>{value}</span>;
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{
+                transform: `scale(${zoom})`,
+                transformOrigin: 'top center',
+            }}
+            className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[10pt] leading-relaxed font-sans relative mb-20 origin-top"
+        >
+            {/* Realistic Paper Effects */}
+            <div className="absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>
+
+            <div className="p-[15mm] h-full flex flex-col relative z-10 min-h-[297mm]">
+
+                {/* 1. SELLER & INVOICE HEADER */}
+                <div className="flex justify-between items-start mb-8 border-b-2 border-slate-900 pb-6">
+                    <div>
+                        <h1 className="text-2xl font-bold uppercase tracking-wider text-slate-800">Invoice</h1>
+                        <div className="mt-4 text-sm">
+                            <h2 className="font-bold text-lg"><RenderField value={data.sellerName} placeholder="[Your Company Name]" /></h2>
+                            <div className="text-slate-600 max-w-[250px] whitespace-pre-wrap"><RenderField value={data.sellerAddress} placeholder="[Full Address]" /></div>
+                            {data.sellerTaxId && <div className="mt-1"><span className="font-bold text-xs uppercase">GSTIN/Tax ID:</span> {data.sellerTaxId}</div>}
+                            <div className="mt-1 text-xs">
+                                {data.sellerEmail && <div>{data.sellerEmail}</div>}
+                                {data.sellerPhone && <div>{data.sellerPhone}</div>}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="text-right">
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm min-w-[200px]">
+                            <div className="flex justify-between mb-1 gap-4">
+                                <span className="text-slate-500 font-bold">Invoice #:</span>
+                                <RenderField value={data.invoiceNumber} placeholder="INV-0001" className="font-mono" />
+                            </div>
+                            <div className="flex justify-between mb-1 gap-4">
+                                <span className="text-slate-500 font-bold">Date:</span>
+                                <RenderField value={data.invoiceDate} placeholder="DD/MM/YYYY" />
+                            </div>
+                            <div className="flex justify-between mb-1 gap-4">
+                                <span className="text-slate-500 font-bold">Due Date:</span>
+                                <RenderField value={data.dueDate} placeholder="DD/MM/YYYY" />
+                            </div>
+                            <div className="flex justify-between gap-4">
+                                <span className="text-slate-500 font-bold">Place of Supply:</span>
+                                <RenderField value={data.placeOfSupply} placeholder="State" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. CLIENT INFO */}
+                <div className="mb-8">
+                    <p className="text-xs uppercase font-bold text-slate-400 mb-1">Bill To</p>
+                    <div className="text-lg font-bold"><RenderField value={data.clientName} placeholder="[Client Name]" /></div>
+                    <div className="text-slate-600 max-w-[300px] whitespace-pre-wrap"><RenderField value={data.clientAddress} placeholder="[Client Address]" /></div>
+                    {data.clientTaxId && <div className="mt-1 text-sm"><span className="font-semibold">GSTIN/Tax ID:</span> {data.clientTaxId}</div>}
+                </div>
+
+                {/* 3. LINE ITEMS TABLE */}
+                <div className="mb-8">
+                    <table className="w-full text-sm">
+                        <thead className="bg-slate-800 text-white uppercase text-xs">
+                            <tr>
+                                <th className="px-3 py-2 text-left w-12">Sr.</th>
+                                <th className="px-3 py-2 text-left">Description</th>
+                                <th className="px-3 py-2 text-center w-20">Qty</th>
+                                <th className="px-3 py-2 text-right w-24">Rate</th>
+                                <th className="px-3 py-2 text-right w-32">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 border-b border-slate-200">
+                            {data.items.map((item, index) => (
+                                <tr key={index} className="even:bg-slate-50">
+                                    <td className="px-3 py-2 text-slate-500">{index + 1}</td>
+                                    <td className="px-3 py-2 font-medium">{item.description}</td>
+                                    <td className="px-3 py-2 text-center">{item.quantity}</td>
+                                    <td className="px-3 py-2 text-right">{Number(item.rate).toLocaleString()}</td>
+                                    <td className="px-3 py-2 text-right font-bold">{Number(item.amount).toLocaleString()}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* 4. TOTALS & TAX */}
+                <div className="flex justify-end mb-8 break-inside-avoid">
+                    <div className="w-[300px]">
+                        <table className="w-full text-sm">
+                            <tbody className="divide-y divide-slate-100">
+                                <tr>
+                                    <td className="py-2 text-slate-600 font-medium">Subtotal</td>
+                                    <td className="py-2 text-right font-bold">{totals.subtotal.toLocaleString()}</td>
+                                </tr>
+                                {data.taxType && Number(data.taxRate) > 0 && (
+                                    <tr>
+                                        <td className="py-2 text-slate-600 font-medium">{data.taxType} ({data.taxRate}%)</td>
+                                        <td className="py-2 text-right font-bold">{totals.taxAmount.toLocaleString()}</td>
+                                    </tr>
+                                )}
+                                <tr className="border-t-2 border-slate-800 text-base">
+                                    <td className="py-2 font-extrabold text-slate-900">Total</td>
+                                    <td className="py-2 text-right font-extrabold text-indigo-700">{totals.grandTotal.toLocaleString()}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div className="mt-2 text-right text-xs text-slate-500 italic border-t border-slate-100 pt-1">
+                            Amount in Words: <span className="font-semibold text-slate-700">{totals.amountInWords}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 5. BANK & FOOTER */}
+                <div className="mt-auto grid grid-cols-2 gap-12 border-t border-slate-200 pt-8 break-inside-avoid">
+                    <div className="text-sm">
+                        <p className="font-bold uppercase text-xs text-slate-400 mb-2">Bank Details</p>
+                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <div className="grid grid-cols-[100px_1fr] gap-1 text-slate-700">
+                                <span className="font-semibold">Account Name:</span> <span>{data.accountName || '-'}</span>
+                                <span className="font-semibold">Bank Name:</span> <span>{data.bankName || '-'}</span>
+                                <span className="font-semibold">Account No.:</span> <span className="font-mono">{data.accountNumber || '-'}</span>
+                                <span className="font-semibold">IFSC/SWIFT:</span> <span className="font-mono">{data.ifscCode || '-'}</span>
+                            </div>
+                        </div>
+
+                        <div className="mt-4">
+                            <p className="font-bold uppercase text-xs text-slate-400 mb-1">Terms</p>
+                            <p className="text-xs text-slate-500">{data.notes}</p>
+                        </div>
+                    </div>
+
+                    <div className="text-right flex flex-col items-end">
+                        <p className="font-bold text-sm text-slate-900 mb-16">For {data.sellerName || '[Company Name]'}</p>
+                        <div className="border-t border-slate-400 w-48 pt-2 text-center">
+                            <p className="font-bold">{data.signatoryName || 'Authorized Signatory'}</p>
+                            <p className="text-xs text-slate-500">Authorized Signature</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+export default InvoiceDocumentPreview;

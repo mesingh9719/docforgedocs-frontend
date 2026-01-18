@@ -1,0 +1,281 @@
+import React, { useState } from 'react';
+import { motion, AnimatePresence, Reorder } from 'framer-motion';
+import { ChevronDown, Layers, Edit3, Plus, Trash2, GripVertical, FileText, User, List, DollarSign } from 'lucide-react';
+
+const AccordionItem = ({ title, icon: Icon, isOpen, onClick, children }) => (
+    <div className="border-b border-slate-100 last:border-none">
+        <button
+            onClick={onClick}
+            className={`w-full flex items-center justify-between p-4 transition-colors ${isOpen ? 'bg-slate-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'}`}
+        >
+            <div className="flex items-center gap-3 font-semibold text-sm">
+                {Icon && <Icon size={18} className={isOpen ? 'text-indigo-500' : 'text-slate-400'} />}
+                <span>{title}</span>
+            </div>
+            <motion.div
+                animate={{ rotate: isOpen ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+            >
+                <ChevronDown size={16} />
+            </motion.div>
+        </button>
+        <AnimatePresence initial={false}>
+            {isOpen && (
+                <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                >
+                    <div className="p-4 pt-0 space-y-4">
+                        {children}
+                    </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    </div>
+);
+
+const InputGroup = ({ label, name, value, onChange, placeholder, type = "text", rows }) => (
+    <div>
+        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
+        {rows ? (
+            <textarea
+                name={name}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                rows={rows}
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-slate-400 resize-y"
+            />
+        ) : (
+            <input
+                type={type}
+                name={name}
+                value={value}
+                onChange={onChange}
+                placeholder={placeholder}
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-slate-400"
+            />
+        )}
+    </div>
+);
+
+const ProposalFormSidebar = ({
+    formData,
+    onChange,
+    docContent,
+    onContentChange,
+    // Section Props
+    addSection,
+    removeSection,
+    updateSection,
+    reorderSections,
+    // Timeline Props
+    updateTimeline,
+    addTimelineRow,
+    removeTimelineRow
+}) => {
+    const [openSection, setOpenSection] = useState('cover');
+    const [mode, setMode] = useState('fill'); // 'fill' or 'edit'
+
+    const toggleSection = (section) => {
+        setOpenSection(openSection === section ? null : section);
+    };
+
+    return (
+        <div className="bg-white min-h-full pb-20">
+            {/* Header with Switcher */}
+            <div className="p-6 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10 backdrop-blur-sm">
+                <div className="flex gap-1 bg-slate-200/50 p-1 rounded-lg mb-4">
+                    <button
+                        onClick={() => setMode('fill')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${mode === 'fill' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <Layers size={16} />
+                        Fill Details
+                    </button>
+                    <button
+                        onClick={() => setMode('edit')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${mode === 'edit' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <Edit3 size={16} />
+                        Builder
+                    </button>
+                </div>
+                <div>
+                    <h2 className="text-lg font-bold text-slate-900">{mode === 'fill' ? 'Proposal Details' : 'Structure Builder'}</h2>
+                    <p className="text-xs text-slate-500 mt-1">{mode === 'fill' ? 'Enter project specifics and pricing' : 'Customize layout and clauses'}</p>
+                </div>
+            </div>
+
+            {mode === 'fill' ? (
+                // FILL MODE
+                <>
+                    {/* Cover Page */}
+                    <AccordionItem
+                        title="Cover Page"
+                        icon={FileText}
+                        isOpen={openSection === 'cover'}
+                        onClick={() => toggleSection('cover')}
+                    >
+                        <InputGroup label="Proposal Title" name="proposalTitle" value={formData.proposalTitle} onChange={onChange} placeholder="e.g. Mobile App Development" />
+                        <InputGroup label="Project Description (Short)" name="projectDescription" value={formData.projectDescription} onChange={onChange} placeholder="Brief summary..." rows={2} />
+                        <div className="grid grid-cols-2 gap-3">
+                            <InputGroup label="Date" name="proposalDate" value={formData.proposalDate} onChange={onChange} placeholder="DD/MM/YYYY" />
+                            <InputGroup label="Ref No." name="referenceNo" value={formData.referenceNo} onChange={onChange} placeholder="Optional" />
+                        </div>
+                    </AccordionItem>
+
+                    {/* Parties */}
+                    <AccordionItem
+                        title="Parties Involved"
+                        icon={User}
+                        isOpen={openSection === 'parties'}
+                        onClick={() => toggleSection('parties')}
+                    >
+                        <div className="space-y-4">
+                            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                                <h4 className="text-xs font-bold text-indigo-900 uppercase mb-3">Prepared For (Client)</h4>
+                                <div className="space-y-3">
+                                    <InputGroup label="Client Name" name="clientName" value={formData.clientName} onChange={onChange} placeholder="Contact Person" />
+                                    <InputGroup label="Company" name="clientCompany" value={formData.clientCompany} onChange={onChange} placeholder="Client Company" />
+                                    <InputGroup label="Address" name="clientAddress" value={formData.clientAddress} onChange={onChange} placeholder="Full Address" rows={2} />
+                                </div>
+                            </div>
+
+                            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                                <h4 className="text-xs font-bold text-emerald-900 uppercase mb-3">Prepared By (Provider)</h4>
+                                <div className="space-y-3">
+                                    <InputGroup label="Your Name" name="providerName" value={formData.providerName} onChange={onChange} placeholder="Your Name" />
+                                    <InputGroup label="Company" name="providerCompany" value={formData.providerCompany} onChange={onChange} placeholder="Your Company" />
+                                    <InputGroup label="Address" name="providerAddress" value={formData.providerAddress} onChange={onChange} placeholder="Full Address" rows={2} />
+                                </div>
+                            </div>
+                        </div>
+                    </AccordionItem>
+
+                    {/* Timeline Builder */}
+                    <AccordionItem
+                        title="Project Timeline"
+                        icon={List}
+                        isOpen={openSection === 'timeline'}
+                        onClick={() => toggleSection('timeline')}
+                    >
+                        <div className="space-y-4">
+                            {formData.timeline.map((item, index) => (
+                                <div key={index} className="bg-slate-50 border border-slate-200 rounded-lg p-3 relative group">
+                                    <div className="grid grid-cols-[1fr_80px] gap-2 mb-2">
+                                        <input
+                                            value={item.phase}
+                                            onChange={(e) => updateTimeline(index, 'phase', e.target.value)}
+                                            className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-700"
+                                            placeholder="Phase"
+                                        />
+                                        <input
+                                            value={item.duration}
+                                            onChange={(e) => updateTimeline(index, 'duration', e.target.value)}
+                                            className="bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-500 text-right"
+                                            placeholder="Duration"
+                                        />
+                                    </div>
+                                    <textarea
+                                        value={item.description}
+                                        onChange={(e) => updateTimeline(index, 'description', e.target.value)}
+                                        rows={2}
+                                        className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-600 resize-none"
+                                        placeholder="Phase Description..."
+                                    />
+                                    {/* Delete Button */}
+                                    <button
+                                        onClick={() => removeTimelineRow(index)}
+                                        className="absolute -top-2 -right-2 bg-white text-slate-400 hover:text-red-500 rounded-full p-1 shadow-sm border border-slate-100 opacity-0 group-hover:opacity-100 transition-all"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                onClick={addTimelineRow}
+                                className="w-full py-2 border border-dashed border-slate-300 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Plus size={14} /> Add Phase
+                            </button>
+                        </div>
+                    </AccordionItem>
+
+                    {/* Commercials */}
+                    <AccordionItem
+                        title="Commercials"
+                        icon={DollarSign}
+                        isOpen={openSection === 'commercials'}
+                        onClick={() => toggleSection('commercials')}
+                    >
+                        <InputGroup label="Total Project Cost" name="totalProjectCost" value={formData.totalProjectCost} onChange={onChange} placeholder="e.g. $5,000 USD" />
+                        <div className="grid grid-cols-2 gap-3 mt-3">
+                            <InputGroup label="Payment Days" name="paymentDays" value={formData.paymentDays} onChange={onChange} placeholder="15" />
+                            <InputGroup label="Validity (Days)" name="validityDays" value={formData.validityDays} onChange={onChange} placeholder="30" />
+                        </div>
+                        <div className="h-px bg-slate-100 my-3"></div>
+                        <InputGroup label="Jurisdiction" name="jurisdiction" value={formData.jurisdiction} onChange={onChange} placeholder="State/Country" />
+                    </AccordionItem>
+                </>
+            ) : (
+                // BUILDER MODE
+                <div className="p-4 space-y-4">
+                    <p className="font-semibold text-xs uppercase text-slate-500 pl-1">Proposal Structure (Draggable)</p>
+                    <Reorder.Group axis="y" values={docContent.sections} onReorder={reorderSections} className="space-y-3">
+                        {docContent.sections.map((section, index) => (
+                            <Reorder.Item key={section.id} value={section} className="relative">
+                                <div className="bg-white border border-slate-200 rounded-lg shadow-sm hover:border-indigo-300 transition-colors group">
+                                    <div className="flex items-center justify-between p-2 border-b border-slate-100 bg-slate-50/30 rounded-t-lg">
+                                        <div className="flex items-center gap-3 flex-1">
+                                            <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-indigo-400 p-1">
+                                                <GripVertical size={16} />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={section.title}
+                                                onChange={(e) => updateSection(section.id, 'title', e.target.value)}
+                                                className="bg-transparent font-bold text-sm text-slate-700 outline-none w-full"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={() => removeSection(section.id)}
+                                            className="text-slate-300 hover:text-red-500 p-1 transition-colors"
+                                            title="Delete Section"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                    <div className="p-3">
+                                        <textarea
+                                            value={section.content}
+                                            onChange={(e) => updateSection(section.id, 'content', e.target.value)}
+                                            rows={4}
+                                            className="w-full text-sm text-slate-600 outline-none resize-y bg-transparent placeholder-slate-300"
+                                            placeholder="Enter clause content here..."
+                                        />
+                                    </div>
+                                </div>
+                            </Reorder.Item>
+                        ))}
+                    </Reorder.Group>
+
+                    <button
+                        onClick={addSection}
+                        className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 font-medium flex items-center justify-center gap-2 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50 transition-all group"
+                    >
+                        <div className="bg-slate-100 group-hover:bg-indigo-100 rounded-full p-1 transition-colors">
+                            <Plus size={18} />
+                        </div>
+                        Add New Section
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default ProposalFormSidebar;

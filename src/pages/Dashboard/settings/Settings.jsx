@@ -59,8 +59,8 @@ const Settings = () => {
 
             <div className="flex flex-col md:flex-row gap-8 items-start">
                 {/* Sidebar Navigation */}
-                <div className="w-full md:w-64 flex-shrink-0">
-                    <nav className="space-y-0.5">
+                <div className="w-full md:w-64 flex-shrink-0 overflow-x-auto md:overflow-visible pb-4 md:pb-0">
+                    <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-0.5 min-w-max md:min-w-0">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
@@ -68,7 +68,7 @@ const Settings = () => {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors ${isActive ? 'bg-slate-100 text-slate-900 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+                                    className={`flex items-center gap-3 px-3 py-2 text-left rounded-md transition-colors whitespace-nowrap ${isActive ? 'bg-slate-100 text-slate-900 font-medium' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
                                 >
                                     <Icon size={18} className={isActive ? 'text-indigo-600' : 'text-slate-400'} />
                                     <span className="text-sm">{tab.label}</span>

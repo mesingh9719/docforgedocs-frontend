@@ -145,56 +145,60 @@ const DocumentList = () => {
                     >
                         {/* List Header (Only for List View) */}
                         {viewMode === 'list' && (
-                            <div className="bg-slate-50 border-b border-slate-200 px-6 py-3 grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-6 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                <div>Document Name</div>
-                                <div>Type</div>
-                                <div>Status</div>
-                                <div>Updated</div>
-                                <div>Owner</div>
-                                <div className="text-right">Action</div>
+                            <div className="overflow-x-auto">
+                                <div className="min-w-[800px] bg-slate-50 border-b border-slate-200 px-6 py-3 grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-6 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <div>Document Name</div>
+                                    <div>Type</div>
+                                    <div>Status</div>
+                                    <div>Updated</div>
+                                    <div>Owner</div>
+                                    <div className="text-right">Action</div>
+                                </div>
                             </div>
                         )}
 
                         {documents.map((doc) => (
                             viewMode === 'list' ? (
                                 // LIST ITEM
-                                <motion.div
-                                    key={doc.id}
-                                    variants={itemVariants}
-                                    className="px-6 py-3 grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-6 items-center hover:bg-slate-50 transition-colors group cursor-pointer border-l-2 border-transparent hover:border-indigo-600"
-                                    onClick={() => navigate(`/documents/${doc.type}/${doc.id}`)}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                            <FileText size={18} strokeWidth={2} />
+                                <div className="overflow-x-auto">
+                                    <motion.div
+                                        key={doc.id}
+                                        variants={itemVariants}
+                                        className="min-w-[800px] px-6 py-3 grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-6 items-center hover:bg-slate-50 transition-colors group cursor-pointer border-l-2 border-transparent hover:border-indigo-600"
+                                        onClick={() => navigate(`/documents/${doc.type}/${doc.id}`)}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                                <FileText size={18} strokeWidth={2} />
+                                            </div>
+                                            <div>
+                                                <span className="font-semibold text-slate-900 block text-sm group-hover:text-indigo-600 transition-colors">{doc.name}</span>
+                                            </div>
                                         </div>
+                                        <div className="text-sm font-medium text-slate-500">{doc.type}</div>
                                         <div>
-                                            <span className="font-semibold text-slate-900 block text-sm group-hover:text-indigo-600 transition-colors">{doc.name}</span>
+                                            <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${getStatusStyle(doc.status)}`}>
+                                                {doc.status}
+                                            </span>
                                         </div>
-                                    </div>
-                                    <div className="text-sm font-medium text-slate-500">{doc.type}</div>
-                                    <div>
-                                        <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${getStatusStyle(doc.status)}`}>
-                                            {doc.status}
-                                        </span>
-                                    </div>
-                                    <div className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
-                                        <Clock size={12} className="text-slate-400" /> {new Date(doc.updated_at).toLocaleDateString()}
-                                    </div>
-                                    <div className="text-xs text-slate-500 flex items-center gap-2">
-                                        <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-200">
-                                            ME
+                                        <div className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
+                                            <Clock size={12} className="text-slate-400" /> {new Date(doc.updated_at).toLocaleDateString()}
                                         </div>
-                                        <span>You</span>
-                                    </div>
-                                    <div className="text-right">
-                                        {(can('document.edit') || can('document.delete')) && (
-                                            <button className="p-1.5 hover:bg-slate-200 rounded text-slate-400 hover:text-indigo-600 transition-colors">
-                                                <MoreVertical size={16} />
-                                            </button>
-                                        )}
-                                    </div>
-                                </motion.div>
+                                        <div className="text-xs text-slate-500 flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-200">
+                                                ME
+                                            </div>
+                                            <span>You</span>
+                                        </div>
+                                        <div className="text-right">
+                                            {(can('document.edit') || can('document.delete')) && (
+                                                <button className="p-1.5 hover:bg-slate-200 rounded text-slate-400 hover:text-indigo-600 transition-colors">
+                                                    <MoreVertical size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                </div>
                             ) : (
                                 // GRID CARD
                                 <motion.div

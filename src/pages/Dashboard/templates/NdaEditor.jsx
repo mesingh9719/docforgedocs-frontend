@@ -251,8 +251,8 @@ const NdaEditor = () => {
     return (
         <div className="flex flex-col h-screen bg-slate-100 overflow-hidden">
             {/* Toolbar */}
-            <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm">
-                <div className="flex items-center gap-4">
+            <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm">
+                <div className="flex items-center gap-2 md:gap-4">
                     <button
                         onClick={handleBack}
                         className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
@@ -265,43 +265,43 @@ const NdaEditor = () => {
                             type="text"
                             value={docContent.title}
                             onChange={(e) => setDocContent({ ...docContent, title: e.target.value })}
-                            className="font-bold text-slate-800 text-lg bg-transparent border-none p-0 focus:ring-0 w-64 hover:bg-slate-50 px-2 -ml-2 rounded cursor-text transition-colors"
+                            className="font-bold text-slate-800 text-sm md:text-lg bg-transparent border-none p-0 focus:ring-0 w-32 md:w-64 hover:bg-slate-50 px-2 -ml-2 rounded cursor-text transition-colors truncate"
                         />
-                        <p className="text-xs text-slate-400 font-medium px-2 -ml-2">Last saved: Just now</p>
+                        <p className="text-[10px] md:text-xs text-slate-400 font-medium px-2 -ml-2 hidden md:block">Last saved: Just now</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center bg-slate-100 rounded-lg p-1 mr-4">
+                <div className="flex items-center gap-2 md:gap-3">
+                    <div className="hidden md:flex items-center bg-slate-100 rounded-lg p-1 mr-4">
                         <button onClick={handleZoomOut} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomOut size={16} /></button>
                         <span className="text-xs font-semibold text-slate-600 w-12 text-center">{Math.round(zoom * 100)}%</span>
                         <button onClick={handleZoomIn} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomIn size={16} /></button>
                     </div>
 
-                    <button className="flex items-center gap-2 px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all">
+                    <button className="hidden md:flex items-center gap-2 px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all">
                         <Printer size={18} />
                         <span className="hidden sm:inline">Print</span>
                     </button>
 
-                    <button className="flex items-center gap-2 px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all">
+                    <button className="flex items-center gap-2 px-3 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all">
                         <Download size={18} />
                         <span className="hidden sm:inline">Export</span>
                     </button>
 
                     <button
                         onClick={handleSave}
-                        className={`flex items-center gap-2 px-5 py-2 rounded-lg text-white font-medium shadow-md transition-all ${isSaving ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                        className={`flex items-center gap-2 px-4 md:px-5 py-2 rounded-lg text-white font-medium shadow-md transition-all ${isSaving ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                     >
                         {isSaving ? <Check size={18} /> : <Save size={18} />}
-                        <span>{isSaving ? 'Saved!' : 'Save'}</span>
+                        <span className="hidden md:inline">{isSaving ? 'Saved!' : 'Save'}</span>
                     </button>
                 </div>
             </header>
 
-            {/* Main Content */}
-            <div className="flex flex-1 overflow-hidden relative">
+            {/* MainContent */}
+            <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative">
                 {/* Left Panel: Editor Sidebar */}
-                <div className="w-[400px] h-full bg-white border-r border-slate-200 overflow-y-auto z-20 shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]">
+                <div className="w-full lg:w-[400px] h-auto lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200 overflow-y-auto z-20 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.1)] lg:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] flex-shrink-0 order-2 lg:order-1 max-h-[40vh] lg:max-h-full">
                     <NdaFormSidebar
                         formData={formData}
                         onChange={handleChange}
@@ -316,7 +316,7 @@ const NdaEditor = () => {
                 </div>
 
                 {/* Right Panel: Live Preview */}
-                <div className="flex-1 h-full overflow-y-auto bg-slate-100/50 p-8 sm:p-12 flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300">
+                <div className="flex-1 h-full overflow-y-auto bg-slate-100/50 p-4 md:p-8 sm:p-12 flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 order-1 lg:order-2">
                     <NdaDocumentPreview data={formData} content={docContent} zoom={zoom} />
                 </div>
             </div>

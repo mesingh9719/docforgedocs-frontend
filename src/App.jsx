@@ -26,11 +26,14 @@ import Contact from './pages/Landing/Contact'
 import Careers from './pages/Landing/Careers'
 import Changelog from './pages/Landing/Changelog'
 
+import ScrollToTop from './components/ScrollToTop'
+
 function App() {
   return (
     <AuthProvider>
       <HelmetProvider>
         <Router>
+          <ScrollToTop />
           <Routes>
             <Route element={<Layout />} >
               <Route path="/" element={<Welcome />} />

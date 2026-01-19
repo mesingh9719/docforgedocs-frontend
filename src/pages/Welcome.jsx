@@ -39,9 +39,15 @@ const FeatureCard = ({ icon: Icon, title, description, delay }) => (
     </motion.div>
 );
 
+import SEO from '../components/SEO';
+
 const Welcome = () => {
     return (
         <div className="min-h-screen bg-white font-sans selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden">
+            <SEO
+                title="Home"
+                description="The all-in-one workspace for modern agencies. Manage documents, teams, and invoices with unparalleled elegance and speed."
+            />
 
             {/* Background Decorations */}
             <div className="fixed inset-0 pointer-events-none z-0">

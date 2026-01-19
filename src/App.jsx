@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
+import { HelmetProvider } from 'react-helmet-async'
 import { AuthProvider } from './context/AuthContext'
 import Layout from './components/LandingPage/Layout'
 import Welcome from './pages/Welcome'
@@ -16,22 +17,39 @@ import Settings from './pages/Dashboard/settings/Settings'
 import Team from './pages/Dashboard/team/Team'
 import AuthLayout from './components/auth/AuthLayout'
 import ProtectedRoute from './components/ProtectedRoute'
+import Features from './pages/Landing/Features'
+import Pricing from './pages/Landing/Pricing'
+import About from './pages/Landing/About'
+import Privacy from './pages/Landing/Privacy'
+import Terms from './pages/Landing/Terms'
+import Contact from './pages/Landing/Contact'
+import Careers from './pages/Landing/Careers'
+import Changelog from './pages/Landing/Changelog'
 
 function App() {
-
   return (
-    <>
-      <AuthProvider>
+    <AuthProvider>
+      <HelmetProvider>
         <Router>
           <Routes>
             <Route element={<Layout />} >
               <Route path="/" element={<Welcome />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/about" element={<About />} />
+
+              {/* Footer Links */}
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/careers" element={<Careers />} />
+              <Route path="/changelog" element={<Changelog />} />
 
               <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
             </Route>
 
-            {/* Auth Routes - Wrapper removed to allow per-page layout props */}
+            {/* Auth Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
@@ -61,8 +79,8 @@ function App() {
             </Route>
           </Routes>
         </Router>
-      </AuthProvider>
-    </>
+      </HelmetProvider>
+    </AuthProvider>
   )
 }
 

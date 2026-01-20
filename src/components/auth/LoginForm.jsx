@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { login } from '../../api/auth';
 import { Loader2, Mail, Lock } from 'lucide-react';
 
 function LoginForm() {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [error, setError] = useState(null);
+    const [error, setError] = useState(location.state?.message || null);
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
+
+    // Clear state so message doesn't persist on refresh manually if needed, 
+    // but React Router handles this well usually. 
+    // However, if we want to be clean:
+    React.useEffect(() => {
+        if (location.state?.message) {
+            window.history.replaceState({}, document.title)
+        }
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

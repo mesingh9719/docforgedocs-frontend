@@ -43,7 +43,7 @@ const InputGroup = ({ label, name, value, onChange, placeholder, type = "text", 
         {rows ? (
             <textarea
                 name={name}
-                value={value}
+                value={value || ''}
                 onChange={onChange}
                 placeholder={placeholder}
                 rows={rows}
@@ -53,7 +53,7 @@ const InputGroup = ({ label, name, value, onChange, placeholder, type = "text", 
             <input
                 type={type}
                 name={name}
-                value={value}
+                value={value || ''}
                 onChange={onChange}
                 placeholder={placeholder}
                 className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-slate-400"
@@ -221,7 +221,7 @@ const NdaFormSidebar = ({
                         </div>
                         <textarea
                             name="preamble"
-                            value={docContent.preamble}
+                            value={docContent.preamble || ''}
                             onChange={onContentChange}
                             rows={3}
                             className="w-full text-xs p-2 rounded border border-slate-200 bg-white mb-2 focus:ring-1 focus:ring-indigo-500 outline-none"
@@ -229,7 +229,7 @@ const NdaFormSidebar = ({
                         />
                         <textarea
                             name="partiesDisclosing"
-                            value={docContent.partiesDisclosing}
+                            value={docContent.partiesDisclosing || ''}
                             onChange={onContentChange}
                             rows={2}
                             className="w-full text-xs p-2 rounded border border-slate-200 bg-white mb-2 focus:ring-1 focus:ring-indigo-500 outline-none"
@@ -237,7 +237,7 @@ const NdaFormSidebar = ({
                         />
                         <textarea
                             name="partiesReceiving"
-                            value={docContent.partiesReceiving}
+                            value={docContent.partiesReceiving || ''}
                             onChange={onContentChange}
                             rows={2}
                             className="w-full text-xs p-2 rounded border border-slate-200 bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
@@ -259,7 +259,7 @@ const NdaFormSidebar = ({
                                                 </div>
                                                 <input
                                                     type="text"
-                                                    value={section.title}
+                                                    value={section.title || ''}
                                                     onChange={(e) => updateSection(section.id, 'title', e.target.value)}
                                                     className="bg-transparent font-bold text-sm text-slate-700 outline-none w-full"
                                                 />
@@ -274,7 +274,7 @@ const NdaFormSidebar = ({
                                         </div>
                                         <div className="p-3">
                                             <textarea
-                                                value={section.content}
+                                                value={section.content || ''}
                                                 onChange={(e) => updateSection(section.id, 'content', e.target.value)}
                                                 rows={4}
                                                 className="w-full text-sm text-slate-600 outline-none resize-y bg-transparent placeholder-slate-300"

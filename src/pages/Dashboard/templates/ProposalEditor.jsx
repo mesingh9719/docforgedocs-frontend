@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save } from 'lucide-react';
+import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Bell } from 'lucide-react';
 import ProposalFormSidebar from './ProposalFormSidebar';
 import ProposalDocumentPreview from './ProposalDocumentPreview';
+import PrintPortal from '../../../components/PrintPortal';
+import SendDocumentModal from '../../../components/SendDocumentModal';
 import { createDocument, getDocument, updateDocument } from '../../../api/documents';
 import { getBusiness } from '../../../api/business';
+import { generateDocumentPdf, wrapHtmlForPdf } from '../../../utils/pdfGenerator';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { useParams } from 'react-router-dom';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
@@ -83,6 +87,7 @@ const ProposalEditor = () => {
     const { id } = useParams();
     const [zoom, setZoom] = useState(1);
     const [isSaving, setIsSaving] = useState(false);
+    const [documentName, setDocumentName] = useState('Untitled Proposal');
 
     // State for the Document Variables (Inputs)
     const [formData, setFormData] = useState({
@@ -130,8 +135,11 @@ const ProposalEditor = () => {
     const loadDocument = async (docId) => {
         try {
             const doc = await getDocument(docId);
+            if (doc.data.name) setDocumentName(doc.data.name);
             const content = doc.data.content || {};
-            if (content.formData) setFormData(content.formData);
+            if (content.formData) {
+                setFormData(prev => ({ ...prev, ...content.formData }));
+            }
             if (content.docContent) setDocContent(content.docContent);
         } catch (error) {
             console.error("Failed to load", error);
@@ -246,7 +254,7 @@ const ProposalEditor = () => {
         setIsSaving(true);
         try {
             const payload = {
-                name: formData.proposalTitle || 'Untitled Proposal',
+                name: documentName,
                 type_slug: 'proposal',
                 content: {
                     formData,
@@ -269,10 +277,94 @@ const ProposalEditor = () => {
         }
     };
 
+    const [isPrinting, setIsPrinting] = useState(false);
+    const lastGeneratedData = React.useRef(null);
+    const [cachedPdfUrl, setCachedPdfUrl] = useState(null);
+
+    const handlePrint = async () => {
+        if (!id) {
+            alert("Please save the document before printing.");
+            return;
+        }
+
+        const currentDataString = JSON.stringify({ formData, docContent });
+        if (cachedPdfUrl && lastGeneratedData.current === currentDataString) {
+            window.open(cachedPdfUrl, '_blank');
+            return;
+        }
+
+        setIsPrinting(true);
+        try {
+            const documentHtml = renderToStaticMarkup(
+                <ProposalDocumentPreview data={formData} content={docContent} zoom={1} printing={true} />
+            );
+
+            const response = await generateDocumentPdf(
+                id,
+                documentHtml,
+                documentName
+            );
+
+            if (response.url) {
+                setCachedPdfUrl(response.url);
+                lastGeneratedData.current = currentDataString;
+                window.open(response.url, '_blank');
+            }
+        } catch (error) {
+            console.error("PDF Generation failed", error);
+            alert("Failed to generate PDF. Please try again.");
+        } finally {
+            setIsPrinting(false);
+        }
+    };
+
+    const [isSending, setIsSending] = useState(false);
+    const [sentAt, setSentAt] = useState(null);
+
+
+
+    const handleSendEmail = () => {
+        if (!id) {
+            alert("Please save the document before sending.");
+            return;
+        }
+        setIsSending(true);
+    };
+
+    const handleSendSuccess = (updatedDoc) => {
+        if (updatedDoc && updatedDoc.sent_at) {
+            setSentAt(updatedDoc.sent_at);
+        }
+    };
+
     return (
         <div className="flex flex-col h-screen bg-slate-100 overflow-hidden">
+            {isPrinting && (
+                <PrintPortal>
+                    <ProposalDocumentPreview data={formData} content={docContent} zoom={1} />
+                </PrintPortal>
+            )}
+
+
+
+            {/* ... Modal ... */}
+            <SendDocumentModal
+                isOpen={isSending}
+                onClose={() => setIsSending(false)}
+                documentId={id}
+                documentName={documentName}
+                isReminder={!!sentAt}
+                onSuccess={handleSendSuccess}
+                getHtmlContent={async () => {
+                    const documentHtml = renderToStaticMarkup(
+                        <ProposalDocumentPreview data={formData} content={docContent} zoom={1} printing={true} />
+                    );
+                    return wrapHtmlForPdf(documentHtml, documentName);
+                }}
+            />
+
             {/* Toolbar */}
-            <header className="h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm">
+            <header className="no-print h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm">
                 <div className="flex items-center gap-2 md:gap-4">
                     <button
                         onClick={handleBack}
@@ -282,13 +374,21 @@ const ProposalEditor = () => {
                         <ArrowLeft size={20} />
                     </button>
                     <div>
-                        <input
-                            type="text"
-                            value={docContent.title}
-                            onChange={(e) => setDocContent({ ...docContent, title: e.target.value })}
-                            className="font-bold text-slate-800 text-sm md:text-lg bg-transparent border-none p-0 focus:ring-0 w-32 md:w-64 hover:bg-slate-50 px-2 -ml-2 rounded cursor-text transition-colors truncate"
-                        />
-                        <p className="text-[10px] md:text-xs text-slate-400 font-medium px-2 -ml-2 hidden md:block">Last saved: Just now</p>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={documentName}
+                                onChange={(e) => setDocumentName(e.target.value)}
+                                className="font-bold text-slate-800 text-sm md:text-lg bg-transparent border-none focus:ring-0 p-0 m-0 w-auto min-w-[200px] placeholder-slate-400"
+                                placeholder="Enter Document Name"
+                            />
+                            {sentAt && (
+                                <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-100">
+                                    <Check size={10} /> Sent {new Date(sentAt).toLocaleDateString()}
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap">Last saved: Just now</p>
                     </div>
                 </div>
 
@@ -299,9 +399,20 @@ const ProposalEditor = () => {
                         <button onClick={handleZoomIn} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomIn size={16} /></button>
                     </div>
 
-                    <button className="hidden md:flex items-center gap-2 px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all">
+                    <button
+                        onClick={handlePrint}
+                        className="flex items-center gap-2 p-2 md:px-4 md:py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"
+                    >
                         <Printer size={18} />
                         <span className="hidden sm:inline">Print</span>
+                    </button>
+
+                    <button
+                        onClick={handleSendEmail}
+                        className={`flex items-center gap-2 px-3 md:px-4 py-2 text-sm font-medium rounded-lg border border-transparent transition-all ${sentAt ? 'text-amber-600 hover:bg-amber-50 hover:border-amber-200' : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200'}`}
+                    >
+                        {sentAt ? <Bell size={18} /> : <Mail size={18} />}
+                        <span className="hidden sm:inline">{sentAt ? 'Remind' : 'Send'}</span>
                     </button>
 
                     <button className="flex items-center gap-2 px-3 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all">
@@ -322,7 +433,7 @@ const ProposalEditor = () => {
             {/* Main Content */}
             <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative">
                 {/* Left Panel: Editor Sidebar */}
-                <div className="w-full lg:w-[400px] h-auto lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200 overflow-y-auto z-20 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.1)] lg:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] flex-shrink-0 order-2 lg:order-1 max-h-[40vh] lg:max-h-full">
+                <div className="no-print w-full lg:w-[400px] h-auto lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200 overflow-y-auto z-20 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.1)] lg:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] flex-shrink-0 order-2 lg:order-1 max-h-[40vh] lg:max-h-full">
                     <ProposalFormSidebar
                         formData={formData}
                         onChange={handleChange}

@@ -12,19 +12,26 @@ import {
 } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { logout } from '../../api/auth';
-
 import { usePermissions } from '../../hooks/usePermissions';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
     const [collapsed, setCollapsed] = useState(false);
     const navigate = useNavigate();
     const { can } = usePermissions();
+    const { setToken } = useAuth();
 
     const toggleSidebar = () => setCollapsed(!collapsed);
 
     const handleLogout = async () => {
-        await logout();
-        navigate('/login');
+        try {
+            await logout();
+        } catch (error) {
+            console.error("Logout failed", error);
+        } finally {
+            setToken(null);
+            navigate('/');
+        }
     };
 
     const businessName = business?.name || 'DocForge';
@@ -53,6 +60,7 @@ const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
             }
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className={`
+                no-print
                 h-screen bg-slate-900 text-slate-400 flex flex-col justify-between z-50 border-r border-slate-800
                 lg:sticky lg:top-0 fixed top-0 left-0
                 ${mobileMenuOpen ? 'w-[260px]' : ''}

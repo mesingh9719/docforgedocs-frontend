@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 const TopBar = ({ business, user, onMenuClick }) => {
     return (
-        <header className="px-6 py-4 flex items-center justify-between sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm transition-all duration-300">
+        <header className="no-print px-6 py-4 flex items-center justify-between sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm transition-all duration-300">
             {/* Breadcrumbs / Page Title */}
             <div className="flex items-center gap-3">
                 <button

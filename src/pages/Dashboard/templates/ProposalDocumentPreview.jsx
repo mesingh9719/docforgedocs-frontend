@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-function ProposalDocumentPreview({ data, content, zoom = 1 }) {
+function ProposalDocumentPreview({ data, content, zoom = 1, printing = false }) {
 
     // Helper to render placeholder or value
     const RenderField = ({ value, placeholder, className = "" }) => {
@@ -49,18 +49,24 @@ function ProposalDocumentPreview({ data, content, zoom = 1 }) {
         );
     };
 
+    const Container = printing ? 'div' : motion.div;
+    const Section = printing ? 'div' : motion.section;
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+        <Container
+            id="printable-document"
+            {...(!printing ? {
+                initial: { opacity: 0, y: 20 },
+                animate: { opacity: 1, y: 0 }
+            } : {})}
             style={{
-                transform: `scale(${zoom})`,
+                transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
             }}
             className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[11pt] leading-relaxed font-serif relative mb-20 origin-top"
         >
             {/* Realistic Paper Effects */}
-            <div className="absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>
+            <div className="no-print absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>
 
             <div className="p-[25mm] h-full flex flex-col relative z-10 min-h-[297mm]">
 
@@ -106,12 +112,14 @@ function ProposalDocumentPreview({ data, content, zoom = 1 }) {
                 <div className="space-y-8">
                     <AnimatePresence>
                         {content.sections && content.sections.map((section, index) => (
-                            <motion.section
+                            <Section
                                 key={section.id}
-                                layout
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
+                                {...(!printing ? {
+                                    layout: true,
+                                    initial: { opacity: 0, y: 10 },
+                                    animate: { opacity: 1, y: 0 },
+                                    exit: { opacity: 0, scale: 0.95 }
+                                } : {})}
                             >
                                 <h2 className="font-bold text-lg uppercase mb-3 text-slate-900 border-l-4 border-indigo-500 pl-3">
                                     {index + 2}. {section.title}
@@ -143,7 +151,7 @@ function ProposalDocumentPreview({ data, content, zoom = 1 }) {
                                         </table>
                                     </div>
                                 )}
-                            </motion.section>
+                            </Section>
                         ))}
                     </AnimatePresence>
                 </div>
@@ -153,48 +161,108 @@ function ProposalDocumentPreview({ data, content, zoom = 1 }) {
                     <h2 className="font-bold text-lg uppercase mb-6 text-slate-900 pl-3 border-l-4 border-indigo-500">{content.sections.length + 2}. Acceptance</h2>
                     <p className="mb-8">By signing below, both parties agree to the terms and conditions outlined in this proposal.</p>
 
-                    <div className="grid grid-cols-2 gap-16">
-                        <div className="space-y-4">
-                            <p className="font-bold uppercase text-xs tracking-wider mb-8 bg-slate-100 p-2 inline-block rounded">For Client</p>
-                            <div className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-4 items-baseline text-sm">
-                                <span className="font-medium text-slate-500">Name:</span>
-                                <div className="border-b border-slate-300 h-6"></div>
+                    {printing ? (
+                        /* TABLE LAYOUT FOR PDF */
+                        <table style={{ width: '100%', marginTop: '20px' }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ width: '48%', verticalAlign: 'top', paddingRight: '2%' }}>
+                                        <p style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '10pt', marginBottom: '20px', backgroundColor: '#f1f5f9', padding: '5px' }}>For Client</p>
+                                        <table style={{ width: '100%' }}>
+                                            <tbody>
+                                                <tr>
+                                                    <td style={{ width: '80px', paddingBottom: '15px' }}>Name:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ width: '80px', paddingBottom: '15px' }}>Designation:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ width: '80px', paddingBottom: '15px' }}>Signature:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc', height: '40px' }}></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ width: '80px' }}>Date:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
 
-                                <span className="font-medium text-slate-500">Designation:</span>
-                                <div className="border-b border-slate-300 h-6"></div>
+                                    <td style={{ width: '4%' }}></td>
 
-                                <span className="font-medium text-slate-500">Signature:</span>
-                                <div className="border-b border-slate-300 h-10"></div>
+                                    <td style={{ width: '48%', verticalAlign: 'top' }}>
+                                        <p style={{ fontWeight: 'bold', textTransform: 'uppercase', fontSize: '10pt', marginBottom: '20px', backgroundColor: '#f1f5f9', padding: '5px' }}>For Service Provider</p>
+                                        <table style={{ width: '100%' }}>
+                                            <tbody>
+                                                <tr>
+                                                    <td style={{ width: '80px', paddingBottom: '15px' }}>Name:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.providerName}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ width: '80px', paddingBottom: '15px' }}>Designation:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ width: '80px', paddingBottom: '15px' }}>Signature:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc', height: '40px' }}></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ width: '80px' }}>Date:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    ) : (
+                        /* GRID LAYOUT FOR BROWSER */
+                        <div className="grid grid-cols-2 gap-16">
+                            <div className="space-y-4">
+                                <p className="font-bold uppercase text-xs tracking-wider mb-8 bg-slate-100 p-2 inline-block rounded">For Client</p>
+                                <div className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-4 items-baseline text-sm">
+                                    <span className="font-medium text-slate-500">Name:</span>
+                                    <div className="border-b border-slate-300 h-6"></div>
 
-                                <span className="font-medium text-slate-500">Date:</span>
-                                <div className="border-b border-slate-300 h-6"></div>
+                                    <span className="font-medium text-slate-500">Designation:</span>
+                                    <div className="border-b border-slate-300 h-6"></div>
+
+                                    <span className="font-medium text-slate-500">Signature:</span>
+                                    <div className="border-b border-slate-300 h-10"></div>
+
+                                    <span className="font-medium text-slate-500">Date:</span>
+                                    <div className="border-b border-slate-300 h-6"></div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <p className="font-bold uppercase text-xs tracking-wider mb-8 bg-slate-100 p-2 inline-block rounded">For Service Provider</p>
+                                <div className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-4 items-baseline text-sm">
+                                    <span className="font-medium text-slate-500">Name:</span>
+                                    <div className="border-b border-slate-300 h-6 text-slate-900">{data.providerName}</div>
+
+                                    <span className="font-medium text-slate-500">Designation:</span>
+                                    <div className="border-b border-slate-300 h-6"></div>
+
+                                    <span className="font-medium text-slate-500">Signature:</span>
+                                    <div className="border-b border-slate-300 h-10"></div>
+
+                                    <span className="font-medium text-slate-500">Date:</span>
+                                    <div className="border-b border-slate-300 h-6"></div>
+                                </div>
                             </div>
                         </div>
-
-                        <div className="space-y-4">
-                            <p className="font-bold uppercase text-xs tracking-wider mb-8 bg-slate-100 p-2 inline-block rounded">For Service Provider</p>
-                            <div className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-4 items-baseline text-sm">
-                                <span className="font-medium text-slate-500">Name:</span>
-                                <div className="border-b border-slate-300 h-6 text-slate-900">{data.providerName}</div>
-
-                                <span className="font-medium text-slate-500">Designation:</span>
-                                <div className="border-b border-slate-300 h-6"></div>
-
-                                <span className="font-medium text-slate-500">Signature:</span>
-                                <div className="border-b border-slate-300 h-10"></div>
-
-                                <span className="font-medium text-slate-500">Date:</span>
-                                <div className="border-b border-slate-300 h-6"></div>
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </section>
 
-                <div className="mt-auto pt-12 text-center">
+                <div className={`mt-auto pt-12 text-center ${printing ? 'no-absolute-print' : ''}`} style={printing ? { position: 'fixed', bottom: '0px', width: '100%', textAlign: 'center' } : {}}>
                     <p className="text-[9px] text-slate-300 uppercase tracking-widest font-sans">Generated by DocForge</p>
                 </div>
             </div>
-        </motion.div>
+        </Container>
     );
 }
 

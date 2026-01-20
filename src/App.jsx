@@ -25,7 +25,9 @@ import Terms from './pages/Landing/Terms'
 import Contact from './pages/Landing/Contact'
 import Careers from './pages/Landing/Careers'
 import Changelog from './pages/Landing/Changelog'
+import PublicDocumentViewer from './pages/PublicDocumentViewer'
 
+import GuestRoute from './components/GuestRoute'
 import ScrollToTop from './components/ScrollToTop'
 
 function App() {
@@ -52,32 +54,40 @@ function App() {
               <Route path="/accept-invite" element={<AcceptInvite />} />
             </Route>
 
-            {/* Auth Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* Public Viewer Route */}
+            <Route path="/view/:token" element={<PublicDocumentViewer />} />
 
-            <Route element={<DashboardLayout />} >
-              <Route path='/dashboard' element={<DashboardHome />} />
+            {/* Auth Routes - Redirect if logged in */}
+            <Route element={<GuestRoute />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+            </Route>
 
-              {/* Documents - View Permission */}
-              <Route element={<ProtectedRoute permission="document.view" />}>
-                <Route path='/documents' element={<DocumentList />} />
-                <Route path='/documents/nda' element={<NdaEditor />} />
-                <Route path='/documents/nda/:id' element={<NdaEditor />} />
-                <Route path='/documents/proposal' element={<ProposalEditor />} />
-                <Route path='/documents/proposal/:id' element={<ProposalEditor />} />
-                <Route path='/documents/invoice' element={<InvoiceEditor />} />
-                <Route path='/documents/invoice/:id' element={<InvoiceEditor />} />
-              </Route>
+            {/* Dashboard Routes - Protected */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<DashboardLayout />} >
+                <Route path='/dashboard' element={<DashboardHome />} />
 
-              {/* Team - View Permission */}
-              <Route element={<ProtectedRoute permission="team.view" />}>
-                <Route path='/team' element={<Team />} />
-              </Route>
+                {/* Documents - View Permission */}
+                <Route element={<ProtectedRoute permission="document.view" />}>
+                  <Route path='/documents' element={<DocumentList />} />
+                  <Route path='/documents/nda' element={<NdaEditor />} />
+                  <Route path='/documents/nda/:id' element={<NdaEditor />} />
+                  <Route path='/documents/proposal' element={<ProposalEditor />} />
+                  <Route path='/documents/proposal/:id' element={<ProposalEditor />} />
+                  <Route path='/documents/invoice' element={<InvoiceEditor />} />
+                  <Route path='/documents/invoice/:id' element={<InvoiceEditor />} />
+                </Route>
 
-              {/* Settings - Manage Permission */}
-              <Route element={<ProtectedRoute permission="settings.manage" />}>
-                <Route path='/settings' element={<Settings />} />
+                {/* Team - View Permission */}
+                <Route element={<ProtectedRoute permission="team.view" />}>
+                  <Route path='/team' element={<Team />} />
+                </Route>
+
+                {/* Settings - Manage Permission */}
+                <Route element={<ProtectedRoute permission="settings.manage" />}>
+                  <Route path='/settings' element={<Settings />} />
+                </Route>
               </Route>
             </Route>
           </Routes>

@@ -43,7 +43,7 @@ const InputGroup = ({ label, name, value, onChange, placeholder, type = "text", 
         {rows ? (
             <textarea
                 name={name}
-                value={value}
+                value={value || ''}
                 onChange={onChange}
                 placeholder={placeholder}
                 rows={rows}
@@ -54,7 +54,7 @@ const InputGroup = ({ label, name, value, onChange, placeholder, type = "text", 
             <input
                 type={type}
                 name={name}
-                value={value}
+                value={value || ''}
                 onChange={onChange}
                 placeholder={placeholder}
                 disabled={disabled}
@@ -97,6 +97,7 @@ const InvoiceFormSidebar = ({
                 isOpen={openSection === 'details'}
                 onClick={() => toggleSection('details')}
             >
+                <InputGroup label="Invoice Title" name="invoiceTitle" value={formData.invoiceTitle} onChange={onChange} placeholder="INVOICE" />
                 <InputGroup label="Invoice Number" name="invoiceNumber" value={formData.invoiceNumber} onChange={onChange} placeholder="INV-001" />
                 <div className="grid grid-cols-2 gap-3">
                     <InputGroup label="Date" name="invoiceDate" value={formData.invoiceDate} onChange={onChange} placeholder="DD/MM/YYYY" />

@@ -33,3 +33,109 @@ body {
 ::selection {
   @apply bg-indigo-600 text-white;
 }
+
+/* Print Styles */
+/* Print Styles */
+@media print {
+  @page {
+    margin: 15mm 15mm 20mm 15mm;
+    size: A4 portrait;
+  }
+
+  /* Reset Body constraints - Critical for multi-page */
+  html,
+  body {
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    /* Optimization for text rendering on paper */
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide the Main App (SPA) completely */
+  #root {
+    display: none !important;
+  }
+
+  /* Ensure our Portal is visible and strictly formatted */
+  #print-root {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Ensure content inside Portal behaves correctly */
+  #print-root>div {
+    max-width: 100% !important;
+    width: 100% !important;
+    /* Let margins flow naturally from @page */
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    /* Ensure flow */
+    position: relative !important;
+  }
+
+  /* Utilities */
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .break-after-page {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  /* Prevent orphans/widows */
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  li {
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    break-after: avoid-page !important;
+    page-break-after: avoid !important;
+  }
+
+  /* Tables */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-bottom: 0.5rem;
+  }
+
+  tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  /* Hide scrollbars */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+}

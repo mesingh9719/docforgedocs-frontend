@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, FileText, FileBadge, ArrowRight, FileCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -41,27 +42,29 @@ const TemplateModal = ({ isOpen, onClose }) => {
         navigate(template.route);
     };
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <>
                     {/* Backdrop */}
                     <motion.div
+                        key="backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50"
+                        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[9998]"
                         onClick={onClose}
                     />
 
                     {/* Modal */}
                     <motion.div
+                        key="modal"
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed inset-0 m-auto max-w-2xl h-fit z-50 p-4"
+                        className="fixed inset-0 m-auto max-w-2xl h-fit z-[9999] p-4 pointer-events-none"
                     >
-                        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden relative">
+                        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden relative pointer-events-auto">
                             {/* Header */}
                             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                                 <div>
@@ -116,7 +119,8 @@ const TemplateModal = ({ isOpen, onClose }) => {
                     </motion.div>
                 </>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

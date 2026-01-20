@@ -43,7 +43,7 @@ const InputGroup = ({ label, name, value, onChange, placeholder, type = "text", 
         {rows ? (
             <textarea
                 name={name}
-                value={value}
+                value={value || ''}
                 onChange={onChange}
                 placeholder={placeholder}
                 rows={rows}
@@ -53,7 +53,7 @@ const InputGroup = ({ label, name, value, onChange, placeholder, type = "text", 
             <input
                 type={type}
                 name={name}
-                value={value}
+                value={value || ''}
                 onChange={onChange}
                 placeholder={placeholder}
                 className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-slate-400"
@@ -168,20 +168,20 @@ const ProposalFormSidebar = ({
                                 <div key={index} className="bg-slate-50 border border-slate-200 rounded-lg p-3 relative group">
                                     <div className="grid grid-cols-[1fr_80px] gap-2 mb-2">
                                         <input
-                                            value={item.phase}
+                                            value={item.phase || ''}
                                             onChange={(e) => updateTimeline(index, 'phase', e.target.value)}
                                             className="bg-white border border-slate-200 rounded px-2 py-1 text-xs font-bold text-slate-700"
                                             placeholder="Phase"
                                         />
                                         <input
-                                            value={item.duration}
+                                            value={item.duration || ''}
                                             onChange={(e) => updateTimeline(index, 'duration', e.target.value)}
                                             className="bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-500 text-right"
                                             placeholder="Duration"
                                         />
                                     </div>
                                     <textarea
-                                        value={item.description}
+                                        value={item.description || ''}
                                         onChange={(e) => updateTimeline(index, 'description', e.target.value)}
                                         rows={2}
                                         className="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-600 resize-none"
@@ -236,7 +236,7 @@ const ProposalFormSidebar = ({
                                             </div>
                                             <input
                                                 type="text"
-                                                value={section.title}
+                                                value={section.title || ''}
                                                 onChange={(e) => updateSection(section.id, 'title', e.target.value)}
                                                 className="bg-transparent font-bold text-sm text-slate-700 outline-none w-full"
                                             />
@@ -251,7 +251,7 @@ const ProposalFormSidebar = ({
                                     </div>
                                     <div className="p-3">
                                         <textarea
-                                            value={section.content}
+                                            value={section.content || ''}
                                             onChange={(e) => updateSection(section.id, 'content', e.target.value)}
                                             rows={4}
                                             className="w-full text-sm text-slate-600 outline-none resize-y bg-transparent placeholder-slate-300"

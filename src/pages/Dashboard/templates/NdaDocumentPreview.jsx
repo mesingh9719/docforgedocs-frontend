@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-function NdaDocumentPreview({ data, content, zoom = 1 }) {
+function NdaDocumentPreview({ data, content, zoom = 1, printing = false }) {
 
     // Helper to render placeholder or value
     const RenderField = ({ value, placeholder, className = "" }) => {
@@ -31,18 +31,26 @@ function NdaDocumentPreview({ data, content, zoom = 1 }) {
         );
     };
 
+    const Container = printing ? 'div' : motion.div;
+    const Section = printing ? 'div' : motion.section;
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+        <Container
+            id="printable-document"
+            {...(!printing ? {
+                initial: { opacity: 0, y: 20 },
+                animate: { opacity: 1, y: 0 }
+            } : {})}
             style={{
-                transform: `scale(${zoom})`,
+                transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
             }}
             className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[11pt] leading-relaxed font-serif relative mb-20 origin-top"
         >
-            {/* Realistic Paper Effects */}
-            <div className="absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>
+            {/* Realistic Paper Effects - Hide when printing */}
+            {!printing && (
+                <div className="no-print absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>
+            )}
 
             <div className="p-[25mm] relative z-10">
                 <h1 className="text-xl font-bold text-center mb-10 uppercase tracking-widest border-b-2 border-slate-900 pb-2">
@@ -71,14 +79,16 @@ function NdaDocumentPreview({ data, content, zoom = 1 }) {
 
                 {/* Dynamic Sections Loop */}
                 <div className="space-y-6 min-h-[100px]">
-                    <AnimatePresence>
+                    <AnimatePresence mode="popLayout">
                         {content.sections && content.sections.map((section, index) => (
-                            <motion.section
+                            <Section
                                 key={section.id}
-                                layout
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
+                                {...(!printing ? {
+                                    layout: true,
+                                    initial: { opacity: 0, y: 10 },
+                                    animate: { opacity: 1, y: 0 },
+                                    exit: { opacity: 0, scale: 0.95 }
+                                } : {})}
                             >
                                 <h2 className="font-bold text-sm uppercase mb-2">
                                     {index + 1}. {section.title}
@@ -86,7 +96,7 @@ function NdaDocumentPreview({ data, content, zoom = 1 }) {
                                 <p className="text-justify">
                                     <DynamicText template={section.content} values={data} />
                                 </p>
-                            </motion.section>
+                            </Section>
                         ))}
                     </AnimatePresence>
                 </div>
@@ -96,58 +106,132 @@ function NdaDocumentPreview({ data, content, zoom = 1 }) {
                     <h2 className="font-bold text-sm uppercase mb-6 border-b border-slate-900 pb-1">{content.sections.length + 1}. Signatures</h2>
                     <p className="mb-8">IN WITNESS WHEREOF, the Parties have executed this Agreement as of the date first written above.</p>
 
-                    <div className="grid grid-cols-2 gap-16">
-                        <div className="space-y-1">
-                            <p className="font-bold uppercase text-xs tracking-wider mb-8">For Disclosing Party</p>
+                    {printing ? (
+                        /* Table Layout for PDF Generation (DomPDF is robust with tables) */
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+                            <tbody>
+                                <tr>
+                                    {/* Column 1: Disclosing Party */}
+                                    <td style={{ width: '48%', verticalAlign: 'top', paddingRight: '2%' }}>
+                                        <p className="font-bold uppercase text-xs tracking-wider mb-8">For Disclosing Party</p>
 
-                            <div className="relative border-b border-slate-800 h-8 mb-2">
-                                {/* Simulated Signature */}
-                                {data.disclosingSignatoryName && (
-                                    <span className="absolute bottom-1 left-2 font-cursive text-xl text-blue-900 opacity-80 rotate-[-2deg]">
-                                        {data.disclosingSignatoryName}
-                                    </span>
-                                )}
+                                        <div className="relative border-b border-slate-800 h-8 mb-2" style={{ borderBottom: '1px solid #000', height: '40px', marginBottom: '10px' }}>
+                                            {/* Signature - Text representation for PDF or Image if needed */}
+                                            {data.disclosingSignatoryName && (
+                                                <span style={{ fontFamily: 'cursive', fontSize: '16pt', color: '#1e3a8a' }}>
+                                                    {data.disclosingSignatoryName}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs uppercase text-slate-500">Authorized Signature</p>
+
+                                        <table style={{ width: '100%', marginTop: '15px' }}>
+                                            <tbody>
+                                                <tr>
+                                                    <td style={{ width: '60px', fontWeight: 'bold', fontSize: '10pt' }}>Name:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.disclosingSignatoryName}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ paddingBottom: '5px' }}></td><td></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ width: '60px', fontWeight: 'bold', fontSize: '10pt' }}>Title:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.disclosingSignatoryDesignation}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+
+                                    {/* Spacer */}
+                                    <td style={{ width: '4%' }}></td>
+
+                                    {/* Column 2: Receiving Party */}
+                                    <td style={{ width: '48%', verticalAlign: 'top' }}>
+                                        <p className="font-bold uppercase text-xs tracking-wider mb-8">For Receiving Party</p>
+
+                                        <div className="relative border-b border-slate-800 h-8 mb-2" style={{ borderBottom: '1px solid #000', height: '40px', marginBottom: '10px' }}>
+                                            {data.receivingSignatoryName && (
+                                                <span style={{ fontFamily: 'cursive', fontSize: '16pt', color: '#1e3a8a' }}>
+                                                    {data.receivingSignatoryName}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs uppercase text-slate-500">Authorized Signature</p>
+
+                                        <table style={{ width: '100%', marginTop: '15px' }}>
+                                            <tbody>
+                                                <tr>
+                                                    <td style={{ width: '60px', fontWeight: 'bold', fontSize: '10pt' }}>Name:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.receivingSignatoryName}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ paddingBottom: '5px' }}></td><td></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ width: '60px', fontWeight: 'bold', fontSize: '10pt' }}>Title:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.receivingSignatoryDesignation}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    ) : (
+                        /* Grid Layout for Browser View */
+                        <div className="grid grid-cols-2 gap-16">
+                            <div className="space-y-1">
+                                <p className="font-bold uppercase text-xs tracking-wider mb-8">For Disclosing Party</p>
+
+                                <div className="relative border-b border-slate-800 h-8 mb-2">
+                                    {/* Simulated Signature */}
+                                    {data.disclosingSignatoryName && (
+                                        <span className="absolute bottom-1 left-2 font-cursive text-xl text-blue-900 opacity-80 rotate-[-2deg]">
+                                            {data.disclosingSignatoryName}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs uppercase text-slate-500">Authorized Signature</p>
+
+                                <div className="pt-4 grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 items-baseline">
+                                    <span className="text-sm font-medium">Name:</span>
+                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.disclosingSignatoryName}</span>
+
+                                    <span className="text-sm font-medium">Title:</span>
+                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.disclosingSignatoryDesignation}</span>
+                                </div>
                             </div>
-                            <p className="text-xs uppercase text-slate-500">Authorized Signature</p>
 
-                            <div className="pt-4 grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 items-baseline">
-                                <span className="text-sm font-medium">Name:</span>
-                                <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.disclosingSignatoryName}</span>
+                            <div className="space-y-1">
+                                <p className="font-bold uppercase text-xs tracking-wider mb-8">For Receiving Party</p>
+                                <div className="relative border-b border-slate-800 h-8 mb-2">
+                                    {/* Simulated Signature */}
+                                    {data.receivingSignatoryName && (
+                                        <span className="absolute bottom-1 left-2 font-cursive text-xl text-blue-900 opacity-80 rotate-[-2deg]">
+                                            {data.receivingSignatoryName}
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs uppercase text-slate-500">Authorized Signature</p>
 
-                                <span className="text-sm font-medium">Title:</span>
-                                <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.disclosingSignatoryDesignation}</span>
+                                <div className="pt-4 grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 items-baseline">
+                                    <span className="text-sm font-medium">Name:</span>
+                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.receivingSignatoryName}</span>
+
+                                    <span className="text-sm font-medium">Title:</span>
+                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.receivingSignatoryDesignation}</span>
+                                </div>
                             </div>
                         </div>
-
-                        <div className="space-y-1">
-                            <p className="font-bold uppercase text-xs tracking-wider mb-8">For Receiving Party</p>
-                            <div className="relative border-b border-slate-800 h-8 mb-2">
-                                {/* Simulated Signature */}
-                                {data.receivingSignatoryName && (
-                                    <span className="absolute bottom-1 left-2 font-cursive text-xl text-blue-900 opacity-80 rotate-[-2deg]">
-                                        {data.receivingSignatoryName}
-                                    </span>
-                                )}
-                            </div>
-                            <p className="text-xs uppercase text-slate-500">Authorized Signature</p>
-
-                            <div className="pt-4 grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 items-baseline">
-                                <span className="text-sm font-medium">Name:</span>
-                                <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.receivingSignatoryName}</span>
-
-                                <span className="text-sm font-medium">Title:</span>
-                                <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.receivingSignatoryDesignation}</span>
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Branding Footer specific to document */}
-                <div className="absolute bottom-4 left-0 right-0 text-center">
+                <div className={`absolute bottom-4 left-0 right-0 text-center ${printing ? 'no-absolute-print' : ''}`} style={printing ? { position: 'fixed', bottom: '0px', width: '100%', textAlign: 'center' } : {}}>
                     <p className="text-[9px] text-slate-300 uppercase tracking-widest font-sans">Powered by DocForge</p>
                 </div>
             </div>
-        </motion.div>
+        </Container>
     );
 }
 

@@ -28,7 +28,7 @@ const DocumentGridItem = ({ doc, navigate, getStatusStyle, variants }) => (
     <motion.div
         variants={variants}
         className="bg-white rounded-lg border border-slate-200 p-5 cursor-pointer shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group flex flex-col justify-between h-full"
-        onClick={() => navigate(`/documents/${doc.type}/${doc.id}`)}
+        onClick={() => navigate(`/documents/${doc.type?.slug || doc.type}/${doc.id}`)}
     >
         <div>
             <div className="flex justify-between items-start mb-4">
@@ -42,8 +42,8 @@ const DocumentGridItem = ({ doc, navigate, getStatusStyle, variants }) => (
                 </div>
             </div>
 
-            <h3 className="font-bold text-base text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">{doc.name}</h3>
-            <p className="text-xs font-medium text-slate-400 mb-4 uppercase tracking-wider">{doc.type}</p>
+            <h3 className="font-bold text-base text-slate-900 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">{doc.title || doc.name}</h3>
+            <p className="text-xs font-medium text-slate-400 mb-4 uppercase tracking-wider">{doc.type?.name || doc.type}</p>
         </div>
 
         <div className="flex items-center justify-between pt-3 border-t border-slate-100 mt-auto">
@@ -64,17 +64,17 @@ const DocumentListItem = ({ doc, navigate, getStatusStyle, variants, permissions
     <motion.div
         variants={variants}
         className="min-w-[800px] px-6 py-3 grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-6 items-center hover:bg-slate-50 transition-colors group cursor-pointer border-l-2 border-transparent hover:border-indigo-600 border-b border-slate-50 last:border-b-0"
-        onClick={() => navigate(`/documents/${doc.type}/${doc.id}`)}
+        onClick={() => navigate(`/documents/${doc.type?.slug || doc.type}/${doc.id}`)}
     >
         <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                 <FileText size={18} strokeWidth={2} />
             </div>
             <div>
-                <span className="font-semibold text-slate-900 block text-sm group-hover:text-indigo-600 transition-colors">{doc.name}</span>
+                <span className="font-semibold text-slate-900 block text-sm group-hover:text-indigo-600 transition-colors">{doc.title || doc.name}</span>
             </div>
         </div>
-        <div className="text-sm font-medium text-slate-500 capitalize">{doc.type}</div>
+        <div className="text-sm font-medium text-slate-500 capitalize">{doc.type?.name || doc.type}</div>
         <div>
             <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${getStatusStyle(doc.status)}`}>
                 {doc.status}

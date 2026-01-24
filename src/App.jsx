@@ -7,6 +7,8 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Onboarding from './pages/auth/Onboarding'
 import AcceptInvite from './pages/auth/AcceptInvite'
+import VerifyEmailMessage from './pages/auth/VerifyEmailMessage'
+import VerifyEmailHandler from './pages/auth/VerifyEmailHandler'
 import DashboardHome from './pages/Dashboard/DashboardHome'
 import DashboardLayout from './components/Dashboard/DashboardLayout'
 import NdaEditor from './pages/Dashboard/templates/NdaEditor'
@@ -50,8 +52,14 @@ function App() {
               <Route path="/careers" element={<Careers />} />
               <Route path="/changelog" element={<Changelog />} />
 
-              <Route path="/onboarding" element={<Onboarding />} />
               <Route path="/accept-invite" element={<AcceptInvite />} />
+              <Route path="/verify-email" element={<VerifyEmailHandler />} />
+              <Route path="/verify-email-message" element={<VerifyEmailMessage />} />
+            </Route>
+
+            {/* Protected Onboarding */}
+            <Route element={<ProtectedRoute redirectPath="/login" />}>
+              <Route path="/onboarding" element={<Onboarding />} />
             </Route>
 
             {/* Public Viewer Route */}

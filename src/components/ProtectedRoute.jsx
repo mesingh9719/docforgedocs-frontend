@@ -20,6 +20,11 @@ const ProtectedRoute = ({ permission, redirectPath = '/dashboard', children }) =
         return <Navigate to="/login" state={{ message: "You must be logged in to view this page." }} replace />;
     }
 
+    // Force Email Verification
+    if (!user.email_verified_at) {
+        return <Navigate to="/verify-email-message" replace />;
+    }
+
     if (permission && !can(permission)) {
         // Logged in but no permission -> Redirect to safe path (Dashboard)
         // Avoid redirect loop if we are already on the dashboard or redirectPath

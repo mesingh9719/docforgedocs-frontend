@@ -61,17 +61,42 @@ function Onboarding() {
     });
 
     const handleChange = (e) => {
+        setError('');
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleFileChange = (e) => {
-        if (e.target.files[0]) {
-            setFormData({ ...formData, logo: e.target.files[0] });
+        const file = e.target.files[0];
+        if (file) {
+            // Validate file type
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                setError('Invalid file type. Please upload a PNG, JPG, or WEBP file.');
+                e.target.value = null; // Clear input
+                return;
+            }
+
+            // Validate file size (1MB)
+            if (file.size > 1024 * 1024) {
+                setError('File size exceeds 1MB. Please upload a smaller image.');
+                e.target.value = null;
+                return;
+            }
+
+            setError(''); // Clear any previous errors
+            setFormData({ ...formData, logo: file });
         }
     };
 
     const nextStep = () => {
+        if (error) return;
         if (currentStep < 4) setCurrentStep(currentStep + 1);
+    };
+
+    const handleSkip = () => {
+        setError('');
+        setFormData(prev => ({ ...prev, logo: null }));
+        if (currentStep < 4) setCurrentStep(prev => prev + 1);
     };
 
     const prevStep = () => {
@@ -99,7 +124,19 @@ function Onboarding() {
             window.location.href = '/dashboard';
         } catch (err) {
             console.error(err);
-            setError(err.response?.data?.message || 'Failed to create business. Please try again.');
+            if (err.response && err.response.data && err.response.data.errors) {
+                // If there are validation errors, prioritize logo errors if present
+                const errors = err.response.data.errors;
+                if (errors.logo) {
+                    setError(errors.logo[0]);
+                } else {
+                    // Show the first error from any other field
+                    const firstError = Object.values(errors)[0][0];
+                    setError(firstError);
+                }
+            } else {
+                setError(err.response?.data?.message || 'Failed to create business. Please try again.');
+            }
             setLoading(false);
         }
     };
@@ -373,7 +410,7 @@ function Onboarding() {
                                             <div className="mt-6 text-center">
                                                 <button
                                                     type="button"
-                                                    onClick={() => nextStep()} // Skip/Next logic
+                                                    onClick={handleSkip}
                                                     className="text-slate-400 hover:text-slate-600 text-sm font-medium"
                                                 >
                                                     Skip for now
@@ -443,7 +480,8 @@ function Onboarding() {
                                         onClick={nextStep}
                                         disabled={
                                             (currentStep === 1 && !isStep1Valid) ||
-                                            (currentStep === 2 && !isStep2Valid)
+                                            (currentStep === 2 && !isStep2Valid) ||
+                                            !!error
                                         }
                                         className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-slate-800 shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:shadow-none disabled:transform-none transition-all"
                                     >

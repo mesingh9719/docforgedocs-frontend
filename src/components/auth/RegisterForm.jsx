@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../../api/auth';
 import { Loader2, User, Mail, Lock } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 function RegisterForm() {
     const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ function RegisterForm() {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { setToken } = useAuth(); // Get setToken from context
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,11 +23,35 @@ function RegisterForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+
+        // Client-side Validation (omitted for brevity in replacement matching, ensuring we keep it)
+        if (!formData.name.trim()) {
+            setError("Please enter your full name.");
+            return;
+        }
+
+        if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
+            setError("Please enter a valid email address.");
+            return;
+        }
+
+        if (formData.password.length < 8) {
+            setError("Password must be at least 8 characters long.");
+            return;
+        }
+
+        if (formData.password !== formData.password_confirmation) {
+            setError("Passwords do not match.");
+            return;
+        }
+
         setLoading(true);
 
         try {
             const data = await register(formData);
-            localStorage.setItem('token', data.token);
+
+            // Update Auth Context
+            setToken(data.token);
 
             if (data.data.business) {
                 navigate('/verify-email-message');
@@ -33,7 +59,20 @@ function RegisterForm() {
                 navigate('/verify-email-message');
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed');
+            // If the error is a specific validation error (e.g., email taken), use that map if available, 
+            // otherwise fallback to general message.
+            // Assuming simplified error handling for now as requested.
+            const apiMessage = err.response?.data?.message;
+            const validationErrors = err.response?.data?.errors;
+
+            if (validationErrors) {
+                // If we have field-specific errors, grab the first one
+                const firstVideoError = Object.values(validationErrors)[0];
+                const msg = Array.isArray(firstVideoError) ? firstVideoError[0] : firstVideoError;
+                setError(msg);
+            } else {
+                setError(apiMessage || 'Registration failed. Please try again.');
+            }
             console.error(err);
         } finally {
             setLoading(false);

@@ -44,9 +44,16 @@ const VerifyEmailHandler = () => {
                 // Refresh user context
                 await fetchUser();
 
-                // Redirect to onboarding after a delay
+                // Redirect based on auth state
                 setTimeout(() => {
-                    navigate('/onboarding');
+                    const currentToken = localStorage.getItem('token');
+                    if (currentToken) {
+                        navigate('/onboarding');
+                    } else {
+                        navigate('/login', {
+                            state: { message: "Email verified successfully! Please log in to continue." }
+                        });
+                    }
                 }, 2000);
 
 

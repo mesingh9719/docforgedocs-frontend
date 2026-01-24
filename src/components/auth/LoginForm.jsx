@@ -2,32 +2,42 @@ import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { login } from '../../api/auth';
 import { Loader2, Mail, Lock } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 function LoginForm() {
     const location = useLocation();
     const navigate = useNavigate();
+    const { setToken } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(location.state?.message || null);
     const [loading, setLoading] = useState(false);
 
-    // Clear state so message doesn't persist on refresh manually if needed, 
-    // but React Router handles this well usually. 
-    // However, if we want to be clean:
-    React.useEffect(() => {
-        if (location.state?.message) {
-            window.history.replaceState({}, document.title)
-        }
-    }, []);
+    // ... useEffect ...
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
+
+        // Client-side validation
+        if (!email || !/\S+@\S+\.\S+/.test(email)) {
+            setError("Please enter a valid email address");
+            return;
+        }
+
+        if (!password) {
+            setError("Please enter your password");
+            return;
+        }
+
         setLoading(true);
 
         try {
             const data = await login({ email, password });
-            localStorage.setItem('token', data.token);
+
+            // Update Auth Context State
+            setToken(data.token);
+
             // Check if user has a business
             if (data.data.business) {
                 navigate('/dashboard');

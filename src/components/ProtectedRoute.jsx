@@ -1,11 +1,12 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { usePermissions } from '../hooks/usePermissions';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ permission, redirectPath = '/dashboard', children }) => {
     const { user, loading: authLoading } = useAuth();
     const { can, loading: permLoading } = usePermissions();
+    const location = useLocation();
 
     if (authLoading || (permission && permLoading)) {
         return (
@@ -23,6 +24,12 @@ const ProtectedRoute = ({ permission, redirectPath = '/dashboard', children }) =
     // Force Email Verification
     if (!user.email_verified_at) {
         return <Navigate to="/verify-email-message" replace />;
+    }
+
+    // Force Onboarding (Business Setup) if not a child user
+    // We check if we are NOT already on the onboarding page to avoid loop
+    if (!user.business && !user.parent_id && location.pathname !== '/onboarding') {
+        return <Navigate to="/onboarding" state={{ message: "Please complete onboarding to access your dashboard." }} replace />;
     }
 
     if (permission && !can(permission)) {

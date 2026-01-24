@@ -1,9 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Mail, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { resendVerification } from '../../api/auth';
 
 const VerifyEmailMessage = () => {
+    const [resendStatus, setResendStatus] = useState('idle'); // idle, loading, success, error
+    const [resendMessage, setResendMessage] = useState('');
+
+    const handleResend = async () => {
+        setResendStatus('loading');
+        try {
+            await resendVerification();
+            setResendStatus('success');
+            setResendMessage('Verification link resent!');
+            setTimeout(() => {
+                setResendStatus('idle');
+                setResendMessage('');
+            }, 5000);
+        } catch (error) {
+            console.error(error);
+            setResendStatus('error');
+            setResendMessage(error.response?.data?.message || 'Failed to resend.');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#0A0A0A] flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 relative overflow-hidden">
             {/* Background Effects */}
@@ -52,10 +73,23 @@ const VerifyEmailMessage = () => {
                 <div className="pt-4 border-t border-white/10">
                     <p className="text-sm text-gray-500">
                         Didn't receive the email? <span className="text-gray-400">Check your spam folder or</span>
-                        <button className="ml-1 text-purple-400 hover:text-purple-300 font-medium transition-colors">
-                            click to resend
+                        <button
+                            onClick={handleResend}
+                            disabled={resendStatus === 'loading' || resendStatus === 'success'}
+                            className="ml-1 text-purple-400 hover:text-purple-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {resendStatus === 'loading' ? 'Sending...' : 'click to resend'}
                         </button>
                     </p>
+                    {(resendStatus === 'success' || resendStatus === 'error') && (
+                        <motion.p
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`text-xs mt-2 font-medium ${resendStatus === 'success' ? 'text-green-400' : 'text-red-400'}`}
+                        >
+                            {resendMessage}
+                        </motion.p>
+                    )}
                 </div>
 
                 <div className="text-sm">

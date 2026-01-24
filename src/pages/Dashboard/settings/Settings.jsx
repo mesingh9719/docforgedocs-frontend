@@ -8,6 +8,8 @@ import TaxSettings from './TaxSettings';
 import CurrencySettings from './CurrencySettings';
 import BrandingSettings from './BrandingSettings';
 import ProfileSettings from './ProfileSettings';
+import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHeader';
+import toast from 'react-hot-toast';
 
 const Settings = () => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -50,12 +52,14 @@ const Settings = () => {
         );
     }
 
+
+
     return (
-        <div className="max-w-6xl mx-auto py-8">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Settings</h1>
-                <p className="text-slate-500 mt-1 text-sm">Manage your personal and workspace preferences.</p>
-            </div>
+        <div className="max-w-6xl mx-auto">
+            <DashboardPageHeader
+                title="Settings"
+                subtitle="Manage your personal and workspace preferences."
+            />
 
             <div className="flex flex-col md:flex-row gap-8 items-start">
                 {/* Sidebar Navigation */}

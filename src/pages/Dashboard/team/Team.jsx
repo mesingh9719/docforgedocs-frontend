@@ -6,6 +6,7 @@ import { Plus, Search, MoreVertical, Shield, Trash2, Mail, User, Briefcase, Chec
 import { motion, AnimatePresence } from 'framer-motion';
 import InviteMemberModal from './InviteMemberModal';
 import EditMemberModal from './EditMemberModal';
+import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHeader';
 
 const Team = () => {
     const { user } = useAuth();
@@ -34,13 +35,16 @@ const Team = () => {
         }
     };
 
+
+
     const handleUpdateMember = async (id, data) => {
         try {
             await updateMember(id, data);
-            fetchMembers(); // Refresh to show new state
+            fetchMembers();
+            toast.success("Member updated successfully");
         } catch (error) {
             console.error("Failed to update member", error);
-            alert("Failed to update member");
+            toast.error("Failed to update member: " + (error.response?.data?.message || error.message));
         }
     };
 
@@ -48,11 +52,11 @@ const Team = () => {
         if (!confirm('Are you sure you want to remove this member?')) return;
         try {
             await removeMember(id);
-            // Optimistic update or refetch
             setMembers(members.filter(m => m.id !== id));
+            toast.success("Member removed successfully");
         } catch (error) {
             console.error("Failed to remove member", error);
-            alert("Failed to remove member");
+            toast.error("Failed to remove member");
         }
         setActiveMenu(null);
     };
@@ -62,9 +66,10 @@ const Team = () => {
             await inviteMember(data);
             fetchMembers();
             setIsInviteModalOpen(false);
+            toast.success("Invitation sent successfully");
         } catch (error) {
             console.error("Failed to invite member", error);
-            // Allow modal to handle error display if needed, or show alert
+            toast.error("Failed to invite member: " + (error.response?.data?.message || error.message));
         }
     };
 
@@ -91,22 +96,22 @@ const Team = () => {
         }
     };
 
+
+
     return (
-        <div className="p-6 md:p-8 max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Team Management</h1>
-                    <p className="text-slate-500 mt-1">Manage your team members and their roles.</p>
-                </div>
+        <div className="max-w-7xl mx-auto">
+            <DashboardPageHeader
+                title="Team Management"
+                subtitle="Manage your team members and their roles."
+            >
                 <button
                     onClick={() => setIsInviteModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-600/20 text-sm"
                 >
-                    <Plus size={18} />
+                    <Plus size={18} strokeWidth={2.5} />
                     Invite Member
                 </button>
-            </div>
+            </DashboardPageHeader>
 
             {/* Tabs */}
             <div className="border-b border-slate-200 mb-6">

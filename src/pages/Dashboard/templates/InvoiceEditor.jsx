@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Bell } from 'lucide-react';
+import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Bell, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import InvoiceFormSidebar from './InvoiceFormSidebar';
 import InvoiceDocumentPreview from './InvoiceDocumentPreview';
 import PrintPortal from '../../../components/PrintPortal';
@@ -216,13 +217,15 @@ const InvoiceEditor = () => {
 
             if (id) {
                 await updateDocument(id, payload);
+                toast.success("Invoice updated successfully");
             } else {
                 const newDoc = await createDocument(payload);
+                toast.success("Invoice created successfully");
                 navigate(`/documents/invoice/${newDoc.data.id}`, { replace: true });
             }
         } catch (error) {
             console.error("Failed to save", error);
-            alert("Failed to save.");
+            toast.error("Failed to save invoice");
         } finally {
             setTimeout(() => setIsSaving(false), 500);
         }
@@ -234,7 +237,7 @@ const InvoiceEditor = () => {
 
     const handlePrint = async () => {
         if (!id) {
-            alert("Please save the document before printing.");
+            toast.error("Please save the document before printing.");
             return;
         }
 
@@ -263,7 +266,7 @@ const InvoiceEditor = () => {
             }
         } catch (error) {
             console.error("PDF Generation failed", error);
-            alert("Failed to generate PDF. Please try again.");
+            toast.error("Failed to generate PDF");
         } finally {
             setIsPrinting(false);
         }
@@ -291,7 +294,7 @@ const InvoiceEditor = () => {
 
     const handleSendEmail = () => {
         if (!id) {
-            alert("Please save the document before sending.");
+            toast.error("Please save the document before sending.");
             return;
         }
         setIsSending(true);
@@ -300,6 +303,43 @@ const InvoiceEditor = () => {
     const handleSendSuccess = (updatedDoc) => {
         if (updatedDoc && updatedDoc.sent_at) {
             setSentAt(updatedDoc.sent_at);
+        }
+    };
+
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExport = async () => {
+        if (!id) {
+            toast.error("Please save the document before exporting.");
+            return;
+        }
+
+        setIsExporting(true);
+        try {
+            const documentHtml = renderToStaticMarkup(
+                <InvoiceDocumentPreview data={formData} totals={totals} zoom={1} printing={true} />
+            );
+
+            const response = await generateDocumentPdf(
+                id,
+                documentHtml,
+                formData.invoiceNumber ? `Invoice #${formData.invoiceNumber}` : 'Invoice'
+            );
+
+            if (response.url) {
+                const link = document.createElement('a');
+                link.href = response.url;
+                link.download = `${(formData.invoiceNumber ? `Invoice_${formData.invoiceNumber}` : 'Invoice').replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                toast.success("Invoice exported successfully");
+            }
+        } catch (error) {
+            console.error("Export failed", error);
+            toast.error("Failed to export invoice");
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -373,9 +413,13 @@ const InvoiceEditor = () => {
                         <span className="hidden sm:inline">{sentAt ? 'Remind' : 'Send'}</span>
                     </button>
 
-                    <button className="flex items-center gap-2 px-3 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all">
-                        <Download size={18} />
-                        <span className="hidden sm:inline">Export</span>
+                    <button
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-3 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
+                    >
+                        {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                        <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
                     </button>
 
                     <button

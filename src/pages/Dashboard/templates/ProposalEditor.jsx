@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Bell } from 'lucide-react';
+import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Bell, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import ProposalFormSidebar from './ProposalFormSidebar';
 import ProposalDocumentPreview from './ProposalDocumentPreview';
 import PrintPortal from '../../../components/PrintPortal';
@@ -265,13 +266,15 @@ const ProposalEditor = () => {
 
             if (id) {
                 await updateDocument(id, payload);
+                toast.success("Proposal updated successfully");
             } else {
                 const newDoc = await createDocument(payload);
+                toast.success("Proposal created successfully");
                 navigate(`/documents/proposal/${newDoc.data.id}`, { replace: true });
             }
         } catch (error) {
             console.error("Failed to save", error);
-            alert("Failed to save.");
+            toast.error("Failed to save proposal");
         } finally {
             setTimeout(() => setIsSaving(false), 500);
         }
@@ -283,7 +286,7 @@ const ProposalEditor = () => {
 
     const handlePrint = async () => {
         if (!id) {
-            alert("Please save the document before printing.");
+            toast.error("Please save the document before printing.");
             return;
         }
 
@@ -312,7 +315,7 @@ const ProposalEditor = () => {
             }
         } catch (error) {
             console.error("PDF Generation failed", error);
-            alert("Failed to generate PDF. Please try again.");
+            toast.error("Failed to generate PDF");
         } finally {
             setIsPrinting(false);
         }
@@ -325,7 +328,7 @@ const ProposalEditor = () => {
 
     const handleSendEmail = () => {
         if (!id) {
-            alert("Please save the document before sending.");
+            toast.error("Please save the document before sending.");
             return;
         }
         setIsSending(true);
@@ -334,6 +337,43 @@ const ProposalEditor = () => {
     const handleSendSuccess = (updatedDoc) => {
         if (updatedDoc && updatedDoc.sent_at) {
             setSentAt(updatedDoc.sent_at);
+        }
+    };
+
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExport = async () => {
+        if (!id) {
+            toast.error("Please save the document before exporting.");
+            return;
+        }
+
+        setIsExporting(true);
+        try {
+            const documentHtml = renderToStaticMarkup(
+                <ProposalDocumentPreview data={formData} content={docContent} zoom={1} printing={true} />
+            );
+
+            const response = await generateDocumentPdf(
+                id,
+                documentHtml,
+                documentName
+            );
+
+            if (response.url) {
+                const link = document.createElement('a');
+                link.href = response.url;
+                link.download = `${documentName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                toast.success("Proposal exported successfully");
+            }
+        } catch (error) {
+            console.error("Export failed", error);
+            toast.error("Failed to export proposal");
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -415,9 +455,13 @@ const ProposalEditor = () => {
                         <span className="hidden sm:inline">{sentAt ? 'Remind' : 'Send'}</span>
                     </button>
 
-                    <button className="flex items-center gap-2 px-3 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all">
-                        <Download size={18} />
-                        <span className="hidden sm:inline">Export</span>
+                    <button
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-3 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
+                    >
+                        {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                        <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
                     </button>
 
                     <button

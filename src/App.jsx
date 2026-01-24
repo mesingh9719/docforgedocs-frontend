@@ -32,12 +32,51 @@ import PublicDocumentViewer from './pages/PublicDocumentViewer'
 import GuestRoute from './components/GuestRoute'
 import ScrollToTop from './components/ScrollToTop'
 
+import { Toaster } from 'react-hot-toast'
+
+// ...
+
 function App() {
   return (
     <AuthProvider>
       <HelmetProvider>
         <Router>
           <ScrollToTop />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#fff',
+                color: '#334155',
+                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                border: '1px solid #e2e8f0',
+                padding: '16px',
+                borderRadius: '12px',
+                fontFamily: 'inherit',
+                fontSize: '14px',
+                fontWeight: 500
+              },
+              success: {
+                style: {
+                  borderLeft: '4px solid #10b981',
+                },
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#fff',
+                },
+              },
+              error: {
+                style: {
+                  borderLeft: '4px solid #ef4444',
+                },
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
           <Routes>
             <Route element={<Layout />} >
               <Route path="/" element={<Welcome />} />

@@ -4,6 +4,7 @@ import axios from '../../api/axios';
 import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const VerifyEmailHandler = () => {
     const [searchParams] = useSearchParams();
@@ -48,10 +49,13 @@ const VerifyEmailHandler = () => {
                     navigate('/onboarding');
                 }, 2000);
 
+
             } catch (error) {
                 console.error("Verification failed", error);
                 setStatus('error');
-                setMessage(error.response?.data?.message || 'Verification failed. The link may be expired.');
+                const errMsg = error.response?.data?.message || 'Verification failed. The link may be expired.';
+                setMessage(errMsg);
+                toast.error(errMsg);
             }
         };
 

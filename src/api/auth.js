@@ -24,3 +24,8 @@ export const updateProfile = async (data) => {
     const response = await api.put('/user/profile', data);
     return response.data;
 };
+
+export const resendVerification = async () => {
+    const response = await api.post('/email/resend');
+    return response.data;
+};

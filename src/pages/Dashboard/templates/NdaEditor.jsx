@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Layers, Bell } from 'lucide-react';
+import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Layers, Bell, Loader2 } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import toast from 'react-hot-toast';
 import NdaFormSidebar from './NdaFormSidebar';
 import NdaDocumentPreview from './NdaDocumentPreview';
 import { createDocument, getDocument, updateDocument } from '../../../api/documents';
@@ -242,14 +243,16 @@ const NdaEditor = () => {
 
             if (id) {
                 await updateDocument(id, payload);
+                toast.success("Document updated successfully");
             } else {
                 const newDoc = await createDocument(payload);
+                toast.success("Document created successfully");
                 // Redirect to edit mode to prevent duplicate creations
                 navigate(`/documents/nda/${newDoc.data.id}`, { replace: true });
             }
         } catch (error) {
             console.error("Failed to save", error);
-            alert("Failed to save document.");
+            toast.error("Failed to save document");
         } finally {
             setTimeout(() => setIsSaving(false), 500);
         }
@@ -260,7 +263,7 @@ const NdaEditor = () => {
 
     const handlePrint = async () => {
         if (!id) {
-            alert("Please save the document before printing.");
+            toast.error("Please save the document before printing.");
             return;
         }
 
@@ -328,7 +331,7 @@ const NdaEditor = () => {
         </html>
 `;
 
-            const response = await generatePdf(id, fullHtml);
+            const response = await generateDocumentPdf(id, fullHtml, documentName);
 
             if (response.url) {
                 setCachedPdfUrl(response.url);
@@ -337,7 +340,7 @@ const NdaEditor = () => {
             }
         } catch (error) {
             console.error("PDF Generation failed", error);
-            alert("Failed to generate PDF. Please try again.");
+            toast.error("Failed to generate PDF. Please try again.");
         } finally {
             setIsGeneratingPdf(false);
         }
@@ -350,7 +353,7 @@ const NdaEditor = () => {
 
     const handleSendEmail = () => {
         if (!id) {
-            alert("Please save the document before sending.");
+            toast.error("Please save the document before sending.");
             return;
         }
         setIsSending(true);
@@ -359,6 +362,44 @@ const NdaEditor = () => {
     const handleSendSuccess = (updatedDoc) => {
         if (updatedDoc && updatedDoc.sent_at) {
             setSentAt(updatedDoc.sent_at);
+        }
+    };
+
+    const [isExporting, setIsExporting] = useState(false);
+
+    const handleExport = async () => {
+        if (!id) {
+            toast.error("Please save the document before exporting.");
+            return;
+        }
+
+        setIsExporting(true);
+        try {
+            const documentHtml = renderToStaticMarkup(
+                <NdaDocumentPreview data={formData} content={docContent} zoom={1} printing={true} />
+            );
+
+            const response = await generateDocumentPdf(
+                id,
+                documentHtml,
+                documentName
+            );
+
+            if (response.url) {
+                // Trigger download
+                const link = document.createElement('a');
+                link.href = response.url;
+                link.download = `${documentName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                toast.success("Document exported successfully");
+            }
+        } catch (error) {
+            console.error("Export failed", error);
+            toast.error("Failed to export document");
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -468,9 +509,13 @@ const NdaEditor = () => {
                         <span className="hidden sm:inline">{sentAt ? 'Remind' : 'Send'}</span>
                     </button>
 
-                    <button className="flex items-center gap-2 px-3 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all">
-                        <Download size={18} />
-                        <span className="hidden sm:inline">Export</span>
+                    <button
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-3 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
+                    >
+                        {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                        <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
                     </button>
 
                     <button

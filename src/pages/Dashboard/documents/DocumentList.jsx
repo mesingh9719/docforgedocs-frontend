@@ -5,6 +5,8 @@ import { getDocuments } from '../../../api/documents';
 import TemplateModal from '../../../components/Dashboard/TemplateModal';
 import { useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../../hooks/usePermissions';
+import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHeader';
+import toast from 'react-hot-toast';
 
 // --- Sub-Components for cleaner rendering ---
 
@@ -185,24 +187,24 @@ const DocumentList = () => {
         show: { opacity: 1, y: 0 }
     };
 
+
+
     return (
-        <div className="max-w-7xl mx-auto min-h-[calc(100vh-140px)] space-y-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Documents</h1>
-                    <p className="text-slate-500 mt-1 text-sm">Manage, organize, and track your legal documents.</p>
-                </div>
+        <div className="max-w-7xl mx-auto space-y-6">
+            <DashboardPageHeader
+                title="Documents"
+                subtitle="Manage, organize, and track your legal documents."
+            >
                 {permissions.canCreate && (
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold flex items-center gap-2 hover:bg-indigo-700 transition-colors shadow-sm"
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20 text-sm"
                     >
                         <Plus size={18} strokeWidth={2.5} />
                         <span>New Document</span>
                     </button>
                 )}
-            </div>
+            </DashboardPageHeader>
 
             {/* Controls Bar */}
             <div className="flex flex-col lg:flex-row gap-4 bg-white p-2 rounded-lg border border-slate-200 shadow-sm items-center">

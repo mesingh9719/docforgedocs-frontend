@@ -28,9 +28,9 @@ function RegisterForm() {
             localStorage.setItem('token', data.token);
 
             if (data.data.business) {
-                navigate('/dashboard');
+                navigate('/verify-email-message');
             } else {
-                navigate('/onboarding');
+                navigate('/verify-email-message');
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed');

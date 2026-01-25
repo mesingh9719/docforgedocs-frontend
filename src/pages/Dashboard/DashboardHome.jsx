@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Users, Activity, FileText, ArrowUpRight, ArrowDownRight, Clock, ShieldCheck, Zap } from 'lucide-react';
 import { getDashboardStats, getRecentActivity } from '../../api/dashboard';
 import { Link } from 'react-router-dom';
+import DashboardCharts from '../../components/Dashboard/DashboardCharts';
 
 const DashboardHome = () => {
     const [statsData, setStatsData] = useState(null);
@@ -112,6 +112,9 @@ const DashboardHome = () => {
                     </motion.div>
                 ))}
             </div>
+
+            {/* Charts Section */}
+            <DashboardCharts />
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -5,8 +5,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from '../../api/notifications';
 
-const TopBar = ({ business, user, onMenuClick }) => {
-    const { logout } = useAuth();
+const TopBar = ({ business, onMenuClick }) => {
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const searchRef = useRef(null);
@@ -234,8 +234,12 @@ const TopBar = ({ business, user, onMenuClick }) => {
                             <p className="text-sm font-semibold text-slate-700 leading-tight">{user?.name || 'User'}</p>
                             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider trancate max-w-[100px]">{user?.role || 'Member'}</p>
                         </div>
-                        <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-                            <span className="font-bold text-sm">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                        <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-200 overflow-hidden">
+                            {user?.avatar_url ? (
+                                <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover" />
+                            ) : (
+                                <span className="font-bold text-sm">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                            )}
                         </div>
                         <ChevronDown size={14} className={`text-slate-400 transition-transform hidden md:block ${isProfileOpen ? 'rotate-180' : ''}`} />
                     </motion.button>

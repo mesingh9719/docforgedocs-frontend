@@ -29,7 +29,7 @@ export const getProfile = async () => {
 };
 
 export const updateProfile = async (data) => {
-    const response = await api.put('/user/profile', data);
+    const response = await api.post('/user/profile', data);
     return response.data;
 };
 

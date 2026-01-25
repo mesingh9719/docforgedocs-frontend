@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Layers, Bell, Loader2 } from 'lucide-react';
+import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Layers, Bell, Loader2, Clock, Eye, X } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import toast from 'react-hot-toast';
 import NdaFormSidebar from './NdaFormSidebar';
@@ -9,6 +9,7 @@ import { createDocument, getDocument, updateDocument } from '../../../api/docume
 import { generateDocumentPdf, wrapHtmlForPdf } from '../../../utils/pdfGenerator';
 import { getBusiness } from '../../../api/business';
 import SendDocumentModal from '../../../components/SendDocumentModal';
+import VersionHistorySidebar from './VersionHistorySidebar';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -86,6 +87,9 @@ const NdaEditor = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
     const [documentName, setDocumentName] = useState('Untitled NDA');
+    const [showHistory, setShowHistory] = useState(false);
+    const [previewVersion, setPreviewVersion] = useState(null);
+    const originalState = React.useRef(null);
 
     // State for the Document Variables (Inputs)
     const [formData, setFormData] = useState({
@@ -403,8 +407,88 @@ const NdaEditor = () => {
         }
     };
 
+    const handlePreviewVersion = (version) => {
+        if (!originalState.current) {
+            originalState.current = { formData, docContent };
+        }
+
+        let content = version.content;
+        if (typeof content === 'string') {
+            try { content = JSON.parse(content); } catch (e) { }
+        }
+        if (content.formData) setFormData(content.formData);
+        if (content.docContent) setDocContent(content.docContent);
+
+        setPreviewVersion(version);
+        setShowHistory(false);
+        toast.success(`Previewing Version ${version.version_number}`);
+    };
+
+    const handleExitPreview = () => {
+        if (originalState.current) {
+            setFormData(originalState.current.formData);
+            setDocContent(originalState.current.docContent);
+            originalState.current = null;
+        }
+        setPreviewVersion(null);
+        toast.success("Exited preview mode");
+    };
+
+    const handleDownloadVersion = async (version) => {
+        const toastId = toast.loading("Preparing version PDF...");
+        try {
+            let content = version.content;
+            if (typeof content === 'string') {
+                try { content = JSON.parse(content); } catch (e) { }
+            }
+
+            // Render HTML for this version
+            const documentHtml = renderToStaticMarkup(
+                <NdaDocumentPreview data={content.formData || formData} content={content.docContent || docContent} zoom={1} printing={true} />
+            );
+
+            const response = await generateDocumentPdf(
+                id,
+                documentHtml,
+                `${documentName} - v${version.version_number}`
+            );
+
+            if (response.url) {
+                const link = document.createElement('a');
+                link.href = response.url;
+                link.download = `${documentName.replace(/[^a-z0-9]/gi, '_')}_v${version.version_number}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                toast.success(`Version ${version.version_number} downloaded`, { id: toastId });
+            }
+        } catch (error) {
+            console.error("Version download failed", error);
+            toast.error("Failed to download version PDF", { id: toastId });
+        }
+    };
+
     return (
         <div className="flex flex-col h-screen bg-slate-100 overflow-hidden">
+            {/* Preview Banner */}
+            {previewVersion && (
+                <div className="bg-amber-100 border-b border-amber-200 px-4 py-2 flex items-center justify-between text-amber-800 text-sm">
+                    <div className="flex items-center gap-2">
+                        <Eye size={16} />
+                        <span className="font-medium">Previewing Version {previewVersion.version_number}</span>
+                        <span className="text-amber-600 hidden md:inline">({new Date(previewVersion.created_at).toLocaleString()})</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleExitPreview}
+                            className="text-amber-700 hover:text-amber-900 font-medium hover:underline flex items-center gap-1"
+                        >
+                            <X size={14} /> Exit Preview
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* ... Modal ... */}
             {/* ... Modal ... */}
             <SendDocumentModal
@@ -486,11 +570,21 @@ const NdaEditor = () => {
                 </div>
 
                 <div className="flex items-center gap-2 md:gap-3">
+
                     <div className="hidden md:flex items-center bg-slate-100 rounded-lg p-1 mr-4">
                         <button onClick={handleZoomOut} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomOut size={16} /></button>
                         <span className="text-xs font-semibold text-slate-600 w-12 text-center">{Math.round(zoom * 100)}%</span>
                         <button onClick={handleZoomIn} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomIn size={16} /></button>
                     </div>
+
+                    <button
+                        onClick={() => setShowHistory(true)}
+                        className="flex items-center gap-2 p-2 md:px-4 md:py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"
+                        title="Version History"
+                    >
+                        <Clock size={18} />
+                        <span className="hidden sm:inline">History</span>
+                    </button>
 
                     <button
                         onClick={handlePrint}
@@ -529,9 +623,9 @@ const NdaEditor = () => {
             </header>
 
             {/* MainContent */}
-            < div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative" >
+            <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative">
                 {/* Left Panel: Editor Sidebar */}
-                < div className="no-print w-full lg:w-[400px] h-auto lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200 overflow-y-auto z-20 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.1)] lg:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] flex-shrink-0 order-2 lg:order-1 max-h-[40vh] lg:max-h-full" >
+                <div className="no-print w-full lg:w-[400px] h-auto lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200 overflow-y-auto z-20 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.1)] lg:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] flex-shrink-0 order-2 lg:order-1 max-h-[40vh] lg:max-h-full">
                     <NdaFormSidebar
                         formData={formData}
                         onChange={handleChange}
@@ -543,14 +637,37 @@ const NdaEditor = () => {
                         updateSection={updateSection}
                         reorderSections={reorderSections}
                     />
-                </div >
+                </div>
 
                 {/* Right Panel: Live Preview */}
-                < div className="flex-1 h-full overflow-y-auto bg-slate-100/50 p-4 md:p-8 sm:p-12 flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 order-1 lg:order-2" >
+                <div className="flex-1 h-full overflow-y-auto bg-slate-100/50 p-4 md:p-8 sm:p-12 flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 order-1 lg:order-2">
                     <NdaDocumentPreview data={formData} content={docContent} zoom={zoom} />
-                </div >
-            </div >
-        </div >
+                </div>
+            </div>
+
+            {/* ... Sidebar ... */}
+            <VersionHistorySidebar
+                documentId={id}
+                isOpen={showHistory}
+                onClose={() => setShowHistory(false)}
+                onPreview={handlePreviewVersion}
+                onDownload={handleDownloadVersion}
+                onRestore={(docData) => {
+                    // Update the editor state with the restored data
+                    if (docData && docData.content) {
+                        let content = docData.content;
+                        if (typeof content === 'string') {
+                            try { content = JSON.parse(content); } catch (e) { }
+                        }
+                        if (content.formData) setFormData(content.formData);
+                        if (content.docContent) setDocContent(content.docContent);
+                    }
+                    // If we were previewing, clear it as we just restored
+                    setPreviewVersion(null);
+                    originalState.current = null;
+                }}
+            />
+        </div>
     );
 };
 

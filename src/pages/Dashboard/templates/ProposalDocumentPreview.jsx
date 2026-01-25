@@ -1,13 +1,15 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-function ProposalDocumentPreview({ data, content, zoom = 1, printing = false }) {
+function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, readOnly = false }) {
 
     // Helper to render placeholder or value
     const RenderField = ({ value, placeholder, className = "" }) => {
         if (!value) {
+            if (readOnly) return <span className={`text-slate-500 italic ${className}`}>{placeholder}</span>;
             return <span className={`bg-blue-50/50 px-1 border-b border-blue-200 text-slate-400 italic transition-colors hover:bg-blue-100 ${className}`}>{placeholder}</span>;
         }
+        if (readOnly) return <span className={`font-medium text-slate-900 ${className}`}>{value}</span>;
         return <span className={`font-medium text-slate-900 border-b border-transparent hover:border-indigo-200 hover:bg-indigo-50 transition-all px-0.5 rounded ${className}`}>{value}</span>;
     };
 

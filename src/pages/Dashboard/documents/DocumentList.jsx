@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, FileText, MoreVertical, Search, Filter, LayoutGrid, List as ListIcon, Clock, User, ArrowUpRight } from 'lucide-react';
-import { getDocuments } from '../../../api/documents';
+import { getDocuments, getDocumentShares } from '../../../api/documents';
 import TemplateModal from '../../../components/Dashboard/TemplateModal';
+import ShareHistoryModal from '../../../components/ShareHistoryModal';
+import { Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../../hooks/usePermissions';
 import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHeader';
@@ -26,7 +28,7 @@ const DocumentSkeleton = ({ viewMode }) => (
     </div>
 );
 
-const DocumentGridItem = ({ doc, navigate, getStatusStyle, variants }) => (
+const DocumentGridItem = ({ doc, navigate, getStatusStyle, variants, onViewHistory }) => (
     <motion.div
         variants={variants}
         className="bg-white rounded-lg border border-slate-200 p-5 cursor-pointer shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group flex flex-col justify-between h-full"
@@ -38,6 +40,13 @@ const DocumentGridItem = ({ doc, navigate, getStatusStyle, variants }) => (
                     <FileText size={20} strokeWidth={2} />
                 </div>
                 <div className="flex gap-2">
+                    <button
+                        onClick={(e) => onViewHistory(e, doc.id)}
+                        className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-50 text-slate-500 border border-slate-200 hover:text-indigo-600 hover:border-indigo-200 transition-colors flex items-center gap-1"
+                        title="View Share History"
+                    >
+                        <Mail size={12} /> History
+                    </button>
                     <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${getStatusStyle(doc.status)}`}>
                         {doc.status}
                     </span>
@@ -62,7 +71,7 @@ const DocumentGridItem = ({ doc, navigate, getStatusStyle, variants }) => (
     </motion.div>
 );
 
-const DocumentListItem = ({ doc, navigate, getStatusStyle, variants, permissions }) => (
+const DocumentListItem = ({ doc, navigate, getStatusStyle, variants, permissions, onViewHistory }) => (
     <motion.div
         variants={variants}
         className="min-w-[800px] px-6 py-3 grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-6 items-center hover:bg-slate-50 transition-colors group cursor-pointer border-l-2 border-transparent hover:border-indigo-600 border-b border-slate-50 last:border-b-0"
@@ -91,7 +100,14 @@ const DocumentListItem = ({ doc, navigate, getStatusStyle, variants, permissions
             </div>
             <span>You</span>
         </div>
-        <div className="text-right">
+        <div className="text-right flex items-center justify-end gap-2">
+            <button
+                onClick={(e) => onViewHistory(e, doc.id)}
+                className="p-1.5 hover:bg-indigo-50 rounded text-slate-400 hover:text-indigo-600 transition-colors"
+                title="View Share History"
+            >
+                <Mail size={16} />
+            </button>
             {(permissions.canEdit || permissions.canDelete) && (
                 <button className="p-1.5 hover:bg-slate-200 rounded text-slate-400 hover:text-indigo-600 transition-colors">
                     <MoreVertical size={16} />
@@ -151,6 +167,26 @@ const DocumentList = () => {
             setIsLoading(false);
         }
     }, [filters]);
+
+    // Share History Logic
+    const [isShareHistoryOpen, setIsShareHistoryOpen] = useState(false);
+    const [shareHistory, setShareHistory] = useState([]);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+
+    const handleViewHistory = async (e, docId) => {
+        e.stopPropagation();
+        setIsShareHistoryOpen(true);
+        setIsHistoryLoading(true);
+        try {
+            const data = await getDocumentShares(docId);
+            setShareHistory(data.data || []);
+        } catch (error) {
+            console.error("Failed to load history", error);
+            // setShareHistory([]); // Optional: clear on error or show toast
+        } finally {
+            setIsHistoryLoading(false);
+        }
+    };
 
     // Debounced Search Effect
     useEffect(() => {
@@ -301,6 +337,7 @@ const DocumentList = () => {
                                             getStatusStyle={getStatusStyle}
                                             variants={itemVariants}
                                             permissions={permissions}
+                                            onViewHistory={handleViewHistory}
                                         />
                                     ))}
                                 </div>
@@ -314,6 +351,7 @@ const DocumentList = () => {
                                     navigate={navigate}
                                     getStatusStyle={getStatusStyle}
                                     variants={itemVariants}
+                                    onViewHistory={handleViewHistory}
                                 />
                             ))
                         )}
@@ -344,6 +382,14 @@ const DocumentList = () => {
 
             {/* Template Selection Modal */}
             <TemplateModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
+            {/* Share History Modal */}
+            <ShareHistoryModal
+                isOpen={isShareHistoryOpen}
+                onClose={() => setIsShareHistoryOpen(false)}
+                history={shareHistory}
+                loading={isHistoryLoading}
+            />
         </div>
     );
 };

@@ -42,11 +42,16 @@ const DashboardHome = () => {
         visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
     };
 
+    // Calculate Completion Rate
+    const totalDocs = statsData?.total_documents || 0;
+    const completedDocs = statsData?.breakdown?.completed || 0;
+    const completionRate = totalDocs > 0 ? Math.round((completedDocs / totalDocs) * 100) : 0;
+
     const stats = [
-        { label: 'Pending Documents', value: statsData?.pending_documents || 0, change: '+2.5%', isPositive: true, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-        { label: 'Active Members', value: statsData?.active_members || 0, change: '+12%', isPositive: true, icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-        { label: 'Total Documents', value: statsData?.total_documents || 0, change: '+8%', isPositive: true, icon: FileText, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-        { label: 'Completion Rate', value: '94%', change: '+1.2%', isPositive: true, icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+        { label: 'Draft Documents', value: statsData?.breakdown?.draft || 0, change: '+2.5%', isPositive: true, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+        { label: 'Team Members', value: statsData?.team_size || 0, change: '+0%', isPositive: true, icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+        { label: 'Total Documents', value: totalDocs, change: '+12%', isPositive: true, icon: FileText, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+        { label: 'Completion Rate', value: `${completionRate}%`, change: '+1.2%', isPositive: true, icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
     ];
 
     if (loading) {

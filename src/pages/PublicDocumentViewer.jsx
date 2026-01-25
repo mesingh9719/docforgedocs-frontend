@@ -63,22 +63,34 @@ const PublicDocumentViewer = () => {
     }
 
     // Determine which preview to render
-    const type = document.type || document.type_slug || document.document_type?.slug; // Handle different resource shapes
+    // Determine which preview to render
+    // Backend Resource usually returns: type (object with slug), or document_type (object with slug), or type_slug (string)
+    const type = document.type?.slug || document.document_type?.slug || document.type_slug || document.type;
+    console.log("Detected Document Type:", type); // Debugging
 
     const renderPreview = () => {
         switch (type) {
             case 'nda':
-                return <NdaDocumentPreview data={content.formData} content={content.docContent} zoom={1} />;
+                return <NdaDocumentPreview data={content.formData} content={content.docContent} zoom={1} readOnly={true} />;
             case 'invoice':
                 // Invoice might need totals calculation if not stored. 
                 // Usually calculator logic is in Editor.
                 // Ideally document content should have everything needed for display.
                 // For now passing data as is.
-                return <InvoiceDocumentPreview data={content.formData} totals={content.totals || {}} zoom={1} />;
+                return <InvoiceDocumentPreview data={content.formData} totals={content.totals || {}} zoom={1} readOnly={true} />;
             case 'proposal':
-                return <ProposalDocumentPreview data={content.formData} content={content.docContent} zoom={1} />;
+                return <ProposalDocumentPreview data={content.formData} content={content.docContent} zoom={1} readOnly={true} />;
             default:
-                return <div className="p-8 text-center">Unknown Document Type</div>;
+                return (
+                    <div className="p-8 text-center">
+                        <AlertCircle className="mx-auto text-amber-500 mb-2" size={32} />
+                        <h3 className="text-lg font-bold text-slate-700">Unknown Document Type</h3>
+                        <p className="text-slate-500 mb-4">The document type "{type}" is not recognized by the viewer.</p>
+                        <div className="text-left bg-slate-100 p-4 rounded overflow-auto max-h-96 text-xs font-mono">
+                            {JSON.stringify(content, null, 2)}
+                        </div>
+                    </div>
+                );
         }
     };
 
@@ -92,13 +104,25 @@ const PublicDocumentViewer = () => {
                     <span className="font-bold text-slate-700">DocForge</span>
                 </div>
                 <div className="flex items-center gap-3">
-                    {/* Try to show download button if PDF path exists? Or trigger print? */}
-                    <button
-                        onClick={() => window.print()}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
-                    >
-                        Download / Print
-                    </button>
+                    {document.pdf_path || document.pdf_url ? (
+                        <a
+                            href={document.pdf_url || `/storage/${document.pdf_path}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                            <Download size={16} />
+                            Download PDF
+                        </a>
+                    ) : (
+                        <button
+                            onClick={() => window.print()}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-medium rounded-lg transition-colors"
+                        >
+                            <Download size={16} />
+                            Print / Save
+                        </button>
+                    )}
                 </div>
             </header>
 

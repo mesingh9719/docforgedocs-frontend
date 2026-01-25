@@ -44,3 +44,18 @@ export const remindDocument = async (id, email, message) => {
     const response = await axios.post(`/documents/${id}/remind`, { email, message });
     return response.data;
 };
+
+export const getDocumentVersions = async (id) => {
+    const response = await axios.get(`/documents/${id}/versions`);
+    return response;
+};
+
+export const restoreDocumentVersion = async (documentId, versionId) => {
+    const response = await axios.post(`/documents/${documentId}/restore/${versionId}`);
+    return response;
+};
+
+export const getDocumentShares = async (id) => {
+    const response = await axios.get(`/documents/${id}/shares`);
+    return response.data;
+};

@@ -221,7 +221,7 @@ const TestimonialCard = ({ quote, author, role, company }) => (
             </div>
             <div>
                 <div className="font-bold text-slate-900 text-sm">{author}</div>
-                <div className="text-slate-400 text-xs">{role}, {company}</div>
+                <div className="text-slate-500 text-xs">{role}, {company}</div>
             </div>
         </div>
     </div>
@@ -299,17 +299,14 @@ const Welcome = () => {
                             v2.0 Now Available
                         </motion.div>
 
-                        <motion.h1
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                        <h1
                             className="text-6xl md:text-8xl font-black tracking-tighter text-slate-900 mb-8 leading-[1]"
                         >
                             The OS for <br className="hidden md:block" />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 animate-gradient-x">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600">
                                 Modern Agencies.
                             </span>
-                        </motion.h1>
+                        </h1>
 
                         <motion.p
                             initial={{ opacity: 0, y: 30 }}
@@ -420,8 +417,23 @@ const Welcome = () => {
 
                 {/* Social Proof Ticker */}
                 <section className="py-10 border-y border-slate-100 bg-white/50 backdrop-blur-sm mb-32">
-                    <p className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">Trusted by industry leaders</p>
-                    <LogoTicker />
+                    <p className="text-center text-xs font-bold text-slate-500 uppercase tracking-widest mb-8">Trusted by industry leaders</p>
+                    <div className="w-full inline-flex flex-nowrap overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]">
+                        <ul className="flex items-center justify-center md:justify-start [&_li]:mx-8 [&_img]:max-w-none animate-infinite-scroll">
+                            {['Acme Corp', 'GlobalBank', 'Nebula', 'SaaS Flow', 'TechStar', 'Vortex', 'Acme Corp', 'GlobalBank'].map((name, i) => (
+                                <li key={i} className="text-xl font-bold text-slate-400 whitespace-nowrap uppercase tracking-widest font-mono">
+                                    {name}
+                                </li>
+                            ))}
+                        </ul>
+                        <ul className="flex items-center justify-center md:justify-start [&_li]:mx-8 [&_img]:max-w-none animate-infinite-scroll" aria-hidden="true">
+                            {['Acme Corp', 'GlobalBank', 'Nebula', 'SaaS Flow', 'TechStar', 'Vortex', 'Acme Corp', 'GlobalBank'].map((name, i) => (
+                                <li key={i} className="text-xl font-bold text-slate-400 whitespace-nowrap uppercase tracking-widest font-mono">
+                                    {name}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 </section>
 
                 {/* Workflow Interactive Section */}

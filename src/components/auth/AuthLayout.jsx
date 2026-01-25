@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Quote } from 'lucide-react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 
 const AuthLayout = ({ children, title, subtitle }) => {
     // If used as a Layout Route (Outlet), render it. 
@@ -25,12 +25,12 @@ const AuthLayout = ({ children, title, subtitle }) => {
                 </div>
 
                 <div className="relative z-10 max-w-lg text-center lg:text-left">
-                    <div className="flex items-center gap-3 mb-12">
-                        <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                    <Link to="/" className="flex items-center gap-3 mb-12 group w-fit">
+                        <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-white/20 transition-colors">
                             <span className="text-white font-bold text-xl">D</span>
                         </div>
                         <span className="font-bold text-2xl text-white">DocForge</span>
-                    </div>
+                    </Link>
 
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}

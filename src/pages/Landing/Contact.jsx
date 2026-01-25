@@ -1,13 +1,36 @@
 import React, { useState } from 'react';
 import { Send } from 'lucide-react';
+import api from '../../api/axios';
+import { toast } from 'react-hot-toast';
 
 const Contact = () => {
     const [submitted, setSubmitted] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        subject: '',
+        message: ''
+    });
 
-    const handleSubmit = (e) => {
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        setSubmitted(true);
-        // Simulate API call
+        setLoading(true);
+        try {
+            await api.post('/public/contact', formData);
+            setSubmitted(true);
+            toast.success('Message sent successfully!');
+            setFormData({ name: '', email: '', subject: '', message: '' });
+        } catch (error) {
+            console.error("Failed to submit contact form", error);
+            toast.error('Failed to send message. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -29,24 +52,66 @@ const Contact = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">Name</label>
-                                <input type="text" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none" required placeholder="John Doe" />
+                                <input
+                                    type="text"
+                                    name="name"
+                                    value={formData.name}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                                    required
+                                    placeholder="John Doe"
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">Email</label>
-                                <input type="email" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none" required placeholder="john@example.com" />
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                                    required
+                                    placeholder="john@example.com"
+                                />
                             </div>
                         </div>
                         <div className="mb-6">
                             <label className="block text-sm font-semibold text-slate-700 mb-2">Subject</label>
-                            <input type="text" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none" required placeholder="How can we help?" />
+                            <input
+                                type="text"
+                                name="subject"
+                                value={formData.subject}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                                required
+                                placeholder="How can we help?"
+                            />
                         </div>
                         <div className="mb-8">
                             <label className="block text-sm font-semibold text-slate-700 mb-2">Message</label>
-                            <textarea rows="5" className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none" required placeholder="Tell us more..."></textarea>
+                            <textarea
+                                rows="5"
+                                name="message"
+                                value={formData.message}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                                required
+                                placeholder="Tell us more..."
+                            ></textarea>
                         </div>
-                        <button type="submit" className="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2">
-                            <Send size={20} />
-                            Send Message
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {loading ? (
+                                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <>
+                                    <Send size={20} />
+                                    Send Message
+                                </>
+                            )}
                         </button>
                     </form>
                 )}

@@ -19,16 +19,17 @@ function Footer() {
                     </div>
 
                     <div>
-                        <h4 className="font-bold text-slate-900 mb-4">Product</h4>
+                        <h3 className="font-bold text-slate-900 mb-4">Product</h3>
                         <ul className="space-y-2 text-sm text-slate-500">
                             <li><Link to="/features" className="hover:text-slate-900 transition-colors">Features</Link></li>
                             <li><Link to="/pricing" className="hover:text-slate-900 transition-colors">Pricing</Link></li>
                             <li><Link to="/changelog" className="hover:text-slate-900 transition-colors">Changelog</Link></li>
+                            <li><Link to="/blog" className="hover:text-slate-900 transition-colors">Blog</Link></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h4 className="font-bold text-slate-900 mb-4">Company</h4>
+                        <h3 className="font-bold text-slate-900 mb-4">Company</h3>
                         <ul className="space-y-2 text-sm text-slate-500">
                             <li><Link to="/about" className="hover:text-slate-900 transition-colors">About Us</Link></li>
                             <li><Link to="/careers" className="hover:text-slate-900 transition-colors">Careers</Link></li>
@@ -37,7 +38,7 @@ function Footer() {
                     </div>
 
                     <div>
-                        <h4 className="font-bold text-slate-900 mb-4">Legal</h4>
+                        <h3 className="font-bold text-slate-900 mb-4">Legal</h3>
                         <ul className="space-y-2 text-sm text-slate-500">
                             <li><Link to="/privacy" className="hover:text-slate-900 transition-colors">Privacy Policy</Link></li>
                             <li><Link to="/terms" className="hover:text-slate-900 transition-colors">Terms of Service</Link></li>
@@ -46,10 +47,10 @@ function Footer() {
                 </div>
 
                 <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="text-slate-400 text-sm">
+                    <div className="text-slate-500 text-sm">
                         © {new Date().getFullYear()} TechSynchronic. All rights reserved.
                     </div>
-                    <div className="flex gap-6 text-slate-400">
+                    <div className="flex gap-6 text-slate-500">
                         <a href="#" className="hover:text-slate-900 transition-colors">Twitter</a>
                         <a href="#" className="hover:text-slate-900 transition-colors">LinkedIn</a>
                         <a href="#" className="hover:text-slate-900 transition-colors">GitHub</a>

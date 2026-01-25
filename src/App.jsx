@@ -29,6 +29,8 @@ import Terms from './pages/Landing/Terms'
 import Contact from './pages/Landing/Contact'
 import Careers from './pages/Landing/Careers'
 import Changelog from './pages/Landing/Changelog'
+import BlogList from './pages/Landing/BlogList'
+import BlogPost from './pages/Landing/BlogPost'
 import PublicDocumentViewer from './pages/PublicDocumentViewer'
 
 import GuestRoute from './components/GuestRoute'
@@ -92,6 +94,8 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/careers" element={<Careers />} />
               <Route path="/changelog" element={<Changelog />} />
+              <Route path="/blog" element={<BlogList />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
 
               <Route path="/accept-invite" element={<AcceptInvite />} />
               <Route path="/verify-email" element={<VerifyEmailHandler />} />

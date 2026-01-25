@@ -67,6 +67,7 @@ function Navbar() {
                 <button
                     className="md:hidden text-slate-900"
                     onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    aria-label="Toggle mobile menu"
                 >
                     {mobileMenuOpen ? <X /> : <Menu />}
                 </button>

@@ -236,34 +236,18 @@ const Team = () => {
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    setActiveMenu(activeMenu === member.id ? null : member.id);
+                                                                    // Calculate position
+                                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                                    setActiveMenu(activeMenu === member.id ? null : {
+                                                                        id: member.id,
+                                                                        top: rect.bottom + window.scrollY,
+                                                                        left: rect.right - 192 // 192px is w-48 (12rem)
+                                                                    });
                                                                 }}
                                                                 className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
                                                             >
                                                                 <MoreVertical size={16} />
                                                             </button>
-
-                                                            {activeMenu === member.id && (
-                                                                <div className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-xl border border-slate-200 z-50 py-1 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setEditingMember(member);
-                                                                            setActiveMenu(null);
-                                                                        }}
-                                                                        className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-b border-slate-100"
-                                                                    >
-                                                                        <Edit3 size={14} />
-                                                                        Edit Access
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleRemove(member.id)}
-                                                                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 mt-1"
-                                                                    >
-                                                                        <Trash2 size={14} />
-                                                                        Remove Member
-                                                                    </button>
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -275,6 +259,7 @@ const Team = () => {
                         </div>
                     </motion.div>
                 ) : (
+                    // ... (Roles tab content)
                     <motion.div
                         key="roles"
                         initial={{ opacity: 0, y: 10 }}
@@ -330,9 +315,38 @@ const Team = () => {
                 )}
             </AnimatePresence>
 
-            {/* Backdrop for menu */}
+            {/* Fixed Position Menu (Portal-like behavior) */}
             {activeMenu && (
-                <div className="fixed inset-0 z-40" onClick={() => setActiveMenu(null)} />
+                <>
+                    <div className="fixed inset-0 z-40" onClick={() => setActiveMenu(null)} />
+                    <div
+                        className="fixed z-50 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-1 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right"
+                        style={{ top: activeMenu.top + 5, left: activeMenu.left }}
+                    >
+                        <button
+                            onClick={() => {
+                                // Find member by ID since activeMenu is now an object
+                                const member = members.find(m => m.id === activeMenu.id);
+                                if (member) setEditingMember(member);
+                                setActiveMenu(null);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-b border-slate-100"
+                        >
+                            <Edit3 size={14} />
+                            Edit Access
+                        </button>
+                        <button
+                            onClick={() => {
+                                handleRemove(activeMenu.id);
+                                setActiveMenu(null);
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 mt-1"
+                        >
+                            <Trash2 size={14} />
+                            Remove Member
+                        </button>
+                    </div>
+                </>
             )}
 
             <InviteMemberModal

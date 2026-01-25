@@ -56,7 +56,7 @@ function NdaDocumentPreview({ data, content, zoom = 1, printing = false, readOnl
                 <div className="no-print absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>
             )}
 
-            <div className="p-[25mm] relative z-10">
+            <div className="p-[10mm] relative z-10">
                 <h1 className="text-xl font-bold text-center mb-10 uppercase tracking-widest border-b-2 border-slate-900 pb-2">
                     {content.title}
                 </h1>
@@ -183,7 +183,8 @@ function NdaDocumentPreview({ data, content, zoom = 1, printing = false, readOnl
                         </table>
                     ) : (
                         /* Grid Layout for Browser View */
-                        <div className="grid grid-cols-2 gap-16">
+                        /* Grid Layout for Browser View */
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
                             <div className="space-y-1">
                                 <p className="font-bold uppercase text-xs tracking-wider mb-8">For Disclosing Party</p>
 

@@ -31,7 +31,7 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
             {/* Realistic Paper Effects */}
             {!printing && <div className="no-print absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>}
 
-            <div className="p-[15mm] h-full flex flex-col relative z-10 min-h-[297mm]">
+            <div className="p-[10mm] h-full flex flex-col relative z-10 min-h-[297mm]">
 
                 {/* 1. SELLER & INVOICE HEADER */}
                 {printing ? (
@@ -64,7 +64,7 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                         </tbody>
                     </table>
                 ) : (
-                    <div className="flex justify-between items-start mb-8 border-b-2 border-slate-900 pb-6">
+                    <div className="flex flex-col md:flex-row justify-between items-start mb-8 border-b-2 border-slate-900 pb-6 gap-6 md:gap-0">
                         {/* ... Browser View Header ... */}
                         <div>
                             <h1 className="text-2xl font-bold uppercase tracking-wider text-slate-800">{data.invoiceTitle || 'Invoice'}</h1>

@@ -70,7 +70,7 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
             {/* Realistic Paper Effects */}
             <div className="no-print absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>
 
-            <div className="p-[25mm] h-full flex flex-col relative z-10 min-h-[297mm]">
+            <div className="p-[10mm] h-full flex flex-col relative z-10 min-h-[297mm]">
 
                 {/* 1. COVER PAGE LANDING */}
                 <div className="flex-1 flex flex-col justify-center items-center text-center border-b-2 border-slate-900 mb-12 pb-12 break-after-page">
@@ -222,7 +222,8 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
                         </table>
                     ) : (
                         /* GRID LAYOUT FOR BROWSER */
-                        <div className="grid grid-cols-2 gap-16">
+                        /* Grid Layout for Browser View */
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
                             <div className="space-y-4">
                                 <p className="font-bold uppercase text-xs tracking-wider mb-8 bg-slate-100 p-2 inline-block rounded">For Client</p>
                                 <div className="grid grid-cols-[100px_1fr] gap-x-2 gap-y-4 items-baseline text-sm">

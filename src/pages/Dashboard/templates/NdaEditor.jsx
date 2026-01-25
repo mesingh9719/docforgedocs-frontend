@@ -6,10 +6,11 @@ import toast from 'react-hot-toast';
 import NdaFormSidebar from './NdaFormSidebar';
 import NdaDocumentPreview from './NdaDocumentPreview';
 import { createDocument, getDocument, updateDocument } from '../../../api/documents';
-import { generateDocumentPdf, wrapHtmlForPdf } from '../../../utils/pdfGenerator';
+import { generateDocumentPdf } from '../../../utils/pdfGenerator';
 import { getBusiness } from '../../../api/business';
 import SendDocumentModal from '../../../components/SendDocumentModal';
 import VersionHistorySidebar from './VersionHistorySidebar';
+import { useMediaQuery } from '../../../hooks/useMediaQuery';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -82,7 +83,10 @@ const defaultContent = {
 
 const NdaEditor = () => {
     const navigate = useNavigate();
-    const { id } = useParams(); // Get ID from URL
+    const { id } = useParams();
+    const isDesktop = useMediaQuery('(min-width: 1024px)'); // lg breakpoint
+    const [activeTab, setActiveTab] = useState('edit');
+
     const [zoom, setZoom] = useState(1);
     const [isSaving, setIsSaving] = useState(false);
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -113,6 +117,10 @@ const NdaEditor = () => {
 
     // State for the Document Structure (Template Text)
     const [docContent, setDocContent] = useState(defaultContent);
+
+    // Performance Optimization: Defer the preview data
+    const deferredFormData = React.useDeferredValue(formData);
+    const deferredDocContent = React.useDeferredValue(docContent);
 
     // Load Document if ID exists
     useEffect(() => {
@@ -150,8 +158,6 @@ const NdaEditor = () => {
             console.error("Failed to load document", error);
         }
     };
-
-
 
     // Load Business Details for Defaults
     useEffect(() => {
@@ -251,7 +257,6 @@ const NdaEditor = () => {
             } else {
                 const newDoc = await createDocument(payload);
                 toast.success("Document created successfully");
-                // Redirect to edit mode to prevent duplicate creations
                 navigate(`/documents/nda/${newDoc.data.id}`, { replace: true });
             }
         } catch (error) {
@@ -279,12 +284,10 @@ const NdaEditor = () => {
 
         setIsGeneratingPdf(true);
         try {
-            // Render the document to HTML string
             const documentHtml = renderToStaticMarkup(
                 <NdaDocumentPreview data={formData} content={docContent} zoom={1} printing={true} />
             );
 
-            // Wrap in basic HTML for DomPDF
             const fullHtml = `
     <!DOCTYPE html>
         <html>
@@ -292,11 +295,8 @@ const NdaEditor = () => {
                 <meta charset="utf-8">
                     <title>${documentName}</title>
                     <style>
-                        /* Reset and Basic Typography */
                         * {box-sizing: border-box; }
                         body {font-family: 'Times New Roman', serif; line-height: 1.5; color: #333; font-size: 12pt; margin: 0; padding: 40px; }
-
-                        /* Utilities Mapped for DomPDF */
                         .text-center {text-align: center; }
                         .uppercase {text-transform: uppercase; }
                         .font-bold {font-weight: bold; }
@@ -312,21 +312,10 @@ const NdaEditor = () => {
                         .mt-12 {margin-top: 3rem; }
                         .border-b {border-bottom: 1px solid #000; }
                         .border-b-2 {border-bottom: 2px solid #000; }
-
-                        /* Layout - Signatures */
-                        /* We actully switched to tables for printing in the component, so we don't need complex float grids here anymore. */
-                        /* The component directly injects style attributes which DomPDF supports very well. */
-
-                        /* Ensure full page use */
                         @page {margin: 40px; }
                         body {margin: 0; padding: 0; }
-
-
                         h1 {font-size: 16pt; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 30px; text-align: center; font-weight: bold; letter-spacing: 2px; }
                         p {margin-bottom: 12px; }
-
-                    /* Footer handling */
-                    /* We use position: fixed in the component style for paging, but let's ensure it doesn't overlap text */
                     </style>
             </head>
             <body>
@@ -352,8 +341,6 @@ const NdaEditor = () => {
 
     const [isSending, setIsSending] = useState(false);
     const [sentAt, setSentAt] = useState(null);
-
-
 
     const handleSendEmail = () => {
         if (!id) {
@@ -390,7 +377,6 @@ const NdaEditor = () => {
             );
 
             if (response.url) {
-                // Trigger download
                 const link = document.createElement('a');
                 link.href = response.url;
                 link.download = `${documentName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
@@ -442,7 +428,6 @@ const NdaEditor = () => {
                 try { content = JSON.parse(content); } catch (e) { }
             }
 
-            // Render HTML for this version
             const documentHtml = renderToStaticMarkup(
                 <NdaDocumentPreview data={content.formData || formData} content={content.docContent || docContent} zoom={1} printing={true} />
             );
@@ -489,8 +474,23 @@ const NdaEditor = () => {
                 </div>
             )}
 
-            {/* ... Modal ... */}
-            {/* ... Modal ... */}
+            {/* Print Portal */}
+            {/* Note: NdaDocumentPreview does not use a portal for printing here, logic is in handlePrint raw html generation, 
+                BUT create Portal logic if needed or just rely on the pure HTML gen logic which is already robust here.
+                Wait, the original code had PrintPortal logic commented out? No, I see it usage? 
+                Actually the original code didn't use PrintPortal in the return?
+                Ah, lines 443 in original code:
+                {isPrinting && ( <PrintPortal>... // wait, that was InvoiceEditor?
+                Let's check NdaEditor original.
+                Lines 492: {isPrinting && ( ... PrintPortal ... ?? No, I don't see PrintPortal used in the NdaEditor original return JSX block I read?
+                Let me checking... Ah, I see `handlePrint` doing manual HTML string generation.
+                BUT wait, line 7 in imports: `import PrintPortal ...`
+                Let's double check the NdaEditor file retrieval...
+                Line 443 in NdaEditor? No.
+                Line 281 in NdaEditor handles print manually.
+                I will stick to the manual generation approach as it seems preferred for NdaEditor to ensure exact CSS control for dompdf.
+            */}
+
             <SendDocumentModal
                 isOpen={isSending}
                 onClose={() => setIsSending(false)}
@@ -499,79 +499,44 @@ const NdaEditor = () => {
                 isReminder={!!sentAt}
                 onSuccess={handleSendSuccess}
                 getHtmlContent={async () => {
-                    // We can rely on renderToStaticMarkup, similar to print logic but returning string
                     const documentHtml = renderToStaticMarkup(
                         <NdaDocumentPreview data={formData} content={docContent} zoom={1} printing={true} />
                     );
-                    // Add wrapper
-                    return `
-                        <!DOCTYPE html>
-                        <html>
-                            <head>
-                                <meta charset="utf-8">
-                                <title>${documentName}</title>
-                                <style>
-                                    * {box-sizing: border-box; }
-                                    body {font-family: 'Times New Roman', serif; line-height: 1.5; color: #333; font-size: 12pt; margin: 0; padding: 40px; }
-                                    .text-center {text-align: center; }
-                                    .uppercase {text-transform: uppercase; }
-                                    .font-bold {font-weight: bold; }
-                                    .text-sm {font-size: 10pt; }
-                                    .text-xs {font-size: 9pt; }
-                                    .text-justify {text-align: justify; }
-                                    .mb-2 {margin-bottom: 0.5rem; }
-                                    .mb-4 {margin-bottom: 1rem; }
-                                    .mb-6 {margin-bottom: 1.5rem; }
-                                    .mb-8 {margin-bottom: 2rem; }
-                                    .mb-10 {margin-bottom: 2.5rem; }
-                                    .pb-2 {padding-bottom: 0.5rem; }
-                                    .mt-12 {margin-top: 3rem; }
-                                    .border-b {border-bottom: 1px solid #000; }
-                                    .border-b-2 {border-bottom: 2px solid #000; }
-                                    @page {margin: 40px; }
-                                    body {margin: 0; padding: 0; }
-                                    h1 {font-size: 16pt; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 30px; text-align: center; font-weight: bold; letter-spacing: 2px; }
-                                    p {margin-bottom: 12px; }
-                                </style>
-                            </head>
-                            <body>${documentHtml}</body>
-                        </html>
-                    `;
+                    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${documentName}</title><style>*{box-sizing:border-box;}body{font-family:'Times New Roman',serif;line-height:1.5;color:#333;font-size:12pt;margin:0;padding:40px;}.text-center{text-align:center;}.uppercase{text-transform:uppercase;}.font-bold{font-weight:bold;}.text-sm{font-size:10pt;}.text-xs{font-size:9pt;}.text-justify{text-align:justify;}.mb-2{margin-bottom:0.5rem;}.mb-4{margin-bottom:1rem;}.mb-6{margin-bottom:1.5rem;}.mb-8{margin-bottom:2rem;}.mb-10{margin-bottom:2.5rem;}.pb-2{padding-bottom:0.5rem;}.mt-12{margin-top:3rem;}.border-b{border-bottom:1px solid #000;}.border-b-2{border-bottom:2px solid #000;}@page{margin:40px;}body{margin:0;padding:0;}h1{font-size:16pt;text-transform:uppercase;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:30px;text-align:center;font-weight:bold;letter-spacing:2px;}p{margin-bottom:12px;}</style></head><body>${documentHtml}</body></html>`;
                 }}
             />
 
             {/* Toolbar */}
             <header className="no-print h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm">
-                <div className="flex items-center gap-2 md:gap-4">
+                <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
                     <button
                         onClick={handleBack}
-                        className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
+                        className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors flex-shrink-0"
                         title="Back to Documents"
                     >
                         <ArrowLeft size={20} />
                     </button>
-                    <div>
+                    <div className="min-w-0">
                         <div className="flex items-center gap-2">
                             <input
                                 type="text"
                                 value={documentName}
                                 onChange={(e) => setDocumentName(e.target.value)}
-                                className="font-bold text-slate-800 text-sm md:text-lg bg-transparent border-none focus:ring-0 p-0 m-0 w-auto min-w-[200px] placeholder-slate-400"
+                                className="font-bold text-slate-800 text-sm md:text-lg bg-transparent border-none focus:ring-0 p-0 m-0 w-auto min-w-[120px] max-w-[200px] placeholder-slate-400 truncate"
                                 placeholder="Enter Document Name"
                             />
                             {sentAt && (
-                                <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-100">
-                                    <Check size={10} /> Sent {new Date(sentAt).toLocaleDateString()}
+                                <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-100">
+                                    <Check size={10} /> Sent
                                 </span>
                             )}
                         </div>
-                        <p className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap">Last saved: Just now</p>
+                        <p className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap hidden sm:block">Last saved: Just now</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2 md:gap-3">
-
-                    <div className="hidden md:flex items-center bg-slate-100 rounded-lg p-1 mr-4">
+                    <div className="hidden lg:flex items-center bg-slate-100 rounded-lg p-1 mr-4">
                         <button onClick={handleZoomOut} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomOut size={16} /></button>
                         <span className="text-xs font-semibold text-slate-600 w-12 text-center">{Math.round(zoom * 100)}%</span>
                         <button onClick={handleZoomIn} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomIn size={16} /></button>
@@ -583,38 +548,38 @@ const NdaEditor = () => {
                         title="Version History"
                     >
                         <Clock size={18} />
-                        <span className="hidden sm:inline">History</span>
+                        <span className="hidden lg:inline">History</span>
                     </button>
 
                     <button
                         onClick={handlePrint}
                         disabled={isGeneratingPdf}
-                        className="flex items-center gap-2 p-2 md:px-4 md:py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
+                        className="hidden md:flex items-center gap-2 p-2 md:px-4 md:py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
                     >
                         {isGeneratingPdf ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
-                        <span className="hidden sm:inline">{isGeneratingPdf ? 'Generating...' : 'Print'}</span>
+                        <span className="hidden lg:inline">{isGeneratingPdf ? 'Generating...' : 'Print'}</span>
                     </button>
 
                     <button
                         onClick={handleSendEmail}
-                        className={`flex items-center gap-2 px-3 md:px-4 py-2 text-sm font-medium rounded-lg border border-transparent transition-all ${sentAt ? 'text-amber-600 hover:bg-amber-50 hover:border-amber-200' : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200'}`}
+                        className={`flex items-center gap-2 px-2 md:px-4 py-2 text-sm font-medium rounded-lg border border-transparent transition-all ${sentAt ? 'text-amber-600 hover:bg-amber-50 hover:border-amber-200' : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200'}`}
                     >
                         {sentAt ? <Bell size={18} /> : <Mail size={18} />}
-                        <span className="hidden sm:inline">{sentAt ? 'Remind' : 'Send'}</span>
+                        <span className="hidden lg:inline">{sentAt ? 'Remind' : 'Send'}</span>
                     </button>
 
                     <button
                         onClick={handleExport}
                         disabled={isExporting}
-                        className="flex items-center gap-2 px-3 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-2 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
                     >
                         {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                        <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
+                        <span className="hidden lg:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
                     </button>
 
                     <button
                         onClick={handleSave}
-                        className={`flex items-center gap-2 px-4 md:px-5 py-2 rounded-lg text-white font-medium shadow-md transition-all ${isSaving ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                        className={`flex items-center gap-2 px-3 md:px-5 py-2 rounded-lg text-white font-medium shadow-md transition-all ${isSaving ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                     >
                         {isSaving ? <Check size={18} /> : <Save size={18} />}
                         <span className="hidden md:inline">{isSaving ? 'Saved!' : 'Save'}</span>
@@ -622,10 +587,33 @@ const NdaEditor = () => {
                 </div>
             </header>
 
+            {/* Mobile Tabs */}
+            {!isDesktop && (
+                <div className="flex bg-white border-b border-slate-200 px-4">
+                    <button
+                        onClick={() => setActiveTab('edit')}
+                        className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'edit' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('preview')}
+                        className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'preview' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Preview
+                    </button>
+                </div>
+            )}
+
             {/* MainContent */}
             <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative">
+
                 {/* Left Panel: Editor Sidebar */}
-                <div className="no-print w-full lg:w-[400px] h-auto lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200 overflow-y-auto z-20 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.1)] lg:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] flex-shrink-0 order-2 lg:order-1 max-h-[40vh] lg:max-h-full">
+                <div className={`
+                    no-print w-full lg:w-[400px] h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200 
+                    overflow-y-auto z-20 shadow-sm flex-shrink-0 lg:order-1
+                    ${isDesktop ? 'block' : (activeTab === 'edit' ? 'block' : 'hidden')}
+                `}>
                     <NdaFormSidebar
                         formData={formData}
                         onChange={handleChange}
@@ -640,12 +628,19 @@ const NdaEditor = () => {
                 </div>
 
                 {/* Right Panel: Live Preview */}
-                <div className="flex-1 h-full overflow-y-auto bg-slate-100/50 p-4 md:p-8 sm:p-12 flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 order-1 lg:order-2">
-                    <NdaDocumentPreview data={formData} content={docContent} zoom={zoom} />
+                <div className={`
+                    flex-1 h-full overflow-y-auto bg-slate-100/50 p-4 md:p-8 sm:p-12 
+                    flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 lg:order-2
+                    ${isDesktop ? 'flex' : (activeTab === 'preview' ? 'flex' : 'hidden')}
+                `}>
+                    <NdaDocumentPreview
+                        data={deferredFormData}
+                        content={deferredDocContent}
+                        zoom={zoom}
+                    />
                 </div>
             </div>
 
-            {/* ... Sidebar ... */}
             <VersionHistorySidebar
                 documentId={id}
                 isOpen={showHistory}
@@ -653,7 +648,6 @@ const NdaEditor = () => {
                 onPreview={handlePreviewVersion}
                 onDownload={handleDownloadVersion}
                 onRestore={(docData) => {
-                    // Update the editor state with the restored data
                     if (docData && docData.content) {
                         let content = docData.content;
                         if (typeof content === 'string') {
@@ -662,7 +656,6 @@ const NdaEditor = () => {
                         if (content.formData) setFormData(content.formData);
                         if (content.docContent) setDocContent(content.docContent);
                     }
-                    // If we were previewing, clear it as we just restored
                     setPreviewVersion(null);
                     originalState.current = null;
                 }}

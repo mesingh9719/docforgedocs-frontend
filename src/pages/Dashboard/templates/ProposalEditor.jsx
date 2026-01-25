@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Bell, Loader2, Clock, Eye, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProposalFormSidebar from './ProposalFormSidebar';
@@ -11,7 +11,7 @@ import { createDocument, getDocument, updateDocument } from '../../../api/docume
 import { getBusiness } from '../../../api/business';
 import { generateDocumentPdf, wrapHtmlForPdf } from '../../../utils/pdfGenerator';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { useParams } from 'react-router-dom';
+import { useMediaQuery } from '../../../hooks/useMediaQuery';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -87,6 +87,9 @@ const defaultContent = {
 const ProposalEditor = () => {
     const navigate = useNavigate();
     const { id } = useParams();
+    const isDesktop = useMediaQuery('(min-width: 1024px)'); // lg breakpoint
+    const [activeTab, setActiveTab] = useState('edit'); // 'edit' or 'preview'
+
     const [zoom, setZoom] = useState(1);
     const [isSaving, setIsSaving] = useState(false);
     const [documentName, setDocumentName] = useState('Untitled Proposal');
@@ -96,21 +99,16 @@ const ProposalEditor = () => {
 
     // State for the Document Variables (Inputs)
     const [formData, setFormData] = useState({
-        proposalTitle: 'Website Redesign Project', // Default
+        proposalTitle: 'Website Redesign Project',
+        // ... (rest of initial state)
         proposalDate: new Date().toLocaleDateString(),
         referenceNo: '',
-
-        // Client Details
         clientName: '',
         clientCompany: '',
         clientAddress: '',
-
-        // Provider Details
         providerName: '',
         providerCompany: '',
         providerAddress: '',
-
-        // Variables used in sections
         projectDescription: '',
         totalProjectCost: '',
         paymentDays: '15',
@@ -118,8 +116,6 @@ const ProposalEditor = () => {
         noticeDays: '30',
         jurisdiction: '',
         courtCity: '',
-
-        // Timeline Table Data
         timeline: [
             { phase: 'Phase 1', description: 'Requirement Analysis', duration: '5 days' },
             { phase: 'Phase 2', description: 'Execution / Development', duration: '15 days' },
@@ -129,6 +125,12 @@ const ProposalEditor = () => {
 
     // State for the Document Structure (Template Text)
     const [docContent, setDocContent] = useState(defaultContent);
+
+    // Performance Optimization: Defer the preview data
+    const deferredFormData = React.useDeferredValue(formData);
+    const deferredDocContent = React.useDeferredValue(docContent);
+
+    // ... (existing effects: loadDocument, fetchBusinessDetails) 
 
     // Load Document
     useEffect(() => {
@@ -173,6 +175,8 @@ const ProposalEditor = () => {
             fetchBusinessDetails();
         }
     }, [id]);
+
+    // ... (rest of handlers: handleChange, handleContentChange, updateTimeline, etc.)
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -249,7 +253,7 @@ const ProposalEditor = () => {
         }));
     };
 
-    // ---------------------------------------
+    // ... (rest of handlers: handleBack, zoom, save, print, etc.)
 
     const handleBack = () => navigate('/documents');
     const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.5));
@@ -327,8 +331,6 @@ const ProposalEditor = () => {
 
     const [isSending, setIsSending] = useState(false);
     const [sentAt, setSentAt] = useState(null);
-
-
 
     const handleSendEmail = () => {
         if (!id) {
@@ -469,9 +471,6 @@ const ProposalEditor = () => {
                 </PrintPortal>
             )}
 
-
-
-            {/* ... Modal ... */}
             <SendDocumentModal
                 isOpen={isSending}
                 onClose={() => setIsSending(false)}
@@ -489,35 +488,36 @@ const ProposalEditor = () => {
 
             {/* Toolbar */}
             <header className="no-print h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm">
-                <div className="flex items-center gap-2 md:gap-4">
+                <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
                     <button
                         onClick={handleBack}
-                        className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors"
+                        className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors flex-shrink-0"
                         title="Back to Documents"
                     >
                         <ArrowLeft size={20} />
                     </button>
-                    <div>
+                    <div className="min-w-0">
                         <div className="flex items-center gap-2">
                             <input
                                 type="text"
                                 value={documentName}
                                 onChange={(e) => setDocumentName(e.target.value)}
-                                className="font-bold text-slate-800 text-sm md:text-lg bg-transparent border-none focus:ring-0 p-0 m-0 w-auto min-w-[200px] placeholder-slate-400"
+                                className="font-bold text-slate-800 text-sm md:text-lg bg-transparent border-none focus:ring-0 p-0 m-0 w-auto min-w-[120px] max-w-[200px] placeholder-slate-400 truncate"
                                 placeholder="Enter Document Name"
                             />
                             {sentAt && (
-                                <span className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-100">
-                                    <Check size={10} /> Sent {new Date(sentAt).toLocaleDateString()}
+                                <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-100">
+                                    <Check size={10} /> Sent
                                 </span>
                             )}
                         </div>
-                        <p className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap">Last saved: Just now</p>
+                        <p className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap hidden sm:block">Last saved: Just now</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2 md:gap-3">
-                    <div className="hidden md:flex items-center bg-slate-100 rounded-lg p-1 mr-4">
+                    {/* Zoom, History, Print - Hidden on small mobile to save space */}
+                    <div className="hidden lg:flex items-center bg-slate-100 rounded-lg p-1 mr-4">
                         <button onClick={handleZoomOut} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomOut size={16} /></button>
                         <span className="text-xs font-semibold text-slate-600 w-12 text-center">{Math.round(zoom * 100)}%</span>
                         <button onClick={handleZoomIn} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomIn size={16} /></button>
@@ -528,37 +528,37 @@ const ProposalEditor = () => {
                         className="flex items-center gap-2 p-2 md:px-4 md:py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"
                     >
                         <Clock size={18} />
-                        <span className="hidden sm:inline">History</span>
+                        <span className="hidden lg:inline">History</span>
                     </button>
 
                     <button
                         onClick={handlePrint}
-                        className="flex items-center gap-2 p-2 md:px-4 md:py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"
+                        className="hidden md:flex items-center gap-2 p-2 md:px-4 md:py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"
                     >
                         <Printer size={18} />
-                        <span className="hidden sm:inline">Print</span>
+                        <span className="hidden lg:inline">Print</span>
                     </button>
 
                     <button
                         onClick={handleSendEmail}
-                        className={`flex items-center gap-2 px-3 md:px-4 py-2 text-sm font-medium rounded-lg border border-transparent transition-all ${sentAt ? 'text-amber-600 hover:bg-amber-50 hover:border-amber-200' : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200'}`}
+                        className={`flex items-center gap-2 px-2 md:px-4 py-2 text-sm font-medium rounded-lg border border-transparent transition-all ${sentAt ? 'text-amber-600 hover:bg-amber-50 hover:border-amber-200' : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200'}`}
                     >
                         {sentAt ? <Bell size={18} /> : <Mail size={18} />}
-                        <span className="hidden sm:inline">{sentAt ? 'Remind' : 'Send'}</span>
+                        <span className="hidden lg:inline">{sentAt ? 'Remind' : 'Send'}</span>
                     </button>
 
                     <button
                         onClick={handleExport}
                         disabled={isExporting}
-                        className="flex items-center gap-2 px-3 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-2 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
                     >
                         {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                        <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
+                        <span className="hidden lg:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
                     </button>
 
                     <button
                         onClick={handleSave}
-                        className={`flex items-center gap-2 px-4 md:px-5 py-2 rounded-lg text-white font-medium shadow-md transition-all ${isSaving ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                        className={`flex items-center gap-2 px-3 md:px-5 py-2 rounded-lg text-white font-medium shadow-md transition-all ${isSaving ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
                     >
                         {isSaving ? <Check size={18} /> : <Save size={18} />}
                         <span className="hidden md:inline">{isSaving ? 'Saved!' : 'Save'}</span>
@@ -566,10 +566,33 @@ const ProposalEditor = () => {
                 </div>
             </header>
 
+            {/* Mobile Tabs */}
+            {!isDesktop && (
+                <div className="flex bg-white border-b border-slate-200 px-4">
+                    <button
+                        onClick={() => setActiveTab('edit')}
+                        className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'edit' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Edit
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('preview')}
+                        className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'preview' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Preview
+                    </button>
+                </div>
+            )}
+
             {/* Main Content */}
             <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative">
+
                 {/* Left Panel: Editor Sidebar */}
-                <div className="no-print w-full lg:w-[400px] h-auto lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200 overflow-y-auto z-20 shadow-[0_4px_24px_-12px_rgba(0,0,0,0.1)] lg:shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)] flex-shrink-0 order-2 lg:order-1 max-h-[40vh] lg:max-h-full">
+                <div className={`
+                    no-print w-full lg:w-[400px] h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200 
+                    overflow-y-auto z-20 shadow-sm flex-shrink-0 lg:order-1
+                    ${isDesktop ? 'block' : (activeTab === 'edit' ? 'block' : 'hidden')}
+                `}>
                     <ProposalFormSidebar
                         formData={formData}
                         onChange={handleChange}
@@ -588,8 +611,16 @@ const ProposalEditor = () => {
                 </div>
 
                 {/* Right Panel: Live Preview */}
-                <div className="flex-1 h-full overflow-y-auto bg-slate-100/50 p-4 md:p-8 sm:p-12 flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 order-1 lg:order-2">
-                    <ProposalDocumentPreview data={formData} content={docContent} zoom={zoom} />
+                <div className={`
+                    flex-1 h-full overflow-y-auto bg-slate-100/50 p-4 md:p-8 sm:p-12 
+                    flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 lg:order-2
+                    ${isDesktop ? 'flex' : (activeTab === 'preview' ? 'flex' : 'hidden')}
+                `}>
+                    <ProposalDocumentPreview
+                        data={deferredFormData}
+                        content={deferredDocContent}
+                        zoom={zoom}
+                    />
                 </div>
             </div>
             <VersionHistorySidebar

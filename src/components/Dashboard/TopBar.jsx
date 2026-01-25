@@ -3,6 +3,7 @@ import { Search, Bell, User, Menu, Settings, LogOut, CheckCircle, AlertCircle, F
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import { getNotifications, markAllNotificationsRead, markNotificationRead } from '../../api/notifications';
 
 const TopBar = ({ business, user, onMenuClick }) => {
     const { logout } = useAuth();
@@ -17,16 +18,58 @@ const TopBar = ({ business, user, onMenuClick }) => {
     const notificationRef = useRef(null);
     const profileRef = useRef(null);
 
-    // Mock Notifications
-    const notifications = [
-        { id: 1, type: 'success', title: 'Document Signed', message: 'NDA-2024-001 has been signed by John.', time: '2 min ago', read: false },
-        { id: 2, type: 'alert', title: 'Subscription Update', message: 'Your trial expires in 3 days.', time: '1 hour ago', read: false },
-        { id: 3, type: 'info', title: 'New Feature', message: 'Check out the new Template Editor!', time: '1 day ago', read: true },
-    ];
+    // Notifications State
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
 
-    const unreadCount = notifications.filter(n => !n.read).length;
+    const fetchNotifications = async () => {
+        try {
+            const response = await getNotifications();
+            // Backend returns { data: [], unread_count: 0 }
+            // Notification structure in DB: { data: { message, title, ... }, read_at: null, ... }
+            const raw = response.data.data;
+            const formatted = raw.map(n => ({
+                id: n.id,
+                type: n.data.type || 'info', // Map DB type to UI type if needed
+                title: n.data.title || 'Notification',
+                message: n.data.message || '',
+                time: new Date(n.created_at).toLocaleDateString(), // Simplified time
+                read: !!n.read_at,
+                raw_created_at: n.created_at
+            }));
+            setNotifications(formatted);
+            setUnreadCount(response.data.unread_count);
+        } catch (error) {
+            console.error("Failed to fetch notifications", error);
+        }
+    };
 
-    // ... (rest of code)
+    useEffect(() => {
+        if (user) {
+            fetchNotifications();
+            // Optional: Layout polling interval here
+            const interval = setInterval(fetchNotifications, 30000);
+            return () => clearInterval(interval);
+        }
+    }, [user]);
+
+    const handleMarkAllRead = async () => {
+        try {
+            await markAllNotificationsRead();
+            fetchNotifications();
+        } catch (error) {
+            console.error("Failed to mark all read", error);
+        }
+    };
+
+    const handleMarkRead = async (id) => {
+        try {
+            await markNotificationRead(id);
+            fetchNotifications();
+        } catch (error) {
+            console.error("Failed to mark read", error);
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -126,42 +169,47 @@ const TopBar = ({ business, user, onMenuClick }) => {
                             >
                                 <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                                     <h3 className="font-semibold text-slate-800">Notifications</h3>
-                                    <button className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors">
+                                    <button
+                                        onClick={handleMarkAllRead}
+                                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                                    >
                                         Mark all read
                                     </button>
                                 </div>
                                 <div className="max-h-[400px] overflow-y-auto">
-                                    {notifications.map((notification) => (
-                                        <div
-                                            key={notification.id}
-                                            className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer group ${!notification.read ? 'bg-indigo-50/30' : ''}`}
-                                        >
-                                            <div className="flex gap-3">
-                                                <div className={`mt-1 h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${notification.type === 'success' ? 'bg-green-100 text-green-600' :
-                                                    notification.type === 'alert' ? 'bg-amber-100 text-amber-600' :
-                                                        'bg-blue-100 text-blue-600'
-                                                    }`}>
-                                                    {notification.type === 'success' ? <CheckCircle size={14} /> :
-                                                        notification.type === 'alert' ? <AlertCircle size={14} /> :
-                                                            <FileText size={14} />}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-medium text-slate-800 group-hover:text-indigo-700 transition-colors">
-                                                        {notification.title}
-                                                    </p>
-                                                    <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                                                        {notification.message}
-                                                    </p>
-                                                    <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                                                        {notification.time}
-                                                    </p>
-                                                </div>
-                                                {!notification.read && (
-                                                    <div className="mt-2 h-2 w-2 rounded-full bg-indigo-500 shrink-0"></div>
-                                                )}
-                                            </div>
+                                    {notifications.length === 0 ? (
+                                        <div className="p-6 text-center text-slate-500 text-sm">
+                                            No notifications.
                                         </div>
-                                    ))}
+                                    ) : (
+                                        notifications.map((notification) => (
+                                            <div
+                                                key={notification.id}
+                                                onClick={() => handleMarkRead(notification.id)}
+                                                className={`p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer group ${!notification.read ? 'bg-indigo-50/30' : ''}`}
+                                            >
+                                                <div className="flex gap-3">
+                                                    <div className={`mt-1 h-8 w-8 rounded-full flex items-center justify-center shrink-0 bg-indigo-100 text-indigo-600`}>
+                                                        <FileText size={14} />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium text-slate-800 group-hover:text-indigo-700 transition-colors">
+                                                            {notification.title}
+                                                        </p>
+                                                        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                                                            {notification.message}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                                                            {notification.time}
+                                                        </p>
+                                                    </div>
+                                                    {!notification.read && (
+                                                        <div className="mt-2 h-2 w-2 rounded-full bg-indigo-500 shrink-0"></div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                                 <div className="p-3 bg-slate-50 text-center border-t border-slate-100">
                                     <button className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors">

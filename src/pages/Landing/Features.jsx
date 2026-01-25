@@ -61,7 +61,7 @@ const Features = () => {
                         variants={fadeIn}
                         className="text-4xl md:text-6xl font-bold text-slate-900 mb-6 tracking-tight"
                     >
-                        Tools designed for <span className="text-indigo-600">modern business.</span>
+                        Tools designed for <span className="text-indigo-600">running your agency.</span>
                     </motion.h1>
                     <motion.p
                         initial="hidden"
@@ -70,7 +70,7 @@ const Features = () => {
                         variants={fadeIn}
                         className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed"
                     >
-                        DocForge isn't just a document editor. It's a complete suite of tools engineered to help you close deals, protect assets, and manage finances.
+                        DocForge isn't just a document editor. It's a complete operating system for your paperwork. From proposal to payment, we've got you covered.
                     </motion.p>
                 </div>
             </section>
@@ -124,8 +124,8 @@ const Features = () => {
                             <ul className="space-y-4">
                                 {[
                                     "Real-time preview updates",
-                                    "Variable injection for rapid re-use",
-                                    "Drag-and-drop section reordering",
+                                    "New! Version History & Restoration",
+                                    "New! Share Tracking & Analytics",
                                     "One-click PDF export"
                                 ].map((item, i) => (
                                     <li key={i} className="flex items-center gap-3 text-slate-700">

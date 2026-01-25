@@ -11,12 +11,12 @@ const SEO = ({
 }) => {
     const siteTitle = 'DocForge';
     const defaultDescription = 'Secure usage of NDAs, Proposals, and Invoices for modern businesses. Streamline your document workflow with DocForge.';
-    const defaultImage = 'https://docforge.tech/og-image.png'; // Placeholder
-    const siteUrl = 'https://docforge.tech'; // Placeholder
+    const siteUrl = 'https://docforgedocs.com'; // Placeholder
+    const defaultImage = `${siteUrl}/images/logo.png`; // Uses the new logo
 
     const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
     const metaDescription = description || defaultDescription;
-    const metaImage = image || defaultImage;
+    const metaImage = image ? (image.startsWith('http') ? image : `${siteUrl}${image}`) : defaultImage;
     const metaUrl = url ? `${siteUrl}${url}` : siteUrl;
 
     return (
@@ -33,6 +33,8 @@ const SEO = ({
             <meta property="og:title" content={fullTitle} />
             <meta property="og:description" content={metaDescription} />
             <meta property="og:image" content={metaImage} />
+            <meta property="og:site_name" content={siteTitle} />
+            <meta property="og:locale" content="en_US" />
 
             {/* Twitter */}
             <meta name="twitter:card" content="summary_large_image" />
@@ -40,6 +42,7 @@ const SEO = ({
             <meta name="twitter:title" content={fullTitle} />
             <meta name="twitter:description" content={metaDescription} />
             <meta name="twitter:image" content={metaImage} />
+            <meta name="twitter:creator" content="@DocForgeApp" />
         </Helmet>
     );
 };

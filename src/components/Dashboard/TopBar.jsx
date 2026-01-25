@@ -7,6 +7,9 @@ import { useNavigate, Link } from 'react-router-dom';
 const TopBar = ({ business, user, onMenuClick }) => {
     const { logout } = useAuth();
     const navigate = useNavigate();
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const searchRef = useRef(null);
+
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -23,6 +26,8 @@ const TopBar = ({ business, user, onMenuClick }) => {
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
+    // ... (rest of code)
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (notificationRef.current && !notificationRef.current.contains(event.target)) {
@@ -30,6 +35,9 @@ const TopBar = ({ business, user, onMenuClick }) => {
             }
             if (profileRef.current && !profileRef.current.contains(event.target)) {
                 setIsProfileOpen(false);
+            }
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setIsSearchOpen(false);
             }
         };
 
@@ -43,7 +51,7 @@ const TopBar = ({ business, user, onMenuClick }) => {
     };
 
     return (
-        <header className="no-print px-6 py-4 flex items-center justify-between sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm transition-all duration-300">
+        <header className="no-print px-4 sm:px-6 py-4 flex items-center justify-between sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm transition-all duration-300">
             {/* Breadcrumbs / Page Title */}
             <div className="flex items-center gap-3">
                 <button
@@ -52,11 +60,11 @@ const TopBar = ({ business, user, onMenuClick }) => {
                 >
                     <Menu size={20} />
                 </button>
-                <div>
-                    <h1 className="text-xl font-bold text-slate-800 tracking-tight">
+                <div className={`${isSearchOpen ? 'hidden md:block' : 'block'}`}>
+                    <h1 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight">
                         Dashboard
                     </h1>
-                    <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5">
+                    <p className="text-xs text-slate-500 font-medium tracking-wide mt-0.5 hidden sm:block">
                         Overview of your {business?.name || 'Workspace'}
                     </p>
                 </div>
@@ -65,15 +73,27 @@ const TopBar = ({ business, user, onMenuClick }) => {
             {/* Actions */}
             <div className="flex items-center gap-2 sm:gap-4">
                 {/* Search */}
-                <div className="relative hidden md:block group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
-                        <Search size={16} />
+                <div className="relative group" ref={searchRef}>
+                    {/* Mobile Search Toggle */}
+                    <button
+                        onClick={() => setIsSearchOpen(!isSearchOpen)}
+                        className="md:hidden p-2 text-slate-500 hover:bg-slate-50 rounded-lg"
+                    >
+                        <Search size={20} />
+                    </button>
+
+                    {/* Desktop Search / Mobile Overlay */}
+                    <div className={`${isSearchOpen ? 'absolute right-0 top-1/2 -translate-y-1/2 w-[calc(100vw-80px)] md:w-auto bg-white z-50' : 'hidden md:block relative'}`}>
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                            <Search size={16} />
+                        </div>
+                        <input
+                            type="text"
+                            autoFocus={isSearchOpen}
+                            placeholder="Search..."
+                            className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm w-full md:w-64 focus:ring-1 focus:ring-indigo-500 focus:bg-white focus:border-indigo-500 transition-all duration-200 placeholder-slate-400 text-slate-700 hover:border-slate-300 shadow-sm md:shadow-none"
+                        />
                     </div>
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm w-48 lg:w-64 focus:ring-1 focus:ring-indigo-500 focus:bg-white focus:border-indigo-500 transition-all duration-200 placeholder-slate-400 text-slate-700 hover:border-slate-300"
-                    />
                 </div>
 
                 <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block"></div>
@@ -102,7 +122,7 @@ const TopBar = ({ business, user, onMenuClick }) => {
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                 transition={{ duration: 0.2 }}
-                                className="absolute right-0 mt-3 w-80 md:w-96 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50 origin-top-right"
+                                className="absolute right-0 mt-3 w-[85vw] sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50 origin-top-right right-[-60px] sm:right-0"
                             >
                                 <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                                     <h3 className="font-semibold text-slate-800">Notifications</h3>
@@ -118,8 +138,8 @@ const TopBar = ({ business, user, onMenuClick }) => {
                                         >
                                             <div className="flex gap-3">
                                                 <div className={`mt-1 h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${notification.type === 'success' ? 'bg-green-100 text-green-600' :
-                                                        notification.type === 'alert' ? 'bg-amber-100 text-amber-600' :
-                                                            'bg-blue-100 text-blue-600'
+                                                    notification.type === 'alert' ? 'bg-amber-100 text-amber-600' :
+                                                        'bg-blue-100 text-blue-600'
                                                     }`}>
                                                     {notification.type === 'success' ? <CheckCircle size={14} /> :
                                                         notification.type === 'alert' ? <AlertCircle size={14} /> :

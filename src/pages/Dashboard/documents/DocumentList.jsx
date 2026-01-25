@@ -207,7 +207,7 @@ const DocumentList = () => {
             </DashboardPageHeader>
 
             {/* Controls Bar */}
-            <div className="flex flex-col lg:flex-row gap-4 bg-white p-2 rounded-lg border border-slate-200 shadow-sm items-center">
+            <div className="flex flex-col xl:flex-row gap-4 bg-white p-2 rounded-lg border border-slate-200 shadow-sm items-stretch xl:items-center">
                 <div className="relative flex-1 w-full group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
                     <input
@@ -218,14 +218,14 @@ const DocumentList = () => {
                         className="w-full pl-9 pr-4 py-2 bg-slate-50 border-slate-200 rounded-md text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder-slate-400 text-slate-900 border"
                     />
                 </div>
-                <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
+                <div className="h-px w-full xl:w-px xl:h-6 bg-slate-200 hidden md:block"></div>
 
                 {/* Filters */}
-                <div className="flex gap-2 w-full lg:w-auto">
+                <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
                     <select
                         value={filters.type}
                         onChange={(e) => handleFilterChange('type', e.target.value)}
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 w-full sm:w-auto"
                     >
                         <option value="all">All Types</option>
                         <option value="nda">NDA</option>
@@ -236,7 +236,7 @@ const DocumentList = () => {
                     <select
                         value={filters.status}
                         onChange={(e) => handleFilterChange('status', e.target.value)}
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 w-full sm:w-auto"
                     >
                         <option value="all">All Status</option>
                         <option value="draft">Draft</option>
@@ -245,10 +245,10 @@ const DocumentList = () => {
                     </select>
                 </div>
 
-                <div className="w-px h-6 bg-slate-200 hidden lg:block"></div>
+                <div className="h-px w-full xl:w-px xl:h-6 bg-slate-200 hidden md:block"></div>
 
-                <div className="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
-                    <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-start">
+                    <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 ml-auto xl:ml-0">
                         <button
                             onClick={() => changeViewMode('list')}
                             className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}

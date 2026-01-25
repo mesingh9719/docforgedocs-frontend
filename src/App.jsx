@@ -9,6 +9,8 @@ import Onboarding from './pages/auth/Onboarding'
 import AcceptInvite from './pages/auth/AcceptInvite'
 import VerifyEmailMessage from './pages/auth/VerifyEmailMessage'
 import VerifyEmailHandler from './pages/auth/VerifyEmailHandler'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 import DashboardHome from './pages/Dashboard/DashboardHome'
 import DashboardLayout from './components/Dashboard/DashboardLayout'
 import NdaEditor from './pages/Dashboard/templates/NdaEditor'
@@ -108,6 +110,8 @@ function App() {
             <Route element={<GuestRoute />}>
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/password-reset/:token" element={<ResetPassword />} />
             </Route>
 
             {/* Dashboard Routes - Protected */}

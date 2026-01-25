@@ -14,25 +14,23 @@ import {
 import { NavLink, useNavigate } from 'react-router-dom';
 import { logout } from '../../api/auth';
 import { usePermissions } from '../../hooks/usePermissions';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
+    const isMobile = useMediaQuery('(max-width: 1024px)');
+
+    // ... rest of state
     const [collapsed, setCollapsed] = useState(false);
     const navigate = useNavigate();
     const { can } = usePermissions();
-    const { setToken } = useAuth(); // Ensure context is used if needed, or just token removal
+    const { setToken, logout } = useAuth();
 
     const toggleSidebar = () => setCollapsed(!collapsed);
 
     const handleLogout = async () => {
-        try {
-            await logout();
-        } catch (error) {
-            console.error("Logout failed", error);
-        } finally {
-            setToken(null);
-            navigate('/');
-        }
+        await logout();
+        navigate('/');
     };
 
     const businessName = business?.name || 'DocForge';
@@ -48,7 +46,7 @@ const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
         <motion.aside
             initial={false}
             animate={
-                window.innerWidth < 1024
+                isMobile
                     ? { x: mobileMenuOpen ? 0 : -300, position: 'fixed', height: '100%' }
                     : { width: collapsed ? 80 : 280, x: 0, position: 'sticky' } // Slightly wider for premium feel
             }
@@ -57,7 +55,7 @@ const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
                 no-print
                 h-screen bg-[#0F172A] text-slate-400 flex flex-col justify-between z-50 border-r border-slate-800 shadow-2xl
                 lg:sticky lg:top-0 fixed top-0 left-0
-                ${mobileMenuOpen ? 'w-[280px]' : ''}
+                ${mobileMenuOpen ? 'w-[280px]' : (isMobile ? 'w-[280px]' : '')}
             `}
         >
             {/* Header / Logo */}

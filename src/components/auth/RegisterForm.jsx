@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../../api/auth';
-import { Loader2, User, Mail, Lock } from 'lucide-react';
+import { Loader2, User, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import AuthInput from './AuthInput';
+import GoogleLoginButton from './GoogleLoginButton';
 
 function RegisterForm() {
     const [formData, setFormData] = useState({
@@ -11,37 +14,67 @@ function RegisterForm() {
         password: '',
         password_confirmation: '',
     });
-    const [error, setError] = useState(null);
+    const [errors, setErrors] = useState({});
+    const [generalError, setGeneralError] = useState(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const { setToken } = useAuth(); // Get setToken from context
+    const { setToken } = useAuth();
+
+    // Refs for focus management
+    const nameRef = useRef(null);
+    const emailRef = useRef(null);
+    const passwordRef = useRef(null);
+    const confirmPasswordRef = useRef(null);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        // Clear specific error on change for premium feel
+        if (errors[e.target.name]) {
+            setErrors(prev => ({ ...prev, [e.target.name]: null }));
+        }
+    };
+
+    const validateForm = () => {
+        const newErrors = {};
+
+        if (!formData.name.trim()) {
+            newErrors.name = "Full name is required";
+        }
+
+        if (!formData.email) {
+            newErrors.email = "Email address is required";
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = "Please enter a valid email address";
+        }
+
+        // Strict Password Validation: Min 12 chars, alphanumeric + special
+        const password = formData.password;
+        if (!password) {
+            newErrors.password = "Password is required";
+        } else if (password.length < 12) {
+            newErrors.password = "Password must be at least 12 characters";
+        } else if (!/(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[!@#$%^&*])/.test(password)) {
+            newErrors.password = "Must contain letters, numbers, and special characters (!@#$%^&*)";
+        }
+
+        if (formData.password !== formData.password_confirmation) {
+            newErrors.password_confirmation = "Passwords do not match";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null);
+        setGeneralError(null);
 
-        // Client-side Validation (omitted for brevity in replacement matching, ensuring we keep it)
-        if (!formData.name.trim()) {
-            setError("Please enter your full name.");
-            return;
-        }
-
-        if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) {
-            setError("Please enter a valid email address.");
-            return;
-        }
-
-        if (formData.password.length < 8) {
-            setError("Password must be at least 8 characters long.");
-            return;
-        }
-
-        if (formData.password !== formData.password_confirmation) {
-            setError("Passwords do not match.");
+        if (!validateForm()) {
+            // Focus logic
+            if (!formData.name.trim()) nameRef.current?.focus();
+            else if (errors.email) emailRef.current?.focus();
+            else if (errors.password) passwordRef.current?.focus();
+            else if (errors.password_confirmation) confirmPasswordRef.current?.focus();
             return;
         }
 
@@ -49,31 +82,28 @@ function RegisterForm() {
 
         try {
             const data = await register(formData);
-
-            // Update Auth Context
             setToken(data.token);
-
-            if (data.data.business) {
-                navigate('/verify-email-message');
-            } else {
-                navigate('/verify-email-message');
-            }
+            navigate('/verify-email-message');
         } catch (err) {
-            // If the error is a specific validation error (e.g., email taken), use that map if available, 
-            // otherwise fallback to general message.
-            // Assuming simplified error handling for now as requested.
             const apiMessage = err.response?.data?.message;
             const validationErrors = err.response?.data?.errors;
 
             if (validationErrors) {
-                // If we have field-specific errors, grab the first one
-                const firstVideoError = Object.values(validationErrors)[0];
-                const msg = Array.isArray(firstVideoError) ? firstVideoError[0] : firstVideoError;
-                setError(msg);
+                // Map API errors to field errors if possible
+                const apiFieldErrors = {};
+                if (validationErrors.email) apiFieldErrors.email = validationErrors.email[0];
+                if (validationErrors.password) apiFieldErrors.password = validationErrors.password[0];
+                if (validationErrors.name) apiFieldErrors.name = validationErrors.name[0];
+
+                setErrors(apiFieldErrors);
+
+                // Fallback for generic display if strictly needed
+                if (Object.keys(apiFieldErrors).length === 0) {
+                    setGeneralError(apiMessage || 'Registration failed. Please fix the errors.');
+                }
             } else {
-                setError(apiMessage || 'Registration failed. Please try again.');
+                setGeneralError(apiMessage || 'Registration failed. Please try again.');
             }
-            console.error(err);
         } finally {
             setLoading(false);
         }
@@ -81,72 +111,80 @@ function RegisterForm() {
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            {error && (
-                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm mb-2 border border-red-100 flex items-center gap-2">
-                    <span className="block w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                    {error}
+            <AnimatePresence>
+                {generalError && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm border border-red-100 flex items-center gap-2 overflow-hidden"
+                    >
+                        <AlertCircle size={16} className="shrink-0" />
+                        {generalError}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Google Login Section */}
+            <div className="mb-2">
+                <GoogleLoginButton text="Sign up with Google" />
+            </div>
+
+            <div className="relative flex items-center justify-center mb-2">
+                <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200"></div>
                 </div>
-            )}
+                <span className="relative z-10 bg-white px-2 text-xs text-slate-400 font-medium uppercase tracking-wider">Or continue with email</span>
+            </div>
+
 
             <div className="space-y-4">
-                <div className="relative group">
-                    <User className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
-                    <input
-                        type="text"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Full Name"
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 block w-full pl-12 p-3.5 transition-all outline-none"
-                        required
-                    />
-                </div>
-
-                <div className="relative group">
-                    <Mail className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
-                    <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="Email Address"
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 block w-full pl-12 p-3.5 transition-all outline-none"
-                        required
-                    />
-                </div>
-
-                <div className="relative group">
-                    <Lock className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
-                    <input
-                        type="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        placeholder="Password"
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 block w-full pl-12 p-3.5 transition-all outline-none"
-                        required
-                        minLength={8}
-                    />
-                </div>
-
-                <div className="relative group">
-                    <Lock className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
-                    <input
-                        type="password"
-                        name="password_confirmation"
-                        value={formData.password_confirmation}
-                        onChange={handleChange}
-                        placeholder="Confirm Password"
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 block w-full pl-12 p-3.5 transition-all outline-none"
-                        required
-                    />
-                </div>
+                <AuthInput
+                    icon={User}
+                    name="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={handleChange}
+                    placeholder="Full Name"
+                    ref={nameRef}
+                    error={errors.name}
+                />
+                <AuthInput
+                    icon={Mail}
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Email Address"
+                    ref={emailRef}
+                    error={errors.email}
+                />
+                <AuthInput
+                    icon={Lock}
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Password (12+ chars, special char & number)"
+                    ref={passwordRef}
+                    error={errors.password}
+                />
+                <AuthInput
+                    icon={Lock}
+                    name="password_confirmation"
+                    type="password"
+                    value={formData.password_confirmation}
+                    onChange={handleChange}
+                    placeholder="Confirm Password"
+                    ref={confirmPasswordRef}
+                    error={errors.password_confirmation}
+                />
             </div>
 
             <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
+                className="w-full bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 relative overflow-hidden active:scale-[0.98]"
             >
                 {loading ? (
                     <>

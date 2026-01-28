@@ -24,7 +24,7 @@ function Footer() {
                             <li><Link to="/features" className="hover:text-slate-900 transition-colors">Features</Link></li>
                             <li><Link to="/pricing" className="hover:text-slate-900 transition-colors">Pricing</Link></li>
                             <li><Link to="/changelog" className="hover:text-slate-900 transition-colors">Changelog</Link></li>
-                            <li><Link to="/blog" className="hover:text-slate-900 transition-colors">Blog</Link></li>
+                            <li><Link to="/blog" className="hover:text-slate-900 transition-colors">Blogs</Link></li>
                         </ul>
                     </div>
 

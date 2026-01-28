@@ -203,8 +203,8 @@ const BlogList = () => {
                                             <h2 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-indigo-600 transition-colors line-clamp-2">
                                                 {post.title}
                                             </h2>
-                                            <p className="text-slate-600 text-sm leading-relaxed mb-6 flex-1 line-clamp-3">
-                                                {post.summary || "Read the full article to learn more..."}
+                                            <p className="text-slate-600 text-sm leading-relaxed mb-6 flex-1 line-clamp-3 break-words">
+                                                {post.summary?.replace(/&nbsp;/g, ' ') || "Read the full article to learn more..."}
                                             </p>
                                             <div className="flex items-center justify-between pt-6 border-t border-slate-50 mt-auto">
                                                 <span className="text-slate-700 text-xs font-medium flex items-center gap-2">

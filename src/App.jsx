@@ -11,6 +11,7 @@ import VerifyEmailMessage from './pages/auth/VerifyEmailMessage'
 import VerifyEmailHandler from './pages/auth/VerifyEmailHandler'
 import ForgotPassword from './pages/auth/ForgotPassword'
 import ResetPassword from './pages/auth/ResetPassword'
+import AuthCallback from './pages/auth/AuthCallback'
 import DashboardHome from './pages/Dashboard/DashboardHome'
 import DashboardLayout from './components/Dashboard/DashboardLayout'
 import NdaEditor from './pages/Dashboard/templates/NdaEditor'
@@ -116,6 +117,7 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/password-reset/:token" element={<ResetPassword />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
             </Route>
 
             {/* Dashboard Routes - Protected */}

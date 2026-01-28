@@ -140,8 +140,8 @@ const BlogPost = () => {
                         )}
 
                         <div
-                            className="prose prose-lg prose-indigo prose-headings:font-bold prose-headings:text-slate-900 prose-p:text-slate-600 prose-p:leading-8 prose-li:text-slate-600 max-w-none"
-                            dangerouslySetInnerHTML={{ __html: post.content }}
+                            className="prose prose-lg prose-indigo prose-headings:font-bold prose-headings:text-slate-900 prose-p:text-slate-600 prose-p:leading-8 prose-li:text-slate-600 max-w-none break-words"
+                            dangerouslySetInnerHTML={{ __html: post.content.replace(/&nbsp;/g, ' ') }}
                         />
 
                         {/* Article Footer */}

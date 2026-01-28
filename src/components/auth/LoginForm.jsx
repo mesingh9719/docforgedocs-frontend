@@ -1,51 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { login } from '../../api/auth';
-import { Loader2, Mail, Lock } from 'lucide-react';
+import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import AuthInput from './AuthInput';
+import GoogleLoginButton from './GoogleLoginButton';
 
 function LoginForm() {
     const location = useLocation();
     const navigate = useNavigate();
     const { setToken } = useAuth();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState(location.state?.message || null);
+
+    const [formData, setFormData] = useState({
+        email: '',
+        password: ''
+    });
+    const [errors, setErrors] = useState({});
+    const [generalError, setGeneralError] = useState(location.state?.message || null);
     const [loading, setLoading] = useState(false);
 
-    // ... useEffect ...
+    // Refs for focus management
+    const emailRef = useRef(null);
+    const passwordRef = useRef(null);
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (errors[e.target.name]) {
+            setErrors(prev => ({ ...prev, [e.target.name]: null }));
+        }
+    };
+
+    const validateForm = () => {
+        const newErrors = {};
+        if (!formData.email) {
+            newErrors.email = "Email address is required";
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            newErrors.email = "Please enter a valid email address";
+        }
+
+        if (!formData.password) {
+            newErrors.password = "Password is required";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null);
+        setGeneralError(null);
 
-        // Client-side validation
-        if (!email || !/\S+@\S+\.\S+/.test(email)) {
-            setError("Please enter a valid email address");
-            return;
-        }
-
-        if (!password) {
-            setError("Please enter your password");
+        if (!validateForm()) {
+            if (!formData.email || !/\S+@\S+\.\S+/.test(formData.email)) emailRef.current?.focus();
+            else if (!formData.password) passwordRef.current?.focus();
             return;
         }
 
         setLoading(true);
 
         try {
-            const data = await login({ email, password });
-
-            // Update Auth Context State
+            const data = await login(formData);
             setToken(data.token);
-
-            // Check if user has a business
             if (data.data.business) {
                 navigate('/dashboard');
             } else {
                 navigate('/onboarding');
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed');
+            const apiMessage = err.response?.data?.message;
+            setGeneralError(apiMessage || 'Login failed. Please check your credentials.');
         } finally {
             setLoading(false);
         }
@@ -53,37 +77,53 @@ function LoginForm() {
 
     return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            {error && (
-                <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm mb-2 border border-red-100 flex items-center gap-2">
-                    <span className="block w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                    {error}
+            <AnimatePresence>
+                {generalError && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm border border-red-100 flex items-center gap-2 overflow-hidden"
+                    >
+                        <AlertCircle size={16} className="shrink-0" />
+                        {generalError}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Google Login Section */}
+            <div className="mb-2">
+                <GoogleLoginButton text="Sign in with Google" />
+            </div>
+
+            <div className="relative flex items-center justify-center mb-2">
+                <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-slate-200"></div>
                 </div>
-            )}
+                <span className="relative z-10 bg-white px-2 text-xs text-slate-400 font-medium uppercase tracking-wider">Or sign in with email</span>
+            </div>
 
             <div className="space-y-4">
-                <div className="relative group">
-                    <Mail className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email Address"
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 block w-full pl-12 p-3.5 transition-all outline-none"
-                        required
-                    />
-                </div>
-
-                <div className="relative group">
-                    <Lock className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={20} />
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Password"
-                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 block w-full pl-12 p-3.5 transition-all outline-none"
-                        required
-                    />
-                </div>
+                <AuthInput
+                    icon={Mail}
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Email Address"
+                    ref={emailRef}
+                    error={errors.email}
+                />
+                <AuthInput
+                    icon={Lock}
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Password"
+                    ref={passwordRef}
+                    error={errors.password}
+                />
             </div>
 
             <div className="flex items-center justify-between text-sm">
@@ -99,7 +139,7 @@ function LoginForm() {
             <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+                className="w-full bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 relative overflow-hidden active:scale-[0.98]"
             >
                 {loading ? (
                     <>

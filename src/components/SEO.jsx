@@ -7,7 +7,8 @@ const SEO = ({
     keywords,
     image,
     url,
-    type = 'website'
+    type = 'website',
+    jsonLd
 }) => {
     const siteTitle = 'DocForge';
     const defaultDescription = 'Secure usage of NDAs, Proposals, and Invoices for modern businesses. Streamline your document workflow with DocForge.';
@@ -36,13 +37,15 @@ const SEO = ({
             <meta property="og:site_name" content={siteTitle} />
             <meta property="og:locale" content="en_US" />
 
-            {/* Twitter */}
-            <meta name="twitter:card" content="summary_large_image" />
-            <meta name="twitter:url" content={metaUrl} />
-            <meta name="twitter:title" content={fullTitle} />
-            <meta name="twitter:description" content={metaDescription} />
             <meta name="twitter:image" content={metaImage} />
             <meta name="twitter:creator" content="@DocForgeApp" />
+
+            {/* Structured Data */}
+            {jsonLd && (
+                <script type="application/ld+json">
+                    {JSON.stringify(jsonLd)}
+                </script>
+            )}
         </Helmet>
     );
 };

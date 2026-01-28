@@ -1,7 +1,19 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import SignatureLayer from '../../../components/Nda/Signatures/SignatureLayer';
 
-function NdaDocumentPreview({ data, content, zoom = 1, printing = false, readOnly = false }) {
+function NdaDocumentPreview({
+    data,
+    content,
+    zoom = 1,
+    printing = false,
+    readOnly = false,
+    // Signature Props
+    signatures = [],
+    onUpdateSignature,
+    onRemoveSignature,
+    onEditSignature
+}) {
 
     // Helper to render placeholder or value
     const RenderField = ({ value, placeholder, className = "" }) => {
@@ -49,11 +61,76 @@ function NdaDocumentPreview({ data, content, zoom = 1, printing = false, readOnl
                 transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
             }}
-            className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[11pt] leading-relaxed font-serif relative mb-20 origin-top"
+            className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[11pt] leading-relaxed font-serif relative mb-20 origin-top shadow-lg"
         >
             {/* Realistic Paper Effects - Hide when printing */}
             {!printing && (
                 <div className="no-print absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>
+            )}
+
+            {/* Signature Layer Overlay */}
+            {!printing && !readOnly && (
+                <SignatureLayer
+                    signatures={signatures}
+                    onUpdateSignature={onUpdateSignature}
+                    onRemoveSignature={onRemoveSignature}
+                    onEditSignature={onEditSignature}
+                />
+            )}
+
+            {/* Flattened Static Signatures for PDF/Print */}
+            {(printing || readOnly) && signatures.length > 0 && (
+                <div className="absolute inset-0 z-50 pointer-events-none">
+                    {signatures.map(sig => (
+                        <div
+                            key={sig.id}
+                            style={{
+                                position: 'absolute',
+                                left: `${sig.position.x}px`,
+                                top: `${sig.position.y}px`,
+                                width: '200px', // Approximate width
+                                height: '60px', // Approximate height
+                                borderBottom: '1px solid #000',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'flex-end'
+                            }}
+                        >
+                            {/* Signee Name (Script Style) or Image */}
+                            <div style={{
+                                fontFamily: 'cursive',
+                                fontSize: '14pt',
+                                color: '#1e3a8a',
+                                marginBottom: '4px'
+                            }}>
+                                {sig.metadata.signeeName || 'Sign Here'}
+                            </div>
+
+                            {/* Label */}
+                            <div style={{
+                                fontSize: '8pt',
+                                color: '#64748b',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                            }}>
+                                {sig.metadata.type === 'date' ? 'Date' : 'Authorized Signature'}
+                            </div>
+
+                            {/* Optional Email/Details */}
+                            {sig.metadata.signeeEmail && (
+                                <div style={{
+                                    fontSize: '7pt',
+                                    color: '#94a3b8',
+                                    position: 'absolute',
+                                    bottom: '-14px',
+                                    left: '0'
+                                }}>
+                                    {sig.metadata.signeeEmail}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
             )}
 
             <div className="p-[10mm] relative z-10">

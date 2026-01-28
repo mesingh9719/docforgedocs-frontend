@@ -127,8 +127,11 @@ export const useNdaDocument = (id) => {
             }
         } catch (error) {
             console.error("Failed to save", error);
-            toast.error("Failed to save document");
-            throw error;
+            // If it's not a validation error (which we want to handle in UI), show generic toast
+            if (!error.response || error.response.status !== 422) {
+                toast.error("Failed to save document");
+            }
+            throw error; // Propagate error to component for specific handling (e.g. 422 duplicate name)
         } finally {
             setTimeout(() => setIsSaving(false), 500);
         }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, FileText, MoreVertical, Search, Filter, LayoutGrid, List as ListIcon, Clock, User, ArrowUpRight } from 'lucide-react';
+import { Plus, FileText, MoreVertical, Search, Filter, LayoutGrid, List as ListIcon, Clock, User, ArrowUpRight, CheckSquare, Square, Trash2, RotateCcw, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getDocuments, getDocumentShares } from '../../../api/documents';
 import TemplateModal from '../../../components/Dashboard/TemplateModal';
 import ShareHistoryModal from '../../../components/ShareHistoryModal';
@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../../hooks/usePermissions';
 import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHeader';
 import toast from 'react-hot-toast';
+import axios from '../../../api/axios';
+import { formatDistanceToNow } from 'date-fns';
 
 // --- Sub-Components for cleaner rendering ---
 
@@ -59,10 +61,20 @@ const DocumentGridItem = ({ doc, navigate, getStatusStyle, variants, onViewHisto
 
         <div className="flex items-center justify-between pt-3 border-t border-slate-100 mt-auto">
             <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-700 border border-indigo-200">
-                    ME
-                </div>
-                <span className="text-xs font-medium text-slate-500">You</span>
+                {doc.creator?.avatar_url ? (
+                    <img
+                        src={doc.creator.avatar_url}
+                        alt={doc.creator.name}
+                        className="w-5 h-5 rounded-full object-cover border border-slate-200"
+                    />
+                ) : (
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] font-bold text-white border border-transparent shadow-sm">
+                        {doc.creator?.name ? doc.creator.name.substring(0, 2).toUpperCase() : 'NA'}
+                    </div>
+                )}
+                <span className="text-xs font-medium text-slate-600 truncate max-w-[100px]" title={doc.creator?.name}>
+                    {doc.creator?.name || 'Unknown'}
+                </span>
             </div>
             <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1">
                 <Clock size={10} /> {new Date(doc.updated_at).toLocaleDateString()}
@@ -71,36 +83,49 @@ const DocumentGridItem = ({ doc, navigate, getStatusStyle, variants, onViewHisto
     </motion.div>
 );
 
-const DocumentListItem = ({ doc, navigate, getStatusStyle, variants, permissions, onViewHistory }) => (
+const DocumentListItem = ({ doc, navigate, getStatusStyle, variants, permissions, onViewHistory, isSelected, toggleSelect, showCheckbox, activeMenuId, setActiveMenuId, handleView, handleDelete, handleRestore, viewMode }) => (
     <motion.div
         variants={variants}
-        className="min-w-[800px] px-6 py-3 grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-6 items-center hover:bg-slate-50 transition-colors group cursor-pointer border-l-2 border-transparent hover:border-indigo-600 border-b border-slate-50 last:border-b-0"
+        className={`px-6 py-3 grid grid-cols-[auto_2fr_1fr_1fr_1fr_1fr_auto] gap-6 items-center hover:bg-slate-50 transition-colors group cursor-pointer border-l-2 border-transparent hover:border-indigo-600 border-b border-slate-50 last:border-b-0 ${isSelected ? 'bg-indigo-50/30' : ''}`}
         onClick={() => navigate(`/documents/${doc.type?.slug || doc.type}/${doc.id}`)}
     >
+        {/* Checkbox */}
+        <div onClick={(e) => { e.stopPropagation(); toggleSelect(doc.id); }}>
+            {isSelected ? <CheckSquare size={18} className="text-indigo-600" /> : <Square size={18} className="text-slate-300 group-hover:text-slate-400" />}
+        </div>
+
         <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+            <div className={`p-2 rounded-lg transition-colors ${isSelected ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-600 group-hover:text-white'}`}>
                 <FileText size={18} strokeWidth={2} />
             </div>
             <div>
-                <span className="font-semibold text-slate-900 block text-sm group-hover:text-indigo-600 transition-colors">{doc.title || doc.name}</span>
+                <span className={`font-semibold block text-sm transition-colors ${isSelected ? 'text-indigo-900' : 'text-slate-900 group-hover:text-indigo-600'}`}>{doc.title || doc.name}</span>
             </div>
         </div>
         <div className="text-sm font-medium text-slate-500 capitalize">{doc.type?.name || doc.type}</div>
         <div>
-            <span className={`px-2 py-0.5 rounded text-xs font-semibold border ${getStatusStyle(doc.status)}`}>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusStyle(doc.status)}`}>
                 {doc.status}
             </span>
         </div>
         <div className="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
-            <Clock size={12} className="text-slate-400" /> {new Date(doc.updated_at).toLocaleDateString()}
+            <Clock size={12} className="text-slate-400" /> {formatDistanceToNow(new Date(doc.updated_at), { addSuffix: true })}
         </div>
         <div className="text-xs text-slate-500 flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-200">
-                ME
-            </div>
-            <span>You</span>
+            {doc.creator?.avatar_url ? (
+                <img
+                    src={doc.creator.avatar_url}
+                    alt={doc.creator.name}
+                    className="w-6 h-6 rounded-full object-cover border border-slate-200 shadow-sm"
+                />
+            ) : (
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-[10px] font-bold text-white border border-transparent shadow-sm">
+                    {doc.creator?.name ? doc.creator.name.substring(0, 2).toUpperCase() : 'NA'}
+                </div>
+            )}
+            <span className="font-medium text-slate-700">{doc.creator?.name || 'Unknown'}</span>
         </div>
-        <div className="text-right flex items-center justify-end gap-2">
+        <div className="text-right flex items-center justify-end gap-2 relative">
             <button
                 onClick={(e) => onViewHistory(e, doc.id)}
                 className="p-1.5 hover:bg-indigo-50 rounded text-slate-400 hover:text-indigo-600 transition-colors"
@@ -108,11 +133,48 @@ const DocumentListItem = ({ doc, navigate, getStatusStyle, variants, permissions
             >
                 <Mail size={16} />
             </button>
-            {(permissions.canEdit || permissions.canDelete) && (
-                <button className="p-1.5 hover:bg-slate-200 rounded text-slate-400 hover:text-indigo-600 transition-colors">
-                    <MoreVertical size={16} />
-                </button>
-            )}
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveMenuId(activeMenuId === doc.id ? null : doc.id);
+                }}
+                className="p-1.5 hover:bg-slate-200 rounded text-slate-400 hover:text-indigo-600 transition-colors"
+            >
+                <MoreVertical size={16} />
+            </button>
+            {/* Context Menu */}
+            <AnimatePresence>
+                {activeMenuId === doc.id && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 0, x: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="absolute right-0 top-8 w-48 bg-white border border-slate-100 rounded-xl shadow-xl z-50 p-1.5 flex flex-col gap-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {viewMode === 'active' ? (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        navigate(`/documents/${doc.type?.slug || doc.type}/${doc.id}`);
+                                        setActiveMenuId(null);
+                                    }}
+                                    className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition-colors"
+                                >
+                                    <Eye size={16} /> View/Edit
+                                </button>
+                                <button onClick={() => { handleDelete(doc.id); setActiveMenuId(null); }} className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                    <Trash2 size={16} /> Delete
+                                </button>
+                            </>
+                        ) : (
+                            <button onClick={() => { handleRestore(doc.id); setActiveMenuId(null); }} className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+                                <RotateCcw size={16} /> Restore
+                            </button>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     </motion.div>
 );
@@ -128,6 +190,19 @@ const DocumentList = () => {
     const [viewMode, setViewMode] = useState(() => localStorage.getItem('documentViewMode') || 'list');
     const [isLoading, setIsLoading] = useState(true);
     const [documents, setDocuments] = useState([]);
+
+    // Advanced Features State
+    const [trashMode, setTrashMode] = useState(false); // Toggle between Active and Trash
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [pagination, setPagination] = useState({
+        current_page: 1,
+        last_page: 1,
+        per_page: 10,
+        total: 0,
+        from: 0,
+        to: 0
+    });
+    const [activeMenuId, setActiveMenuId] = useState(null);
 
     // Filter States
     const [filters, setFilters] = useState({
@@ -150,23 +225,37 @@ const DocumentList = () => {
     };
 
     // Fetch Documents Logic
-    const fetchDocuments = useCallback(async () => {
+    const fetchDocuments = useCallback(async (page = 1) => {
         try {
             setIsLoading(true);
             const params = {
+                page,
+                per_page: pagination.per_page,
                 search: filters.search,
                 status: filters.status,
-                type: filters.type
+                type: filters.type,
+                view_mode: trashMode ? 'trash' : 'active'
             };
-            const data = await getDocuments(params);
-            setDocuments(data.data || []);
+            const response = await axios.get('/documents', { params });
+            // API returns Resource Collection: { data: [...], meta: { ... }, links: { ... } }
+            setDocuments(response.data.data || []);
+            if (response.data.meta) {
+                setPagination(prev => ({
+                    ...prev,
+                    current_page: response.data.meta.current_page,
+                    last_page: response.data.meta.last_page,
+                    total: response.data.meta.total,
+                    from: response.data.meta.from,
+                    to: response.data.meta.to
+                }));
+            }
         } catch (error) {
             console.error("Failed to fetch documents", error);
             setDocuments([]);
         } finally {
             setIsLoading(false);
         }
-    }, [filters]);
+    }, [filters, trashMode, pagination.per_page]);
 
     // Share History Logic
     const [isShareHistoryOpen, setIsShareHistoryOpen] = useState(false);
@@ -182,7 +271,6 @@ const DocumentList = () => {
             setShareHistory(data.data || []);
         } catch (error) {
             console.error("Failed to load history", error);
-            // setShareHistory([]); // Optional: clear on error or show toast
         } finally {
             setIsHistoryLoading(false);
         }
@@ -191,10 +279,17 @@ const DocumentList = () => {
     // Debounced Search Effect
     useEffect(() => {
         const timer = setTimeout(() => {
-            fetchDocuments();
+            fetchDocuments(1);
         }, 300);
         return () => clearTimeout(timer);
     }, [fetchDocuments]);
+
+    // Close menu on outside click
+    useEffect(() => {
+        const handleClickOutside = () => setActiveMenuId(null);
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -208,6 +303,60 @@ const DocumentList = () => {
             default: return 'bg-slate-100 text-slate-700 border-slate-200';
         }
     };
+
+    // Selection Logic
+    const toggleSelectAll = () => {
+        if (selectedIds.length === documents.length && documents.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(documents.map(d => d.id));
+        }
+    };
+
+    const toggleSelect = (id) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    // Actions
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to move this document to trash?')) return;
+        try {
+            await axios.delete(`/documents/${id}`);
+            toast.success('Document moved to trash');
+            fetchDocuments(pagination.current_page);
+        } catch (error) {
+            toast.error('Failed to delete document');
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!window.confirm(`Delete ${selectedIds.length} documents?`)) return;
+        try {
+            await axios.post('/documents/bulk-delete', { ids: selectedIds });
+            toast.success(`${selectedIds.length} documents moved to trash`);
+            setSelectedIds([]);
+            fetchDocuments(pagination.current_page);
+        } catch (error) {
+            toast.error('Failed to bulk delete');
+        }
+    };
+
+    const handleRestore = async (id) => {
+        try {
+            await axios.post(`/documents/${id}/restore`);
+            toast.success('Document restored');
+            fetchDocuments(pagination.current_page);
+        } catch (error) {
+            toast.error('Failed to restore document');
+        }
+    };
+
+    const handleView = (doc) => {
+        navigate(`/documents/${doc.document_type?.slug || doc.type}/${doc.id}`);
+    };
+
 
     // Animation Variants
     const containerVariants = {
@@ -231,60 +380,80 @@ const DocumentList = () => {
                 title="Documents"
                 subtitle="Manage, organize, and track your legal documents."
             >
-                {permissions.canCreate && (
+                <div className="flex items-center gap-3">
+                    {/* Trash Toggle */}
                     <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20 text-sm"
+                        onClick={() => {
+                            setTrashMode(prev => !prev);
+                            setPagination(p => ({ ...p, current_page: 1 }));
+                            setSelectedIds([]);
+                        }}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${trashMode
+                            ? 'bg-red-100 text-red-700 border border-red-200'
+                            : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                            }`}
                     >
-                        <Plus size={18} strokeWidth={2.5} />
-                        <span>New Document</span>
+                        {trashMode ? <RotateCcw size={16} /> : <Trash2 size={16} />}
+                        {trashMode ? 'Back to All' : 'Trash'}
                     </button>
-                )}
+
+                    {permissions.canCreate && !trashMode && (
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20 text-sm"
+                        >
+                            <Plus size={18} strokeWidth={2.5} />
+                            <span>New Document</span>
+                        </button>
+                    )}
+                </div>
             </DashboardPageHeader>
 
-            {/* Controls Bar */}
-            <div className="flex flex-col xl:flex-row gap-4 bg-white p-2 rounded-lg border border-slate-200 shadow-sm items-stretch xl:items-center">
-                <div className="relative flex-1 w-full group">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={16} />
+            {/* Controls Bar - Styled to match Team.jsx Search Bar */}
+            <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col xl:flex-row gap-4 justify-between items-center">
+                <div className="relative flex-1 w-full xl:max-w-lg group">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
                     <input
                         type="text"
                         value={filters.search}
                         onChange={(e) => handleFilterChange('search', e.target.value)}
-                        placeholder="Search by name..."
-                        className="w-full pl-9 pr-4 py-2 bg-slate-50 border-slate-200 rounded-md text-sm focus:bg-white focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder-slate-400 text-slate-900 border"
+                        placeholder="Search documents by name..."
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border-transparent rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all placeholder-slate-400 text-slate-900 outline-none"
                     />
                 </div>
-                <div className="h-px w-full xl:w-px xl:h-6 bg-slate-200 hidden md:block"></div>
 
                 {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto">
-                    <select
-                        value={filters.type}
-                        onChange={(e) => handleFilterChange('type', e.target.value)}
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 w-full sm:w-auto"
-                    >
-                        <option value="all">All Types</option>
-                        <option value="nda">NDA</option>
-                        <option value="proposal">Proposal</option>
-                        <option value="invoice">Invoice</option>
-                    </select>
+                <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto items-center">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Filter size={16} className="text-slate-400" />
+                        <select
+                            value={filters.type}
+                            onChange={(e) => handleFilterChange('type', e.target.value)}
+                            className="px-3 py-2 bg-slate-50 border-transparent hover:bg-slate-100 rounded-lg text-sm text-slate-600 font-medium outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer transition-colors w-full sm:w-auto"
+                        >
+                            <option value="all">All Types</option>
+                            <option value="nda">NDA</option>
+                            <option value="proposal">Proposal</option>
+                            <option value="invoice">Invoice</option>
+                        </select>
+                    </div>
+
+                    <div className="w-px h-6 bg-slate-200 hidden sm:block"></div>
 
                     <select
                         value={filters.status}
                         onChange={(e) => handleFilterChange('status', e.target.value)}
-                        className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 outline-none focus:ring-1 focus:ring-indigo-500 w-full sm:w-auto"
+                        className="px-3 py-2 bg-slate-50 border-transparent hover:bg-slate-100 rounded-lg text-sm text-slate-600 font-medium outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer transition-colors w-full sm:w-auto"
                     >
                         <option value="all">All Status</option>
                         <option value="draft">Draft</option>
                         <option value="sent">Sent</option>
                         <option value="signed">Signed</option>
                     </select>
-                </div>
 
-                <div className="h-px w-full xl:w-px xl:h-6 bg-slate-200 hidden md:block"></div>
+                    <div className="w-px h-6 bg-slate-200 hidden sm:block"></div>
 
-                <div className="flex items-center gap-3 w-full xl:w-auto justify-between xl:justify-start">
-                    <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200 ml-auto xl:ml-0">
+                    <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                         <button
                             onClick={() => changeViewMode('list')}
                             className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
@@ -300,6 +469,23 @@ const DocumentList = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Bulk Actions (if selected) */}
+            {selectedIds.length > 0 && (
+                <div className="flex items-center gap-4 w-full bg-slate-50 p-2 rounded-lg border border-slate-200 animate-in fade-in slide-in-from-top-2">
+                    <span className="text-sm font-semibold text-slate-700 ml-2">
+                        {selectedIds.length} selected
+                    </span>
+                    <div className="h-6 w-px bg-slate-300"></div>
+                    {/* Assuming 'active' view for bulk delete, adjust if trash view is added */}
+                    <button
+                        onClick={handleBulkDelete}
+                        className="flex items-center gap-2 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                    >
+                        <Trash2 size={16} /> Delete Selected
+                    </button>
+                </div>
+            )}
 
             {/* Content Area */}
             <div className={`${viewMode === 'list' ? 'bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden' : ''}`}>
@@ -320,7 +506,12 @@ const DocumentList = () => {
                         {viewMode === 'list' ? (
                             // LIST VIEW
                             <div className="min-w-[800px]">
-                                <div className="bg-slate-50 border-b border-slate-200 px-6 py-3 grid grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-6 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                <div className="bg-slate-50 border-b border-slate-200 px-6 py-3 grid grid-cols-[auto_2fr_1fr_1fr_1fr_1fr_auto] gap-6 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                    <div className="w-6">
+                                        <button onClick={toggleSelectAll}>
+                                            {documents.length > 0 && selectedIds.length === documents.length ? <CheckSquare size={18} className="text-slate-900" /> : <Square size={18} />}
+                                        </button>
+                                    </div>
                                     <div>Document Name</div>
                                     <div>Type</div>
                                     <div>Status</div>
@@ -338,6 +529,15 @@ const DocumentList = () => {
                                             variants={itemVariants}
                                             permissions={permissions}
                                             onViewHistory={handleViewHistory}
+                                            isSelected={selectedIds.includes(doc.id)}
+                                            toggleSelect={toggleSelect}
+                                            showCheckbox={true}
+                                            activeMenuId={activeMenuId}
+                                            setActiveMenuId={setActiveMenuId}
+                                            handleView={handleView}
+                                            handleDelete={handleDelete}
+                                            handleRestore={handleRestore}
+                                            viewMode={trashMode ? 'trash' : 'active'}
                                         />
                                     ))}
                                 </div>
@@ -364,21 +564,56 @@ const DocumentList = () => {
                         <div className="p-4 bg-slate-50 rounded-full mb-4 ring-1 ring-slate-100">
                             <FileText size={32} className="text-slate-300" strokeWidth={1.5} />
                         </div>
-                        <h3 className="text-lg font-bold text-slate-900 mb-2">No documents created yet</h3>
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">No documents found</h3>
                         <p className="text-slate-500 max-w-sm mx-auto mb-6 text-sm leading-relaxed">
-                            Start by creating your first document using one of our templates.
+                            {trashMode ? "Trash is empty." : "Start by creating your first document."}
                         </p>
-                        {permissions.canCreate && (
-                            <button
-                                onClick={() => setIsModalOpen(true)}
-                                className="px-5 py-2 bg-indigo-600 border border-transparent text-white font-semibold rounded-lg hover:bg-indigo-700 transition-all shadow-sm"
-                            >
-                                Create Document
-                            </button>
-                        )}
                     </div>
                 )}
             </div>
+            {/* Pagination Footer */}
+            {pagination.total > 0 && (
+                <div className="border-t border-slate-200 p-4 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm mt-auto rounded-b-xl">
+                    <div className="text-slate-500 font-medium">
+                        Showing <span className="text-slate-900 font-bold">{pagination.from}</span> to <span className="text-slate-900 font-bold">{pagination.to}</span> of <span className="text-slate-900 font-bold">{pagination.total}</span> results
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        {/* Page Size */}
+                        <select
+                            value={pagination.per_page}
+                            onChange={(e) => setPagination(p => ({ ...p, per_page: Number(e.target.value), current_page: 1 }))}
+                            className="border border-slate-200 rounded-lg text-sm py-1.5 pl-2 pr-8 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 cursor-pointer font-medium text-slate-600"
+                        >
+                            <option value={10}>10 per page</option>
+                            <option value={20}>20 per page</option>
+                            <option value={50}>50 per page</option>
+                        </select>
+
+                        {/* Nav Buttons */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => fetchDocuments(pagination.current_page - 1)}
+                                disabled={pagination.current_page <= 1}
+                                className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <span className="px-2 font-bold text-slate-700 min-w-[20px] text-center">
+                                {pagination.current_page}
+                            </span>
+                            <button
+                                onClick={() => fetchDocuments(pagination.current_page + 1)}
+                                disabled={pagination.current_page >= pagination.last_page}
+                                className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
 
             {/* Template Selection Modal */}
             <TemplateModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />

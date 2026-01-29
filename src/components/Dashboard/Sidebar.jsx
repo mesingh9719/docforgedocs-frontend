@@ -39,7 +39,7 @@ const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
 
         { icon: FileText, label: 'Documents', path: '/documents', permission: 'document.view' },
 
-        { icon: PenTool, label: 'Signatures', path: '/signatures', permission: 'signature.view' },
+        { icon: PenTool, label: 'Signatures', path: '/signatures', permission: 'settings.signature' },
 
         { icon: Users, label: 'Team', path: '/team', permission: 'team.view' },
 

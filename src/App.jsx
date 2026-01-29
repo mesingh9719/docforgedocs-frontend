@@ -19,6 +19,7 @@ import InvoiceEditor from './pages/Dashboard/templates/InvoiceEditor'
 import DocumentList from './pages/Dashboard/documents/DocumentList'
 import Settings from './pages/Dashboard/settings/Settings'
 import Team from './pages/Dashboard/team/Team'
+import SignatureModule from './pages/Dashboard/signature-module/SignatureModule'
 import AuthLayout from './components/auth/AuthLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Features from './pages/Landing/Features'
@@ -137,6 +138,11 @@ function App() {
                 {/* Team - View Permission */}
                 <Route element={<ProtectedRoute permission="team.view" />}>
                   <Route path='/team' element={<Team />} />
+                </Route>
+
+                {/* Signatures - Manage Permission */}
+                <Route element={<ProtectedRoute permission="settings.signature" />}>
+                  <Route path='/signatures' element={<SignatureModule />} />
                 </Route>
 
                 {/* Settings - Manage Permission */}

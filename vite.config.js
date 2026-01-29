@@ -9,5 +9,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   optimizeDeps: {
     include: ['@dnd-kit/core', '@dnd-kit/utilities', '@dnd-kit/modifiers']
-  }
+  },
+  server: {
+    watch: {
+      usePolling: true,
+      interval: 1000,
+      ignored: ['**/node_modules/**', '**/.git/**'],
+    },
+  },
 })

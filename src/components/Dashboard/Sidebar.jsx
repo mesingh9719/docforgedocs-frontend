@@ -10,7 +10,8 @@ import {
     FileText,
     Building2,
     Shield,
-    PenTool
+    PenTool,
+    ScrollText
 } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -39,7 +40,7 @@ const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
 
         { icon: FileText, label: 'Documents', path: '/documents', permission: 'document.view' },
 
-        { icon: PenTool, label: 'Signatures', path: '/signatures', permission: 'settings.signature' },
+        { icon: ScrollText, label: 'Signatures', path: '/signatures/list', permission: 'settings.signature' },
 
         { icon: Users, label: 'Team', path: '/team', permission: 'team.view' },
 

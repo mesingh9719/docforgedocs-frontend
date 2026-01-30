@@ -3,77 +3,115 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Edit2, Trash2, PenTool } from 'lucide-react';
 
-const SignatureField = ({ id, data, left, top, onEdit, onDelete, isSelected }) => {
+// Non-hook visual component for DragOverlay
+export const SignatureFieldVisual = ({ style, data, isSelected, isDragging, onEdit, onDelete, listeners, attributes, setNodeRef, readOnly = false }) => {
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={`
+                group flex items-center gap-2 bg-white/95 backdrop-blur-md 
+                border shadow-sm transition-all duration-200 py-1.5 px-3 rounded-full
+                ${isSelected && !readOnly ? 'border-indigo-500 shadow-indigo-100 ring-2 ring-indigo-500/20' : 'border-slate-300'}
+                ${!readOnly ? 'hover:border-indigo-400 hover:shadow-md cursor-grab' : 'cursor-default'}
+                ${isDragging ? 'opacity-50 cursor-grabbing' : ''}
+                w-auto min-w-[100px] max-w-[220px] select-none
+            `}
+            {...listeners}
+            {...attributes}
+            onClick={(e) => {
+                if (readOnly) return;
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit && onEdit();
+            }}
+        >
+            {/* Drag Handle Indicator - Hidden in ReadOnly */}
+            {!readOnly && (
+                <div className={`text-slate-400 ${isSelected ? 'text-indigo-400' : ''}`}>
+                    <GripVertical size={14} />
+                </div>
+            )}
+
+            {/* Name */}
+            <span className={`text-xs font-semibold truncate select-none ${isSelected && !readOnly ? 'text-indigo-700' : 'text-slate-700'}`}>
+                {data.signeeName || "Signer"}
+            </span>
+
+            {/* Divider & Actions - Hidden in ReadOnly */}
+            {!readOnly && (
+                <>
+                    <div className="w-px h-3 bg-slate-200 mx-0.5" />
+                    <div className="flex items-center gap-0.5 relative z-20">
+                        <button
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                onEdit && onEdit();
+                            }}
+                            className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                        >
+                            <Edit2 size={12} />
+                        </button>
+                        <button
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                onDelete && onDelete();
+                            }}
+                            className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-red-500 transition-colors cursor-pointer"
+                        >
+                            <Trash2 size={12} />
+                        </button>
+                    </div>
+                </>
+            )}
+
+            {/* Order Badge - Always Visible */}
+            {data.order && (
+                <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-indigo-600 text-white text-[9px] font-bold flex items-center justify-center rounded-full shadow-sm border border-white z-10 pointer-events-none">
+                    {data.order}
+                </div>
+            )}
+        </div>
+    );
+};
+
+const SignatureField = ({ id, data, left, top, onEdit, onDelete, isSelected, readOnly = false }) => {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
         id: id,
-        data: { ...data, type: 'signature-field', id } // ensure type is distinguishing
+        data: { ...data, type: 'signature-field', id }, // ensure type is distinguishing
+        disabled: readOnly
     });
 
     const style = {
         transform: CSS.Translate.toString(transform),
-        left: `${left}px`, // Absolute positioning based on parent container
-        top: `${top}px`,
+        left: `${left}%`, // Percentage positioning relative to PDF page
+        top: `${top}%`,
         position: 'absolute',
         zIndex: isDragging ? 999 : (isSelected ? 50 : 10),
         touchAction: 'none'
     };
 
     return (
-        <div
-            ref={setNodeRef}
+        <SignatureFieldVisual
             style={style}
-            className={`
-                group flex flex-col w-64 bg-white/90 backdrop-blur-sm 
-                border-2 rounded-lg shadow-sm transition-colors
-                ${isSelected ? 'border-indigo-500 shadow-indigo-100 ring-2 ring-indigo-500/20' : 'border-indigo-200 hover:border-indigo-400'}
-                ${isDragging ? 'opacity-0' : ''}
-            `}
-            // We apply listeners to the handle to allow drag, or whole box? 
-            // Usually whole box is easier for broad movements, but let's put handle for clarity
-            {...listeners}
-            {...attributes}
-            onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-            }}
-        >
-            {/* Header / Drag Handle */}
-            <div className="flex items-center justify-between p-1.5 border-b border-indigo-100 bg-indigo-50/50 rounded-t-md">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-700">
-                    <GripVertical size={14} className="cursor-grab active:cursor-grabbing opacity-50" />
-                    <span className="truncate max-w-[120px]">{data.signeeName || "Signature"}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                        className="p-1 hover:bg-white rounded text-indigo-600 transition-colors"
-                        title="Edit"
-                    >
-                        <Edit2 size={12} />
-                    </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                        className="p-1 hover:bg-white rounded text-red-500 transition-colors"
-                        title="Delete"
-                    >
-                        <Trash2 size={12} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Visual Body */}
-            <div className="p-3 py-5 bg-white cursor-pointer rounded-b-md flex items-center justify-center gap-2 text-indigo-200">
-                <PenTool size={32} strokeWidth={1.5} />
-                <div className="border-b-2 border-indigo-100 w-full absolute bottom-4 left-4 right-4"></div>
-            </div>
-
-            {/* Order Badge */}
-            {data.order && (
-                <div className="absolute -top-2 -right-2 w-5 h-5 bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center rounded-full shadow-sm border border-white">
-                    {data.order}
-                </div>
-            )}
-        </div>
+            data={data}
+            isSelected={isSelected}
+            isDragging={isDragging}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            listeners={listeners}
+            attributes={attributes}
+            setNodeRef={setNodeRef}
+            readOnly={readOnly}
+        />
     );
 };
 

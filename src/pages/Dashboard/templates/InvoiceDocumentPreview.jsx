@@ -3,7 +3,20 @@ import { motion } from 'framer-motion';
 
 function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, readOnly = false }) {
 
-    // Helper to render placeholder or value
+    const logoSize = data.logoSize || 60;
+    const logoAlign = data.logoAlignment || 'left';
+
+    const Logo = ({ className = "", style = {} }) => (
+        data.businessLogo && data.brandingEnabled !== false && data.brandingEnabled !== 'false' ? (
+            <img
+                src={data.businessLogo}
+                alt="Business Logo"
+                className={`${className}`}
+                style={{ height: `${logoSize}px`, objectFit: 'contain', ...style }}
+            />
+        ) : null
+    );
+
     const RenderField = ({ value, placeholder, className = "" }) => {
         if (!value) {
             if (readOnly) return <span className={`text-slate-500 italic ${className}`}>{placeholder}</span>;
@@ -26,10 +39,10 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                 transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
             }}
-            className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[10pt] leading-relaxed font-sans relative mb-20 origin-top"
+            className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[10pt] leading-relaxed font-sans relative mb-20 origin-top shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60"
         >
             {/* Realistic Paper Effects */}
-            {!printing && <div className="no-print absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>}
+            {!printing && <div className="no-print absolute inset-0 rounded-sm pointer-events-none bg-gradient-to-b from-white to-slate-50/20"></div>}
 
             <div className="p-[10mm] h-full flex flex-col relative z-10 min-h-[297mm]">
 
@@ -37,8 +50,19 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                 {printing ? (
                     <table style={{ width: '100%', marginBottom: '20px', borderBottom: '2px solid #000', paddingBottom: '20px' }}>
                         <tbody>
+                            {/* Center Logo Row */}
+                            {logoAlign === 'center' && data.businessLogo && (
+                                <tr>
+                                    <td colSpan="2" style={{ textAlign: 'center', paddingBottom: '20px' }}>
+                                        <Logo style={{ marginBottom: '15px' }} />
+                                    </td>
+                                </tr>
+                            )}
                             <tr>
                                 <td style={{ verticalAlign: 'top', width: '50%' }}>
+                                    {/* Left Logo */}
+                                    {logoAlign === 'left' && <div style={{ marginBottom: '15px' }}><Logo /></div>}
+
                                     <h1 className="text-2xl font-bold uppercase tracking-wider text-slate-800">{data.invoiceTitle || 'Invoice'}</h1>
                                     <div className="mt-4 text-sm">
                                         <h2 className="font-bold text-lg"><RenderField value={data.sellerName} placeholder="[Your Company Name]" /></h2>
@@ -51,6 +75,9 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                                     </div>
                                 </td>
                                 <td style={{ verticalAlign: 'top', width: '50%', textAlign: 'right' }}>
+                                    {/* Right Logo */}
+                                    {logoAlign === 'right' && <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end' }}><Logo /></div>}
+
                                     <table style={{ float: 'right', width: 'auto', backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                         <tbody>
                                             <tr><td style={{ fontWeight: 'bold', color: '#64748b', paddingRight: '10px' }}>Invoice #:</td><td className="font-mono"><RenderField value={data.invoiceNumber} placeholder="INV-0001" /></td></tr>
@@ -64,38 +91,54 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                         </tbody>
                     </table>
                 ) : (
-                    <div className="flex flex-col md:flex-row justify-between items-start mb-8 border-b-2 border-slate-900 pb-6 gap-6 md:gap-0">
-                        {/* ... Browser View Header ... */}
-                        <div>
-                            <h1 className="text-2xl font-bold uppercase tracking-wider text-slate-800">{data.invoiceTitle || 'Invoice'}</h1>
-                            <div className="mt-4 text-sm">
-                                <h2 className="font-bold text-lg"><RenderField value={data.sellerName} placeholder="[Your Company Name]" /></h2>
-                                <div className="text-slate-600 max-w-[250px] whitespace-pre-wrap"><RenderField value={data.sellerAddress} placeholder="[Full Address]" /></div>
-                                {data.sellerTaxId && <div className="mt-1"><span className="font-bold text-xs uppercase">GSTIN/Tax ID:</span> {data.sellerTaxId}</div>}
-                                <div className="mt-1 text-xs">
-                                    {data.sellerEmail && <div>{data.sellerEmail}</div>}
-                                    {data.sellerPhone && <div>{data.sellerPhone}</div>}
+                    <div className="flex flex-col gap-6 mb-8 border-b-2 border-slate-900 pb-6">
+                        {/* Center Logo */}
+                        {logoAlign === 'center' && (
+                            <div className="flex justify-center mb-4">
+                                <Logo />
+                            </div>
+                        )}
+
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-6 md:gap-0">
+                            {/* Left Column */}
+                            <div>
+                                {/* Left Logo */}
+                                {logoAlign === 'left' && <div className="mb-4"><Logo /></div>}
+
+                                <h1 className="text-2xl font-bold uppercase tracking-wider text-slate-800">{data.invoiceTitle || 'Invoice'}</h1>
+                                <div className="mt-4 text-sm">
+                                    <h2 className="font-bold text-lg"><RenderField value={data.sellerName} placeholder="[Your Company Name]" /></h2>
+                                    <div className="text-slate-600 max-w-[250px] whitespace-pre-wrap"><RenderField value={data.sellerAddress} placeholder="[Full Address]" /></div>
+                                    {data.sellerTaxId && <div className="mt-1"><span className="font-bold text-xs uppercase">GSTIN/Tax ID:</span> {data.sellerTaxId}</div>}
+                                    <div className="mt-1 text-xs">
+                                        {data.sellerEmail && <div>{data.sellerEmail}</div>}
+                                        {data.sellerPhone && <div>{data.sellerPhone}</div>}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="text-right">
-                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm min-w-[200px]">
-                                <div className="flex justify-between mb-1 gap-4">
-                                    <span className="text-slate-500 font-bold">Invoice #:</span>
-                                    <RenderField value={data.invoiceNumber} placeholder="INV-0001" className="font-mono" />
-                                </div>
-                                <div className="flex justify-between mb-1 gap-4">
-                                    <span className="text-slate-500 font-bold">Date:</span>
-                                    <RenderField value={data.invoiceDate} placeholder="DD/MM/YYYY" />
-                                </div>
-                                <div className="flex justify-between mb-1 gap-4">
-                                    <span className="text-slate-500 font-bold">Due Date:</span>
-                                    <RenderField value={data.dueDate} placeholder="DD/MM/YYYY" />
-                                </div>
-                                <div className="flex justify-between gap-4">
-                                    <span className="text-slate-500 font-bold">Place of Supply:</span>
-                                    <RenderField value={data.placeOfSupply} placeholder="State" />
+                            {/* Right Column */}
+                            <div className="text-right flex flex-col items-end">
+                                {/* Right Logo */}
+                                {logoAlign === 'right' && <div className="mb-4"><Logo /></div>}
+
+                                <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm min-w-[200px]">
+                                    <div className="flex justify-between mb-1 gap-4">
+                                        <span className="text-slate-500 font-bold">Invoice #:</span>
+                                        <RenderField value={data.invoiceNumber} placeholder="INV-0001" className="font-mono" />
+                                    </div>
+                                    <div className="flex justify-between mb-1 gap-4">
+                                        <span className="text-slate-500 font-bold">Date:</span>
+                                        <RenderField value={data.invoiceDate} placeholder="DD/MM/YYYY" />
+                                    </div>
+                                    <div className="flex justify-between mb-1 gap-4">
+                                        <span className="text-slate-500 font-bold">Due Date:</span>
+                                        <RenderField value={data.dueDate} placeholder="DD/MM/YYYY" />
+                                    </div>
+                                    <div className="flex justify-between gap-4">
+                                        <span className="text-slate-500 font-bold">Place of Supply:</span>
+                                        <RenderField value={data.placeOfSupply} placeholder="State" />
+                                    </div>
                                 </div>
                             </div>
                         </div>

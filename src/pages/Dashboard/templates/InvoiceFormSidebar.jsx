@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, FileText, User, ShoppingBag, Percent, Landmark, Info, Trash2, Plus } from 'lucide-react';
+import { ChevronDown, FileText, User, ShoppingBag, Percent, Landmark, Info, Trash2, Plus, Palette } from 'lucide-react';
+import { BrandingControls } from '../../../components/Common/BrandingControls';
 
 const AccordionItem = ({ title, icon: Icon, isOpen, onClick, children }) => (
     <div className="border-b border-slate-100 last:border-none">
@@ -104,7 +105,19 @@ const InvoiceFormSidebar = ({
                     <InputGroup label="Due Date" name="dueDate" value={formData.dueDate} onChange={onChange} placeholder="DD/MM/YYYY" />
                 </div>
                 <InputGroup label="Place of Supply" name="placeOfSupply" value={formData.placeOfSupply} onChange={onChange} placeholder="State/Country" />
+                <InputGroup label="Place of Supply" name="placeOfSupply" value={formData.placeOfSupply} onChange={onChange} placeholder="State/Country" />
             </AccordionItem>
+
+            {/* Branding Settings */}
+            <AccordionItem
+                title="Document Branding"
+                icon={Palette}
+                isOpen={openSection === 'branding'}
+                onClick={() => toggleSection('branding')}
+            >
+                <BrandingControls formData={formData} onChange={onChange} />
+            </AccordionItem>
+
 
             {/* 2. Bill From / Bill To */}
             <AccordionItem

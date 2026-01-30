@@ -69,6 +69,12 @@ export const defaultFormData = {
     effectiveDateDay: '',
     effectiveDateMonth: '',
     effectiveDateYear: '',
+
+    // Branding
+    logoSize: 70,
+    logoAlignment: 'center', // center default for NDA
+    brandingEnabled: true,
+
     disclosingPartyName: '',
     disclosingPartyAddress: '',
     receivingPartyName: '',

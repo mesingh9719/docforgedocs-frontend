@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { Reorder } from 'framer-motion';
-import { PenTool, Edit3, Layers, Plus, Trash2, GripVertical, FileSignature, Calendar, User, FileText, Globe } from 'lucide-react';
+import { PenTool, Edit3, Layers, Plus, Trash2, GripVertical, Calendar, User, FileText, Globe, Palette } from 'lucide-react';
 import { SidebarSection, SidebarInput } from '../../../components/Nda/SidebarComponents';
+import { BuilderSectionCard, BuilderAddButton } from '../../../components/Common/BuilderComponents';
+import { BrandingControls } from '../../../components/Common/BrandingControls';
 import ConfirmationModal from '../../../components/ConfirmationModal';
-import SignatureToolbar from '../../../components/Nda/Signatures/SignatureToolbar';
+import { getBusiness } from '../../../api/business';
+import toast from 'react-hot-toast';
+import { Building2 } from 'lucide-react';
 
 const NdaFormSidebar = ({
     formData,
@@ -50,6 +54,27 @@ const NdaFormSidebar = ({
         }
     };
 
+    const handleFillBusinessInfo = async () => {
+        try {
+            const business = await getBusiness();
+            if (business) {
+                onChange({
+                    target: { name: 'disclosingPartyName', value: business.name || '' }
+                });
+                const address = [business.address, business.city, business.state, business.country].filter(Boolean).join(', ');
+                onChange({
+                    target: { name: 'disclosingPartyAddress', value: address || '' }
+                });
+                toast.success("Business details populated");
+            } else {
+                toast.error("No business profile found");
+            }
+        } catch (error) {
+            console.error("Failed to fetch business info", error);
+            toast.error("Failed to load business info");
+        }
+    };
+
     return (
         <div className="bg-white min-h-full pb-20 relative">
             {/* Confirmation Modal */}
@@ -80,20 +105,13 @@ const NdaFormSidebar = ({
                     >
                         <Edit3 size={16} />
                     </button>
-                    <button
-                        onClick={() => setMode('sign')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${mode === 'sign' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
-                        title="E-Signature Fields"
-                    >
-                        <FileSignature size={16} />
-                    </button>
                 </div>
                 <div>
                     <h2 className="text-lg font-bold text-slate-900">
-                        {mode === 'fill' ? 'Document Details' : (mode === 'edit' ? 'Structure Builder' : 'E-Sign Fields')}
+                        {mode === 'fill' ? 'Document Details' : 'Structure Builder'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-1">
-                        {mode === 'fill' ? 'Review and specify the agreement terms' : (mode === 'edit' ? 'Drag to reorder, add, or remove sections' : 'Drag signature fields onto the document')}
+                        {mode === 'fill' ? 'Review and specify the agreement terms' : 'Customize layout and clauses'}
                     </p>
                 </div>
             </div>
@@ -126,8 +144,17 @@ const NdaFormSidebar = ({
                     >
                         <div className="space-y-4">
                             <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
-                                <h4 className="text-xs font-bold text-indigo-900 uppercase mb-3 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Disclosing Party
+                                <h4 className="text-xs font-bold text-indigo-900 uppercase mb-3 flex items-center justify-between">
+                                    <span className="flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Disclosing Party
+                                    </span>
+                                    <button
+                                        onClick={handleFillBusinessInfo}
+                                        className="text-[10px] bg-white border border-indigo-200 text-indigo-600 px-2 py-1 rounded hover:bg-indigo-50 transition-colors flex items-center gap-1"
+                                        title="Auto-fill with your business profile"
+                                    >
+                                        <Building2 size={10} /> Use Profile
+                                    </button>
                                 </h4>
                                 <div className="space-y-3">
                                     <SidebarInput label="Name / Company" name="disclosingPartyName" value={formData.disclosingPartyName} onChange={onChange} placeholder="Ex: Acme Corp" />
@@ -145,6 +172,17 @@ const NdaFormSidebar = ({
                                 </div>
                             </div>
                         </div>
+                    </SidebarSection>
+
+                    {/* Branding */}
+                    <SidebarSection
+                        title="Document Branding"
+                        icon={Palette}
+                        isOpen={openSection === 'branding'}
+                        isComplete={true}
+                        onClick={() => toggleSection('branding')}
+                    >
+                        <BrandingControls formData={formData} onChange={onChange} />
                     </SidebarSection>
 
                     {/* Purpose */}
@@ -208,108 +246,74 @@ const NdaFormSidebar = ({
                         </div>
                     </SidebarSection>
                 </>
-            )}
+            )
+            }
 
-            {mode === 'edit' && (
-                // EDIT/BUILDER MODE: REORDER LIST
-                <div className="p-4 space-y-4">
-                    {/* Fixed Preamble Section */}
-                    <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50">
-                        <div className="flex items-center gap-2 mb-2 font-semibold text-xs uppercase text-slate-500">
-                            <Layers size={14} /> Preamble & Parties (Fixed)
-                        </div>
-                        <textarea
-                            name="preamble"
-                            value={docContent.preamble || ''}
-                            onChange={onContentChange}
-                            rows={3}
-                            className="w-full text-xs p-2 rounded border border-slate-200 bg-white mb-2 focus:ring-1 focus:ring-indigo-500 outline-none"
-                            placeholder="Preamble..."
-                        />
-                        <textarea
-                            name="partiesDisclosing"
-                            value={docContent.partiesDisclosing || ''}
-                            onChange={onContentChange}
-                            rows={2}
-                            className="w-full text-xs p-2 rounded border border-slate-200 bg-white mb-2 focus:ring-1 focus:ring-indigo-500 outline-none"
-                            placeholder="Disclosing Party Clause..."
-                        />
-                        <textarea
-                            name="partiesReceiving"
-                            value={docContent.partiesReceiving || ''}
-                            onChange={onContentChange}
-                            rows={2}
-                            className="w-full text-xs p-2 rounded border border-slate-200 bg-white focus:ring-1 focus:ring-indigo-500 outline-none"
-                            placeholder="Receiving Party Clause..."
-                        />
-                    </div>
 
-                    {/* Draggable Sections */}
-                    <div className="space-y-2">
-                        <p className="font-semibold text-xs uppercase text-slate-500 pl-1">Agreement Clauses (Draggable)</p>
-                        {docContent.sections.length === 0 && (
-                            <div className="p-6 text-center border-2 border-dashed border-slate-200 rounded-lg bg-slate-50">
-                                <p className="text-slate-400 text-sm">No custom sections added.</p>
-                                <p className="text-slate-400 text-xs">Click below to add one.</p>
+            {
+                mode === 'edit' && (
+                    // EDIT/BUILDER MODE: REORDER LIST
+                    <div className="p-4 space-y-6 pb-20">
+                        {/* Fixed Preamble Section */}
+                        <BuilderSectionCard
+                            isFixed={true}
+                            section={{ title: "Preamble & Parties" }}
+                            onUpdate={() => { }}
+                        >
+                            <div className="space-y-3 mt-3">
+                                <textarea
+                                    name="preamble"
+                                    value={docContent.preamble || ''}
+                                    onChange={onContentChange}
+                                    rows={3}
+                                    className="w-full text-xs p-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all resize-y placeholder-slate-400"
+                                    placeholder="Preamble..."
+                                />
+                                <div className="grid gap-3">
+                                    <textarea
+                                        name="partiesDisclosing"
+                                        value={docContent.partiesDisclosing || ''}
+                                        onChange={onContentChange}
+                                        rows={2}
+                                        className="w-full text-xs p-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all resize-y placeholder-slate-400"
+                                        placeholder="Disclosing Party Clause..."
+                                    />
+                                    <textarea
+                                        name="partiesReceiving"
+                                        value={docContent.partiesReceiving || ''}
+                                        onChange={onContentChange}
+                                        rows={2}
+                                        className="w-full text-xs p-3 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:border-indigo-300 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all resize-y placeholder-slate-400"
+                                        placeholder="Receiving Party Clause..."
+                                    />
+                                </div>
                             </div>
-                        )}
-                        <Reorder.Group axis="y" values={docContent.sections} onReorder={reorderSections} className="space-y-3">
-                            {docContent.sections.map((section, index) => (
-                                <Reorder.Item key={section.id} value={section} className="relative">
-                                    <div className="bg-white border border-slate-200 rounded-lg shadow-sm hover:border-indigo-300 transition-colors group">
-                                        <div className="flex items-center justify-between p-2 border-b border-slate-100 bg-slate-50/30 rounded-t-lg">
-                                            <div className="flex items-center gap-3 flex-1">
-                                                <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-indigo-400 p-1">
-                                                    <GripVertical size={16} />
-                                                </div>
-                                                <input
-                                                    type="text"
-                                                    value={section.title || ''}
-                                                    onChange={(e) => updateSection(section.id, 'title', e.target.value)}
-                                                    className="bg-transparent font-bold text-sm text-slate-700 outline-none w-full"
-                                                />
-                                            </div>
-                                            <button
-                                                onClick={() => handleRemoveRequest(section.id)}
-                                                className="text-slate-300 hover:text-red-500 p-1 transition-colors"
-                                                title="Delete Section"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                        <div className="p-3">
-                                            <textarea
-                                                value={section.content || ''}
-                                                onChange={(e) => updateSection(section.id, 'content', e.target.value)}
-                                                rows={4}
-                                                className="w-full text-sm text-slate-600 outline-none resize-y bg-transparent placeholder-slate-300"
-                                                placeholder="Enter clause content here..."
-                                            />
-                                        </div>
-                                    </div>
-                                </Reorder.Item>
-                            ))}
-                        </Reorder.Group>
-                    </div>
+                        </BuilderSectionCard>
 
-                    <button
-                        onClick={addSection}
-                        className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 font-medium flex items-center justify-center gap-2 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50 transition-all group"
-                    >
-                        <div className="bg-slate-100 group-hover:bg-indigo-100 rounded-full p-1 transition-colors">
-                            <Plus size={18} />
+                        <div className="relative">
+                            <div className="absolute left-[7px] top-[-24px] bottom-0 w-[2px] bg-slate-100" />
+                            <p className="font-bold text-[10px] uppercase tracking-widest text-slate-400 pl-8 mb-4">Structure</p>
+
+                            <Reorder.Group axis="y" values={docContent.sections} onReorder={reorderSections} className="space-y-0">
+                                {docContent.sections.map((section) => (
+                                    <Reorder.Item key={section.id} value={section} className="relative mb-2">
+                                        <BuilderSectionCard
+                                            section={section}
+                                            onUpdate={(field, value) => updateSection(section.id, field, value)}
+                                            onRemove={() => handleRemoveRequest(section.id)}
+                                            placeholderTitle="Section Title"
+                                            placeholderContent="Section clauses..."
+                                        />
+                                    </Reorder.Item>
+                                ))}
+                            </Reorder.Group>
+
+                            <BuilderAddButton onClick={addSection} />
                         </div>
-                        Add New Section
-                    </button>
-                </div>
-            )}
-
-            {mode === 'sign' && (
-                <div className="p-4">
-                    <SignatureToolbar />
-                </div>
-            )}
-        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

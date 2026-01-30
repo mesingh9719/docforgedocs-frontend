@@ -6,7 +6,7 @@ import NdaDocumentPreview from '../pages/Dashboard/templates/NdaDocumentPreview'
  * Generates the full HTML string for PDF generation.
  * This is used by Print, Export, and Email functions.
  */
-export const generateNdaHtml = (formData, docContent, documentName = 'Document', signatures = []) => {
+export const generateNdaHtml = (formData, docContent, documentName = 'Document', signatures = [], businessLogo = null) => {
     // Render the React component to static HTML string
     const documentHtml = renderToStaticMarkup(
         <NdaDocumentPreview
@@ -15,6 +15,7 @@ export const generateNdaHtml = (formData, docContent, documentName = 'Document',
             zoom={1}
             printing={true}
             signatures={signatures} // Pass signatures for flattening
+            businessLogo={businessLogo}
         />
     );
 

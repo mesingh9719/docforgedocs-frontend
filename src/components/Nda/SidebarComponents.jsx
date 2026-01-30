@@ -8,10 +8,10 @@ export const SidebarSection = ({ title, icon: Icon, isOpen, isComplete, onClick,
     <div className="border-b border-slate-100 last:border-none">
         <button
             onClick={onClick}
-            className={`w-full flex items-center justify-between p-4 transition-colors ${isOpen ? 'bg-slate-50 text-indigo-600' : 'text-slate-700 hover:bg-slate-50'}`}
+            className={`w-full flex items-center justify-between p-4 transition-all duration-200 ${isOpen ? 'bg-indigo-50/50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
         >
             <div className="flex items-center gap-3 font-semibold text-sm">
-                {Icon && <Icon size={18} className={isOpen ? 'text-indigo-500' : (isComplete ? 'text-emerald-500' : 'text-slate-400')} />}
+                {Icon && <Icon size={18} className={`transition-colors duration-200 ${isOpen ? 'text-indigo-600' : (isComplete ? 'text-emerald-500' : 'text-slate-400 group-hover:text-slate-500')}`} />}
                 <span>{title}</span>
             </div>
             <div className="flex items-center gap-2">
@@ -44,7 +44,7 @@ export const SidebarSection = ({ title, icon: Icon, isOpen, isComplete, onClick,
 
 export const SidebarInput = ({ label, name, value, onChange, placeholder, type = "text", rows, className = "" }) => (
     <div className={className}>
-        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">{label}</label>
+        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{label}</label>
         {rows ? (
             <textarea
                 name={name}
@@ -52,7 +52,7 @@ export const SidebarInput = ({ label, name, value, onChange, placeholder, type =
                 onChange={onChange}
                 placeholder={placeholder}
                 rows={rows}
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-slate-400 resize-y"
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 shadow-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all duration-200 placeholder-slate-400 resize-y hover:border-slate-300"
             />
         ) : (
             <input
@@ -61,7 +61,7 @@ export const SidebarInput = ({ label, name, value, onChange, placeholder, type =
                 value={value || ''}
                 onChange={onChange}
                 placeholder={placeholder}
-                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all placeholder-slate-400"
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 shadow-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all duration-200 placeholder-slate-400 hover:border-slate-300"
             />
         )}
     </div>

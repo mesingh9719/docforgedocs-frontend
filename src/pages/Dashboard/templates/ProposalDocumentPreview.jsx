@@ -3,14 +3,40 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, readOnly = false }) {
 
+    // Helper to get consistent color for a variable name
+    const getVariableColor = (name) => {
+        if (!name) return 'bg-slate-100 text-slate-600 border-slate-200';
+        const colors = [
+            'bg-indigo-50 text-indigo-700 border-indigo-200',
+            'bg-emerald-50 text-emerald-700 border-emerald-200',
+            'bg-amber-50 text-amber-700 border-amber-200',
+            'bg-rose-50 text-rose-700 border-rose-200',
+            'bg-violet-50 text-violet-700 border-violet-200',
+            'bg-sky-50 text-sky-700 border-sky-200'
+        ];
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    };
+
     // Helper to render placeholder or value
-    const RenderField = ({ value, placeholder, className = "" }) => {
+    const RenderField = ({ value, placeholder, name, className = "" }) => {
+        const colorClass = getVariableColor(name);
+
         if (!value) {
             if (readOnly) return <span className={`text-slate-500 italic ${className}`}>{placeholder}</span>;
-            return <span className={`bg-blue-50/50 px-1 border-b border-blue-200 text-slate-400 italic transition-colors hover:bg-blue-100 ${className}`}>{placeholder}</span>;
+            return <span className={`px-1.5 py-0.5 rounded border border-dashed ${colorClass} bg-opacity-50 font-medium text-xs mx-0.5 ${className}`}>{placeholder}</span>;
         }
+
         if (readOnly) return <span className={`font-medium text-slate-900 ${className}`}>{value}</span>;
-        return <span className={`font-medium text-slate-900 border-b border-transparent hover:border-indigo-200 hover:bg-indigo-50 transition-all px-0.5 rounded ${className}`}>{value}</span>;
+
+        return (
+            <span className={`px-1.5 py-0.5 rounded border ${colorClass} font-medium mx-0.5 transition-all hover:brightness-95 ${className}`}>
+                {value}
+            </span>
+        );
     };
 
     // Component to parse text and replace {{variable}} with RenderField components
@@ -34,7 +60,7 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
                             {varParts.map((vPart, vIndex) => {
                                 if (vPart.startsWith('{{') && vPart.endsWith('}}')) {
                                     const key = vPart.slice(2, -2).trim();
-                                    return <RenderField key={vIndex} value={values[key]} placeholder={`[${key}]`} />;
+                                    return <RenderField key={vIndex} value={values[key]} name={key} placeholder={`[${key}]`} />;
                                 }
                                 // Handle newlines
                                 return vPart.split('\n').map((line, lIndex) => (
@@ -73,7 +99,23 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
             <div className="p-[10mm] h-full flex flex-col relative z-10 min-h-[297mm]">
 
                 {/* 1. COVER PAGE LANDING */}
-                <div className="flex-1 flex flex-col justify-center items-center text-center border-b-2 border-slate-900 mb-12 pb-12 break-after-page">
+                <div
+                    className={`flex-1 flex flex-col justify-center ${data.logoAlignment === 'left' ? 'items-start text-left' : data.logoAlignment === 'right' ? 'items-end text-right' : 'items-center text-center'} border-b-2 border-slate-900 mb-12 pb-12 break-after-page`}
+                    style={printing ? { textAlign: data.logoAlignment || 'center' } : {}}
+                >
+
+                    {/* Brand Logo */}
+                    {data.businessLogo && data.brandingEnabled !== false && data.brandingEnabled !== 'false' && (
+                        <div className="mb-8 w-full">
+                            <img
+                                src={data.businessLogo}
+                                alt="Company Logo"
+                                style={{ height: `${data.logoSize || 80}px`, objectFit: 'contain', marginLeft: data.logoAlignment === 'right' ? 'auto' : data.logoAlignment === 'center' ? 'auto' : '0', marginRight: data.logoAlignment === 'left' ? 'auto' : data.logoAlignment === 'center' ? 'auto' : '0', display: 'block' }}
+                                className={`object-contain ${data.logoAlignment === 'left' ? '' : data.logoAlignment === 'right' ? 'ml-auto' : 'mx-auto'}`}
+                            />
+                        </div>
+                    )}
+
                     <div className="mb-4">
                         <span className="uppercase tracking-[0.2em] text-slate-400 text-sm font-sans">Project Proposal</span>
                     </div>
@@ -84,7 +126,7 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
 
                     <div className="w-16 h-1 bg-indigo-500 my-8"></div>
 
-                    <div className="grid grid-cols-1 gap-12 w-full max-w-md text-left mt-8">
+                    <div className={`grid grid-cols-1 gap-12 w-full max-w-md mt-8 ${data.logoAlignment === 'right' ? 'text-right' : 'text-left'}`}>
                         <div>
                             <p className="text-xs uppercase font-bold text-slate-400 mb-2 font-sans">Prepared For</p>
                             <div className="text-lg font-medium"><RenderField value={data.clientName} placeholder="[Client Name]" /></div>
@@ -100,11 +142,11 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
                         </div>
                     </div>
 
-                    <div className="mt-auto grid grid-cols-2 gap-8 w-full max-w-md text-sm border-t border-slate-100 pt-8">
-                        <div>
+                    <div className={`mt-auto grid grid-cols-2 gap-8 w-full max-w-md text-sm border-t border-slate-100 pt-8`}>
+                        <div className={data.logoAlignment === 'right' ? 'text-right order-2' : ''}>
                             <span className="text-slate-400">Date:</span> <RenderField value={data.proposalDate} placeholder="DD/MM/YYYY" />
                         </div>
-                        <div className="text-right">
+                        <div className={data.logoAlignment === 'right' ? 'text-left order-1' : 'text-right'}>
                             <span className="text-slate-400">Ref:</span> <RenderField value={data.referenceNo} placeholder="-" />
                         </div>
                     </div>

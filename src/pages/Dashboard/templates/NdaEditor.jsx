@@ -14,6 +14,7 @@ import { useNdaDocument } from '../../../hooks/useNdaDocument';
 import { generateDocumentPdf } from '../../../utils/pdfGenerator';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { generateNdaHtml, generateId } from '../../../utils/ndaUtils';
+import { getBusiness } from '../../../api/business';
 
 const NdaEditor = () => {
     const navigate = useNavigate();
@@ -31,6 +32,7 @@ const NdaEditor = () => {
     const [previewVersion, setPreviewVersion] = useState(null);
     const [nameError, setNameError] = useState(null);
     const [nameSuggestion, setNameSuggestion] = useState(null);
+    const [businessLogo, setBusinessLogo] = useState(null);
 
     // Business Logic Hook
     const {
@@ -104,6 +106,37 @@ const NdaEditor = () => {
             toast.error("Enter 'Receiving Party Name' in the form first.");
         }
     };
+
+    const convertUrlToBase64 = async (url) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (error) {
+            console.error("Failed to convert image to base64", error);
+            return null;
+        }
+    };
+
+    // Fetch Business Logo
+    React.useEffect(() => {
+        const fetchLogo = async () => {
+            try {
+                const business = await getBusiness();
+                if (business && business.logo) {
+                    setBusinessLogo(business.logo);
+                }
+            } catch (error) {
+                console.error("Failed to fetch business logo", error);
+            }
+        };
+        fetchLogo();
+    }, []);
 
     const onSave = async () => {
         const trimmedName = documentName?.trim();
@@ -240,8 +273,15 @@ const NdaEditor = () => {
         }
 
         setIsGeneratingPdf(true);
+        setIsGeneratingPdf(true);
         try {
-            const fullHtml = generateNdaHtml(formData, docContent, documentName, signatures);
+            let logoBase64 = businessLogo;
+            if (businessLogo && !businessLogo.startsWith('data:')) {
+                const base64 = await convertUrlToBase64(businessLogo);
+                if (base64) logoBase64 = base64;
+            }
+
+            const fullHtml = generateNdaHtml(formData, docContent, documentName, signatures, logoBase64);
             const response = await generateDocumentPdf(id, fullHtml, documentName);
 
             if (response.url) {
@@ -262,8 +302,15 @@ const NdaEditor = () => {
         }
 
         setIsExporting(true);
+        setIsExporting(true);
         try {
-            const fullHtml = generateNdaHtml(formData, docContent, documentName, signatures);
+            let logoBase64 = businessLogo;
+            if (businessLogo && !businessLogo.startsWith('data:')) {
+                const base64 = await convertUrlToBase64(businessLogo);
+                if (base64) logoBase64 = base64;
+            }
+
+            const fullHtml = generateNdaHtml(formData, docContent, documentName, signatures, logoBase64);
             // Re-using simplified HTML generator for export
             const documentHtml = fullHtml;
 
@@ -330,7 +377,13 @@ const NdaEditor = () => {
             const versionFormData = content.formData || formData;
             const versionDocContent = content.docContent || docContent;
 
-            const fullHtml = generateNdaHtml(versionFormData, versionDocContent, `${documentName} - v${version.version_number}`);
+            let logoBase64 = businessLogo;
+            if (businessLogo && !businessLogo.startsWith('data:')) {
+                const base64 = await convertUrlToBase64(businessLogo);
+                if (base64) logoBase64 = base64;
+            }
+
+            const fullHtml = generateNdaHtml(versionFormData, versionDocContent, `${documentName} - v${version.version_number}`, [], logoBase64);
 
             const response = await generateDocumentPdf(
                 id,
@@ -434,12 +487,19 @@ const NdaEditor = () => {
                     documentName={documentName}
                     isReminder={!!sentAt}
                     onSuccess={handleSendSuccess}
-                    getHtmlContent={async () => generateNdaHtml(formData, docContent, documentName, signatures)}
+                    getHtmlContent={async () => {
+                        let logoBase64 = businessLogo;
+                        if (businessLogo && !businessLogo.startsWith('data:')) {
+                            const base64 = await convertUrlToBase64(businessLogo);
+                            if (base64) logoBase64 = base64;
+                        }
+                        return generateNdaHtml(formData, docContent, documentName, signatures, logoBase64);
+                    }}
                     signatures={signatures}
                 />
 
                 {/* Toolbar */}
-                <header className="no-print h-14 md:h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm relative z-30">
+                <header className="no-print h-14 md:h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm relative transition-all duration-300">
                     <div className="flex items-center gap-2 md:gap-4">
                         <button
                             onClick={handleBack}
@@ -587,10 +647,15 @@ const NdaEditor = () => {
 
                     {/* Right Panel: Live Preview */}
                     <div className={`
-                        flex-1 h-full overflow-y-auto bg-slate-100/50 p-4 md:p-8 sm:p-12 
+                        flex-1 h-full overflow-y-auto bg-slate-50/50 p-4 md:p-8 sm:p-12 
                         flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 lg:order-2
                         ${isDesktop ? 'flex' : (activeTab === 'preview' ? 'flex' : 'hidden')}
-                    `}>
+                    `}
+                        style={{
+                            backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+                            backgroundSize: '20px 20px'
+                        }}
+                    >
                         <NdaDocumentPreview
                             data={deferredFormData}
                             content={deferredDocContent}
@@ -599,6 +664,7 @@ const NdaEditor = () => {
                             onUpdateSignature={updateSignature}
                             onRemoveSignature={removeSignature}
                             onEditSignature={handleEditSignature}
+                            businessLogo={businessLogo}
                         />
 
                         {/* Mobile Add Signature FAB */}

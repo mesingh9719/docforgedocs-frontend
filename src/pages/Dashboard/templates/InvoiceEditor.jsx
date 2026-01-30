@@ -35,6 +35,11 @@ const InvoiceEditor = () => {
         dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString(), // +15 days default
         placeOfSupply: 'State/Country',
 
+        // Branding
+        logoSize: 60,
+        logoAlignment: 'left', // left, center, right
+        brandingEnabled: true,
+
         // Seller Details
         sellerName: '',
         sellerAddress: '',
@@ -246,6 +251,22 @@ const InvoiceEditor = () => {
     const lastGeneratedData = React.useRef(null);
     const [cachedPdfUrl, setCachedPdfUrl] = useState(null);
 
+    const convertUrlToBase64 = async (url) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (error) {
+            console.error("Failed to convert image to base64", error);
+            return null;
+        }
+    };
+
     const handlePrint = async () => {
         if (!id) {
             toast.error("Please save the document before printing.");
@@ -260,8 +281,21 @@ const InvoiceEditor = () => {
 
         setIsPrinting(true);
         try {
+            // Prepare Base64 Logo for PDF
+            let logoBase64 = formData.businessLogo;
+            if (formData.businessLogo && !formData.businessLogo.startsWith('data:')) {
+                const base64 = await convertUrlToBase64(formData.businessLogo);
+                if (base64) logoBase64 = base64;
+            }
+
+            // Create temporary data with base64 logo
+            const printData = {
+                ...formData,
+                businessLogo: logoBase64
+            };
+
             const documentHtml = renderToStaticMarkup(
-                <InvoiceDocumentPreview data={formData} totals={totals} zoom={1} printing={true} />
+                <InvoiceDocumentPreview data={printData} totals={totals} zoom={1} printing={true} />
             );
 
             const response = await generateDocumentPdf(
@@ -311,8 +345,21 @@ const InvoiceEditor = () => {
 
         setIsExporting(true);
         try {
+            // Prepare Base64 Logo for PDF
+            let logoBase64 = formData.businessLogo;
+            if (formData.businessLogo && !formData.businessLogo.startsWith('data:')) {
+                const base64 = await convertUrlToBase64(formData.businessLogo);
+                if (base64) logoBase64 = base64;
+            }
+
+            // Create temporary data with base64 logo
+            const printData = {
+                ...formData,
+                businessLogo: logoBase64
+            };
+
             const documentHtml = renderToStaticMarkup(
-                <InvoiceDocumentPreview data={formData} totals={totals} zoom={1} printing={true} />
+                <InvoiceDocumentPreview data={printData} totals={totals} zoom={1} printing={true} />
             );
 
             const response = await generateDocumentPdf(
@@ -446,15 +493,28 @@ const InvoiceEditor = () => {
                 isReminder={!!sentAt}
                 onSuccess={handleSendSuccess}
                 getHtmlContent={async () => {
+                    // Prepare Base64 Logo for PDF
+                    let logoBase64 = formData.businessLogo;
+                    if (formData.businessLogo && !formData.businessLogo.startsWith('data:')) {
+                        const base64 = await convertUrlToBase64(formData.businessLogo);
+                        if (base64) logoBase64 = base64;
+                    }
+
+                    // Create temporary data with base64 logo
+                    const printData = {
+                        ...formData,
+                        businessLogo: logoBase64
+                    };
+
                     const documentHtml = renderToStaticMarkup(
-                        <InvoiceDocumentPreview data={formData} totals={totals} zoom={1} printing={true} />
+                        <InvoiceDocumentPreview data={printData} totals={totals} zoom={1} printing={true} />
                     );
                     return wrapHtmlForPdf(documentHtml, `Invoice #${formData.invoiceNumber}`);
                 }}
             />
 
             {/* Header */}
-            <header className="no-print h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+            <header className="no-print h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm transition-all duration-300">
                 <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
                     <button
                         onClick={handleBack}
@@ -565,10 +625,15 @@ const InvoiceEditor = () => {
 
                 {/* Right Panel: Live Preview */}
                 <div className={`
-                    flex-1 h-full overflow-y-auto bg-slate-100/50 p-4 md:p-8 sm:p-12 
+                    flex-1 h-full overflow-y-auto bg-slate-50/50 p-4 md:p-8 sm:p-12 
                     flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 lg:order-2
                     ${isDesktop ? 'flex' : (activeTab === 'preview' ? 'flex' : 'hidden')}
-                `}>
+                `}
+                    style={{
+                        backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+                        backgroundSize: '20px 20px'
+                    }}
+                >
                     <InvoiceDocumentPreview
                         data={deferredFormData}
                         totals={deferredTotals}

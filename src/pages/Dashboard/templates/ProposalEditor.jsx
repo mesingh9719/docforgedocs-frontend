@@ -102,6 +102,11 @@ const ProposalEditor = () => {
         proposalTitle: 'Website Redesign Project',
         // ... (rest of initial state)
         proposalDate: new Date().toLocaleDateString(),
+        // Branding
+        logoSize: 80,
+        logoAlignment: 'center', // left, center, right
+        brandingEnabled: true,
+        referenceNo: '',
         referenceNo: '',
         clientName: '',
         clientCompany: '',
@@ -487,7 +492,7 @@ const ProposalEditor = () => {
             />
 
             {/* Toolbar */}
-            <header className="no-print h-16 bg-white border-b border-slate-200 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm">
+            <header className="no-print h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm transition-all duration-300">
                 <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
                     <button
                         onClick={handleBack}
@@ -612,10 +617,15 @@ const ProposalEditor = () => {
 
                 {/* Right Panel: Live Preview */}
                 <div className={`
-                    flex-1 h-full overflow-y-auto bg-slate-100/50 p-4 md:p-8 sm:p-12 
+                    flex-1 h-full overflow-y-auto bg-slate-50/50 p-4 md:p-8 sm:p-12 
                     flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 lg:order-2
                     ${isDesktop ? 'flex' : (activeTab === 'preview' ? 'flex' : 'hidden')}
-                `}>
+                `}
+                    style={{
+                        backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+                        backgroundSize: '20px 20px'
+                    }}
+                >
                     <ProposalDocumentPreview
                         data={deferredFormData}
                         content={deferredDocContent}

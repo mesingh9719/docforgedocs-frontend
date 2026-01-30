@@ -12,19 +12,46 @@ function NdaDocumentPreview({
     signatures = [],
     onUpdateSignature,
     onRemoveSignature,
-    onEditSignature
+    onEditSignature,
+    businessLogo
 }) {
 
-    // Helper to render placeholder or value
-    const RenderField = ({ value, placeholder, className = "" }) => {
-        if (!value) {
-            // In readOnly mode, show placeholder cleanly or empty? Usually placeholder is better but subtle.
-            if (readOnly) return <span className={`text-slate-500 italic ${className}`}>{placeholder}</span>;
-            return <span className={`bg-blue-50/50 px-1 border-b border-blue-200 text-slate-400 italic transition-colors hover:bg-blue-100 ${className}`}>{placeholder}</span>;
+    // Helper to get consistent color for a variable name
+    const getVariableColor = (name) => {
+        if (!name) return 'bg-slate-100 text-slate-600 border-slate-200';
+        const colors = [
+            'bg-indigo-50 text-indigo-700 border-indigo-200',
+            'bg-emerald-50 text-emerald-700 border-emerald-200',
+            'bg-amber-50 text-amber-700 border-amber-200',
+            'bg-rose-50 text-rose-700 border-rose-200',
+            'bg-violet-50 text-violet-700 border-violet-200',
+            'bg-sky-50 text-sky-700 border-sky-200'
+        ];
+        // Simple hash
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
         }
-        // In readOnly mode, just show the text
+        return colors[Math.abs(hash) % colors.length];
+    };
+
+    // Helper to render placeholder or value
+    const RenderField = ({ value, placeholder, name, className = "" }) => {
+        const colorClass = getVariableColor(name);
+
+        if (!value) {
+            if (readOnly) return <span className={`text-slate-500 italic ${className}`}>{placeholder}</span>;
+            return <span className={`px-1.5 py-0.5 rounded border border-dashed ${colorClass} bg-opacity-50 font-medium text-xs mx-0.5 ${className}`}>{placeholder}</span>;
+        }
+
         if (readOnly) return <span className={`font-medium text-slate-900 ${className}`}>{value}</span>;
-        return <span className={`font-medium text-slate-900 border-b border-transparent hover:border-indigo-200 hover:bg-indigo-50 transition-all px-0.5 rounded ${className}`}>{value}</span>;
+
+        // Highlighted filled value
+        return (
+            <span className={`px-1.5 py-0.5 rounded border ${colorClass} font-medium mx-0.5 transition-all hover:brightness-95 ${className}`}>
+                {value}
+            </span>
+        );
     };
 
     // Component to parse text and replace {{variable}} with RenderField components
@@ -38,8 +65,7 @@ function NdaDocumentPreview({
                 {parts.map((part, index) => {
                     if (part.startsWith('{{') && part.endsWith('}}')) {
                         const key = part.slice(2, -2).trim();
-                        // Special handling for placeholder names if needed, defaults to key name
-                        return <RenderField key={index} value={values[key]} placeholder={`[${key}]`} />;
+                        return <RenderField key={index} value={values[key]} name={key} placeholder={`[${key}]`} />;
                     }
                     return <span key={index}>{part}</span>;
                 })}
@@ -61,11 +87,11 @@ function NdaDocumentPreview({
                 transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
             }}
-            className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[11pt] leading-relaxed font-serif relative mb-20 origin-top shadow-lg"
+            className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[11pt] leading-relaxed font-serif relative mb-20 origin-top shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60"
         >
             {/* Realistic Paper Effects - Hide when printing */}
             {!printing && (
-                <div className="no-print absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>
+                <div className="no-print absolute inset-0 rounded-sm pointer-events-none bg-gradient-to-b from-white to-slate-50/20"></div>
             )}
 
             {/* Signature Layer Overlay */}
@@ -134,6 +160,21 @@ function NdaDocumentPreview({
             )}
 
             <div className="p-[10mm] relative z-10">
+
+                {/* Brand Logo */}
+                {businessLogo && data.brandingEnabled !== false && data.brandingEnabled !== 'false' && (
+                    <div
+                        className={`flex mb-8 ${data.logoAlignment === 'left' ? 'justify-start' : data.logoAlignment === 'right' ? 'justify-end' : 'justify-center'}`}
+                        style={printing ? { textAlign: data.logoAlignment || 'center' } : {}}
+                    >
+                        <img
+                            src={businessLogo}
+                            alt="Company Logo"
+                            style={{ height: `${data.logoSize || 70}px`, objectFit: 'contain' }}
+                        />
+                    </div>
+                )}
+
                 <h1 className="text-xl font-bold text-center mb-10 uppercase tracking-widest border-b-2 border-slate-900 pb-2">
                     {content.title}
                 </h1>

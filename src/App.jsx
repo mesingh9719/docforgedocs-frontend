@@ -21,6 +21,7 @@ import DocumentList from './pages/Dashboard/documents/DocumentList'
 import Settings from './pages/Dashboard/settings/Settings'
 import Team from './pages/Dashboard/team/Team'
 import SignatureModule from './pages/Dashboard/signature-module/SignatureModule'
+import DocumentEditor from './components/DocumentEngine/DocumentEditor' // [NEW] Unified Engine
 import AuthLayout from './components/auth/AuthLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Features from './pages/Landing/Features'
@@ -146,6 +147,9 @@ function App() {
                 <Route element={<ProtectedRoute permission="settings.signature" />}>
                   <Route path='/signatures' element={<SignatureModule />} />
                 </Route>
+
+                {/* Unified Engine Test Route */}
+                <Route path='/document-engine/test' element={<DocumentEditor />} />
 
                 {/* Settings - Manage Permission */}
                 <Route element={<ProtectedRoute permission="settings.manage" />}>

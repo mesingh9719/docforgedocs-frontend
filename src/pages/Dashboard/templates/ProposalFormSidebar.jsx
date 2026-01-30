@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { ChevronDown, Layers, Edit3, Plus, Trash2, GripVertical, FileText, User, List, DollarSign } from 'lucide-react';
+import { ChevronDown, Layers, Edit3, Plus, Trash2, GripVertical, FileText, User, List, DollarSign, Palette } from 'lucide-react';
+import { BrandingControls } from '../../../components/Common/BrandingControls';
+import { BuilderSectionCard, BuilderAddButton } from '../../../components/Common/BuilderComponents';
 
 const AccordionItem = ({ title, icon: Icon, isOpen, onClick, children }) => (
     <div className="border-b border-slate-100 last:border-none">
@@ -128,6 +130,16 @@ const ProposalFormSidebar = ({
                         </div>
                     </AccordionItem>
 
+                    {/* Branding */}
+                    <AccordionItem
+                        title="Document Branding"
+                        icon={Palette}
+                        isOpen={openSection === 'branding'}
+                        onClick={() => toggleSection('branding')}
+                    >
+                        <BrandingControls formData={formData} onChange={onChange} />
+                    </AccordionItem>
+
                     {/* Parties */}
                     <AccordionItem
                         title="Parties Involved"
@@ -223,55 +235,27 @@ const ProposalFormSidebar = ({
                 </>
             ) : (
                 // BUILDER MODE
-                <div className="p-4 space-y-4">
-                    <p className="font-semibold text-xs uppercase text-slate-500 pl-1">Proposal Structure (Draggable)</p>
-                    <Reorder.Group axis="y" values={docContent.sections} onReorder={reorderSections} className="space-y-3">
-                        {docContent.sections.map((section, index) => (
-                            <Reorder.Item key={section.id} value={section} className="relative">
-                                <div className="bg-white border border-slate-200 rounded-lg shadow-sm hover:border-indigo-300 transition-colors group">
-                                    <div className="flex items-center justify-between p-2 border-b border-slate-100 bg-slate-50/30 rounded-t-lg">
-                                        <div className="flex items-center gap-3 flex-1">
-                                            <div className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-indigo-400 p-1">
-                                                <GripVertical size={16} />
-                                            </div>
-                                            <input
-                                                type="text"
-                                                value={section.title || ''}
-                                                onChange={(e) => updateSection(section.id, 'title', e.target.value)}
-                                                className="bg-transparent font-bold text-sm text-slate-700 outline-none w-full"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={() => removeSection(section.id)}
-                                            className="text-slate-300 hover:text-red-500 p-1 transition-colors"
-                                            title="Delete Section"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                    <div className="p-3">
-                                        <textarea
-                                            value={section.content || ''}
-                                            onChange={(e) => updateSection(section.id, 'content', e.target.value)}
-                                            rows={4}
-                                            className="w-full text-sm text-slate-600 outline-none resize-y bg-transparent placeholder-slate-300"
-                                            placeholder="Enter clause content here..."
-                                        />
-                                    </div>
-                                </div>
-                            </Reorder.Item>
-                        ))}
-                    </Reorder.Group>
+                <div className="p-4 space-y-4 pb-20">
+                    <div className="relative">
+                        <div className="absolute left-[7px] top-4 bottom-0 w-[2px] bg-slate-100" />
+                        <p className="font-bold text-[10px] uppercase tracking-widest text-slate-400 pl-8 mb-4">Proposal Structure</p>
 
-                    <button
-                        onClick={addSection}
-                        className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 font-medium flex items-center justify-center gap-2 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50 transition-all group"
-                    >
-                        <div className="bg-slate-100 group-hover:bg-indigo-100 rounded-full p-1 transition-colors">
-                            <Plus size={18} />
-                        </div>
-                        Add New Section
-                    </button>
+                        <Reorder.Group axis="y" values={docContent.sections} onReorder={reorderSections} className="space-y-0">
+                            {docContent.sections.map((section, index) => (
+                                <Reorder.Item key={section.id} value={section} className="relative mb-2">
+                                    <BuilderSectionCard
+                                        section={section}
+                                        onUpdate={(field, value) => updateSection(section.id, field, value)}
+                                        onRemove={() => removeSection(section.id)}
+                                        placeholderTitle="Section Title"
+                                        placeholderContent="Section content..."
+                                    />
+                                </Reorder.Item>
+                            ))}
+                        </Reorder.Group>
+
+                        <BuilderAddButton onClick={addSection} />
+                    </div>
                 </div>
             )}
         </div>

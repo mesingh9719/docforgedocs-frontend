@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Users, CheckCircle, Download, Eye, Settings as SettingsIcon } from 'lucide-react';
+import { Upload, FileText, Users, CheckCircle, Download, Eye, Settings as SettingsIcon, UserPlus } from 'lucide-react';
 import PDFUploader from './components/PDFUploader';
 import PDFViewer from './components/PDFViewer';
 import SignatureCanvas from './components/SignatureCanvas';
@@ -34,7 +34,7 @@ const SignatureModule = () => {
     const handleFileUpload = (file) => {
         setPdfFile(file);
         const url = URL.createObjectURL(file);
-        setPdfUrl(url);
+        setPdfUrl(file);
         setCurrentStep(2);
     };
 
@@ -58,6 +58,7 @@ const SignatureModule = () => {
                         id: `sig-${Date.now()}`,
                         type: active.data.current.fieldType,
                         position: { x: Math.max(0, x), y: Math.max(0, y) },
+                        pageNumber: 0, // Track which page this signature is on (default to first page)
                         metadata: {
                             signeeName: '',
                             signeeEmail: '',
@@ -98,6 +99,13 @@ const SignatureModule = () => {
             alert('Please add at least one signature field');
             return;
         }
+        // Mock email notification
+        const signersToNotify = signers.length > 0 ? signers : signatures.map(sig => sig.metadata);
+        const uniqueSigners = [...new Set(signersToNotify.map(s => s.email || s.signeeEmail))];
+        
+        if (uniqueSigners.length > 0) {
+            alert(`📧 Mock Email Sent!\n\nNotifications sent to:\n${uniqueSigners.filter(Boolean).join('\n') || 'No emails configured'}\n\n(Note: Backend integration required for real emails)`);
+        }
         setCurrentStep(3);
     };
 
@@ -114,9 +122,87 @@ const SignatureModule = () => {
         }
     };
 
-    const handleDownload = () => {
-        console.log('Downloading signed PDF with signatures:', completedSignatures);
-        alert('Download functionality would be implemented here');
+    const handleDownload = async () => {
+        try {
+            // Import pdf-lib dynamically
+            const { PDFDocument, rgb } = await import('pdf-lib');
+            
+            // Read the original PDF file
+            const arrayBuffer = await pdfFile.arrayBuffer();
+            const pdfDoc = await PDFDocument.load(arrayBuffer);
+            const pages = pdfDoc.getPages();
+            
+            // Add signature highlights to the PDF
+            signatures.forEach((sig) => {
+                const pageIndex = sig.pageNumber || 0; // Assuming signature has pageNumber property
+                if (pageIndex < pages.length) {
+                    const page = pages[pageIndex];
+                    const { width: pageWidth, height: pageHeight } = page.getSize();
+                    
+                    // Get signature position and size
+                    const x = sig.position.x;
+                    const y = pageHeight - sig.position.y - 60; // Flip Y coordinate for PDF (bottom-left origin)
+                    const width = 200; // Signature field width
+                    const height = 60; // Signature field height
+                    
+                    // Draw a semi-transparent yellow rectangle to highlight signature area
+                    page.drawRectangle({
+                        x: x,
+                        y: y,
+                        width: width,
+                        height: height,
+                        borderColor: rgb(0.4, 0.4, 1), // Blue border
+                        borderWidth: 2,
+                        color: rgb(0.95, 0.95, 0.4), // Light yellow fill
+                        opacity: 0.3,
+                    });
+                    
+                    // Add text label
+                    const completed = completedSignatures.find(cs => cs.fieldId === sig.id);
+                    const labelText = completed 
+                        ? `✓ Signed by: ${sig.metadata.signeeName}`
+                        : `Sign here: ${sig.metadata.signeeName}`;
+                    
+                    page.drawText(labelText, {
+                        x: x + 5,
+                        y: y + height - 20,
+                        size: 10,
+                        color: rgb(0.2, 0.2, 0.8),
+                    });
+                }
+            });
+            
+            // Save the modified PDF
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            
+            // Download the modified PDF
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `signed_${pdfFile.name}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            // Show success message
+            alert('✅ Complete PDF Downloaded with Signature Highlights!');
+        } catch (error) {
+            console.error('Error processing PDF:', error);
+            // Fallback to original PDF download
+            const pdfBlob = new Blob([pdfFile], { type: 'application/pdf' });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            const pdfLink = document.createElement('a');
+            pdfLink.href = pdfUrl;
+            pdfLink.download = `signed_${pdfFile.name}`;
+            document.body.appendChild(pdfLink);
+            pdfLink.click();
+            document.body.removeChild(pdfLink);
+            URL.revokeObjectURL(pdfUrl);
+            
+            alert('✅ PDF Downloaded!\n\n(Note: Install pdf-lib for signature highlights)');
+        }
     };
 
     return (
@@ -200,81 +286,146 @@ const SignatureModule = () => {
                         </motion.div>
                     )}
 
-                    {currentStep === 2 && (
+                  {currentStep === 2 && (
                         <motion.div
                             key="place-signatures"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="grid grid-cols-1 lg:grid-cols-4 gap-6"
                         >
-                            <div className="lg:col-span-1">
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sticky top-24">
-                                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                        <SettingsIcon size={20} className="text-indigo-600" />
-                                        Signature Tools
-                                    </h3>
-                                    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                                        <SignatureToolbar />
-                                    </DndContext>
-                                    
-                                    <div className="mt-6 pt-6 border-t border-slate-100">
-                                        <h4 className="text-sm font-bold text-slate-700 mb-3">
-                                            Placed Fields ({signatures.length})
-                                        </h4>
-                                        {signatures.length === 0 ? (
-                                            <p className="text-xs text-slate-500 italic">
-                                                Drag fields onto the document
-                                            </p>
-                                        ) : (
-                                            <div className="space-y-2">
-                                                {signatures.map((sig) => (
-                                                    <div 
-                                                        key={sig.id}
-                                                        className="p-2 bg-slate-50 rounded-lg text-xs flex items-center justify-between"
-                                                    >
-                                                        <span className="font-medium text-slate-700 truncate">
-                                                            {sig.metadata.signeeName || 'Unnamed Signer'}
-                                                        </span>
-                                                        <span className="text-[10px] text-slate-500 bg-white px-2 py-1 rounded">
-                                                            #{sig.metadata.order}
-                                                        </span>
+                            <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                                    {/* Left Sidebar */}
+                                    <div className="lg:col-span-1 space-y-6">
+                                        {/* Signature Tools */}
+                                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                                <SettingsIcon size={20} className="text-indigo-600" />
+                                                Signature Tools
+                                            </h3>
+                                            
+                                            <SignatureToolbar />
+                                            
+                                            <div className="mt-6 pt-6 border-t border-slate-100">
+                                                <h4 className="text-sm font-bold text-slate-700 mb-3">
+                                                    Placed Fields ({signatures.length})
+                                                </h4>
+                                                {signatures.length === 0 ? (
+                                                    <p className="text-xs text-slate-500 italic">
+                                                        Drag fields onto the document
+                                                    </p>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {signatures.map((sig) => (
+                                                            <div 
+                                                                key={sig.id}
+                                                                className="p-2 bg-slate-50 rounded-lg text-xs flex items-center justify-between"
+                                                            >
+                                                                <span className="font-medium text-slate-700 truncate">
+                                                                    {sig.metadata.signeeName || 'Unnamed Signer'}
+                                                                </span>
+                                                                <span className="text-[10px] text-slate-500 bg-white px-2 py-1 rounded">
+                                                                    #{sig.metadata.order}
+                                                                </span>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ))}
+                                                )}
                                             </div>
-                                        )}
+                                        </div>
+
+                                        {/* Signer Management - Enhanced UI */}
+                                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <div>
+                                                    <h3 className="text-lg font-bold text-slate-800">Signers</h3>
+                                                    <p className="text-xs text-slate-500 mt-0.5">
+                                                        Manage who needs to sign this document
+                                                    </p>
+                                                </div>
+                                                <button 
+                                                    onClick={() => {/* Add signer modal logic */}}
+                                                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                                                >
+                                                    <UserPlus size={16} />
+                                                    Add Signer
+                                                </button>
+                                            </div>
+
+                                            {signers.length === 0 ? (
+                                                <div className="text-center py-12">
+                                                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                        <UserPlus size={24} className="text-slate-400" />
+                                                    </div>
+                                                    <p className="text-sm font-semibold text-slate-600 mb-1">
+                                                        No signers added yet
+                                                    </p>
+                                                    <p className="text-xs text-slate-500">
+                                                        Click "Add Signer" to get started
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-3 mt-4">
+                                                    {signers.map((signer, index) => (
+                                                        <div 
+                                                            key={index}
+                                                            className="p-3 bg-slate-50 rounded-lg border border-slate-100 hover:border-indigo-200 transition-colors"
+                                                        >
+                                                            <div className="flex items-start justify-between">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                                                        <Users size={18} className="text-indigo-600" />
+                                                                    </div>
+                                                                    <div className="min-w-0">
+                                                                        <p className="text-sm font-semibold text-slate-800 truncate">
+                                                                            {signer.name}
+                                                                        </p>
+                                                                        <p className="text-xs text-slate-500 truncate">
+                                                                            {signer.email}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Proceed Button */}
+                                        <button
+                                            onClick={handleProceedToSigning}
+                                            disabled={signatures.length === 0}
+                                            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Proceed to Signing
+                                        </button>
                                     </div>
 
-                                    <button
-                                        onClick={handleProceedToSigning}
-                                        disabled={signatures.length === 0}
-                                        className="mt-6 w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        Proceed to Signing
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="lg:col-span-3">
-                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                                    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-                                        <div ref={pdfViewerRef} className="relative">
-                                            <PDFViewer pdfUrl={pdfUrl} />
-                                            <SignatureLayer
-                                                signatures={signatures}
-                                                onUpdateSignature={handleUpdateSignature}
-                                                onRemoveSignature={handleRemoveSignature}
-                                                onEditSignature={handleEditSignature}
-                                            />
+                                    {/* PDF Viewer with Signature Layer */}
+                                    <div className="lg:col-span-3">
+                                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                                            <div ref={pdfViewerRef} className="relative">
+                                                <PDFViewer pdfUrl={pdfUrl} />
+                                                <SignatureLayer
+                                                    signatures={signatures}
+                                                    onUpdateSignature={handleUpdateSignature}
+                                                    onRemoveSignature={handleRemoveSignature}
+                                                    onEditSignature={handleEditSignature}
+                                                />
+                                            </div>
                                         </div>
-                                        <DragOverlay>
-                                            {activeDragId ? (
-                                                <div className="w-64 h-24 bg-indigo-100 border-2 border-indigo-400 rounded-lg opacity-75" />
-                                            ) : null}
-                                        </DragOverlay>
-                                    </DndContext>
+                                    </div>
                                 </div>
-                            </div>
+                                
+                                <DragOverlay>
+                                    {activeDragId ? (
+                                        <div className="w-64 h-24 bg-indigo-100 border-2 border-indigo-400 rounded-lg opacity-75 flex items-center justify-center">
+                                            <span className="text-indigo-600 font-medium">Drop to place signature</span>
+                                        </div>
+                                    ) : null}
+                                </DragOverlay>
+                            </DndContext>
                         </motion.div>
                     )}
 

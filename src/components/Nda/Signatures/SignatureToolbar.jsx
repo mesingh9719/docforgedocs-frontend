@@ -18,6 +18,7 @@ const DraggableToolbarItem = ({ type, icon: Icon, label }) => {
                 cursor-grab active:cursor-grabbing hover:border-indigo-300 hover:shadow-sm transition-all
                 ${isDragging ? 'opacity-50 border-indigo-500 ring-2 ring-indigo-500/20' : ''}
             `}
+            style={{ touchAction: 'none' }}
         >
             <div className={`p-2 rounded-md ${isDragging ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}>
                 <Icon size={18} />

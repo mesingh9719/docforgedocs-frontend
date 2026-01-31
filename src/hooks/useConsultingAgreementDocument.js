@@ -3,7 +3,8 @@ import toast from 'react-hot-toast';
 import { createDocument, getDocument, updateDocument } from '../api/documents';
 import { getBusiness } from '../api/business';
 import { defaultContent, defaultFormData } from '../data/consultingAgreementDefaults';
-import { generateId } from '../utils/ndaUtils'; // Reusing ID generator
+import { generateId } from '../utils/ndaUtils';
+import { useDocumentStyles } from './useDocumentStyles';
 
 export const useConsultingAgreementDocument = (id) => {
     const [formData, setFormData] = useState(defaultFormData);
@@ -12,6 +13,9 @@ export const useConsultingAgreementDocument = (id) => {
     const [sentAt, setSentAt] = useState(null);
     const [isLoading, setIsLoading] = useState(!!id);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Style Integration
+    const { styles, updateStyle, resetStyles } = useDocumentStyles();
 
     // Track original state for preview mode to restore later
     const originalState = useRef(null);
@@ -35,6 +39,9 @@ export const useConsultingAgreementDocument = (id) => {
                     if (content.formData) setFormData(prev => ({ ...prev, ...content.formData }));
                     if (content.docContent) setDocContent(content.docContent);
                     if (content.signatures) setSignatures(content.signatures);
+                    if (content.styles) {
+                        Object.entries(content.styles).forEach(([k, v]) => updateStyle(k, v));
+                    }
                 } catch (error) {
                     console.error("Failed to load document", error);
                     toast.error("Failed to load document");
@@ -111,7 +118,7 @@ export const useConsultingAgreementDocument = (id) => {
             const payload = {
                 name: documentName,
                 type_slug: 'consulting-agreement',
-                content: { formData, docContent, signatures },
+                content: { formData, docContent, signatures, styles },
                 status: 'draft'
             };
 
@@ -212,6 +219,10 @@ export const useConsultingAgreementDocument = (id) => {
         saveDocument,
         enterPreviewMode,
         exitPreviewMode,
-        restoreVersion
+        restoreVersion,
+        // Style Exports
+        styles,
+        updateStyle,
+        resetStyles
     };
 };

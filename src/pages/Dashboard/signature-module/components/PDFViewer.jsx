@@ -29,7 +29,7 @@ const PDFViewer = ({ pdfUrl, signatures = [], onUpdateSignature, onRemoveSignatu
     }, {});
 
     return (
-        <div className="relative flex flex-col items-center bg-slate-100/50 min-h-[600px] rounded-xl border border-slate-200 overflow-hidden">
+        <div className="relative flex flex-col items-center bg-slate-100/50 h-full w-full rounded-xl border border-slate-200 overflow-hidden">
             {/* Toolbar */}
             <div className="sticky top-0 z-30 w-full bg-white/80 backdrop-blur-md border-b border-slate-200 p-2 flex items-center justify-between px-4">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -54,11 +54,11 @@ const PDFViewer = ({ pdfUrl, signatures = [], onUpdateSignature, onRemoveSignatu
             </div>
 
             {/* Document Content */}
-            <div className="flex-1 w-full overflow-auto p-8 flex justify-center">
+            <div className="flex-1 w-full overflow-y-auto overflow-x-hidden p-8 flex flex-col items-center scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
                 <Document
                     file={pdfUrl}
                     onLoadSuccess={onDocumentLoadSuccess}
-                    className="flex flex-col items-center"
+                    className="flex flex-col items-center gap-8" // Gap between pages
                     loading={
                         <div className="flex flex-col items-center justify-center py-20">
                             <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
@@ -77,30 +77,31 @@ const PDFViewer = ({ pdfUrl, signatures = [], onUpdateSignature, onRemoveSignatu
                         const pageSignatures = signaturesByPage[pageNumber] || [];
 
                         return (
-                            <PDFPageRenderer
-                                key={`page_${pageNumber}`}
-                                pageNumber={pageNumber}
-                                scale={scale}
-                            >
-                                {pageSignatures.map(sig => (
-                                    <SignatureField
-                                        key={sig.id}
-                                        id={sig.id}
-                                        data={sig.metadata}
-                                        // The x/y stored are percentages relative to page size? 
-                                        // Or absolute pixels? PROBABLY need to be percentages for responsiveness.
-                                        // For now, let's assume they are passed as style props or handled by SignatureField.
-                                        left={sig.position.x}
-                                        top={sig.position.y}
-                                        onEdit={() => onEditSignature(sig)}
-                                        onDelete={() => onRemoveSignature(sig.id)}
-                                        readOnly={readOnly}
-                                    />
-                                ))}
-                            </PDFPageRenderer>
+                            <div key={`page_${pageNumber}`}>
+                                <PDFPageRenderer
+                                    pageNumber={pageNumber}
+                                    scale={scale}
+                                >
+                                    {pageSignatures.map(sig => (
+                                        <SignatureField
+                                            key={sig.id}
+                                            id={sig.id}
+                                            data={sig.metadata}
+                                            left={sig.position.x}
+                                            top={sig.position.y}
+                                            onEdit={() => onEditSignature(sig)}
+                                            onDelete={() => onRemoveSignature(sig.id)}
+                                            readOnly={readOnly}
+                                        />
+                                    ))}
+                                </PDFPageRenderer>
+                            </div>
                         );
                     })}
                 </Document>
+
+                {/* Explicit Bottom Spacer to ensure scrolling past the last page */}
+                <div className="h-40 w-full flex-shrink-0" />
             </div>
         </div>
     );

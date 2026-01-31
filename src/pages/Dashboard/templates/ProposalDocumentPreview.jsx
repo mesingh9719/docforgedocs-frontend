@@ -1,7 +1,19 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, readOnly = false }) {
+function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, readOnly = false, styles }) {
+
+    // Style Defaults
+    const s = styles || {
+        fontFamily: 'font-serif',
+        fontSize: 'text-[11pt]',
+        lineHeight: 'leading-relaxed',
+        textColor: '#1e293b',
+        headingColor: '#0f172a',
+        accentColor: '#4f46e5',
+        pageMargin: 'p-[25mm]',
+        paragraphSpacing: 'mb-4',
+    };
 
     // Helper to get consistent color for a variable name
     const getVariableColor = (name) => {
@@ -90,8 +102,12 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
             style={{
                 transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
+                color: s.textColor
             }}
-            className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[11pt] leading-relaxed font-serif relative mb-20 origin-top"
+            className={`w-[210mm] min-h-[297mm] bg-white relative mb-20 origin-top
+                ${printing ? '' : 'shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60'}
+                ${s.fontFamily} ${s.fontSize} ${s.lineHeight} ${s.pageMargin}
+            `}
         >
             {/* Realistic Paper Effects */}
             <div className="no-print absolute inset-0 shadow-[0_2px_4px_rgba(0,0,0,0.05),0_12px_24px_rgba(0,0,0,0.1)] rounded-sm pointer-events-none"></div>
@@ -120,7 +136,7 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
                         <span className="uppercase tracking-[0.2em] text-slate-400 text-sm font-sans">Project Proposal</span>
                     </div>
 
-                    <h1 className="text-4xl font-bold text-slate-900 mb-2 max-w-lg leading-tight">
+                    <h1 className="text-4xl font-bold mb-2 max-w-lg leading-tight" style={{ color: s.headingColor }}>
                         <RenderField value={data.proposalTitle} placeholder="[Project Name]" />
                     </h1>
 
@@ -165,7 +181,7 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
                                     exit: { opacity: 0, scale: 0.95 }
                                 } : {})}
                             >
-                                <h2 className="font-bold text-lg uppercase mb-3 text-slate-900 border-l-4 border-indigo-500 pl-3">
+                                <h2 className="font-bold text-lg uppercase mb-3 border-l-4 pl-3" style={{ color: s.headingColor, borderColor: s.accentColor }}>
                                     {index + 2}. {section.title}
                                 </h2>
                                 <div className="text-justify text-slate-700">

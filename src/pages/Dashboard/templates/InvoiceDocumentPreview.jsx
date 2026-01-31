@@ -1,7 +1,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, readOnly = false }) {
+function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, readOnly = false, styles }) {
+
+    // Style Defaults
+    const s = styles || {
+        fontFamily: 'font-sans',
+        fontSize: 'text-[10pt]',
+        lineHeight: 'leading-relaxed',
+        textColor: '#1e293b',
+        headingColor: '#0f172a',
+        accentColor: '#4f46e5',
+        pageMargin: 'p-[10mm]',
+        paragraphSpacing: 'mb-4',
+    };
 
     const logoSize = data.logoSize || 60;
     const logoAlign = data.logoAlignment || 'left';
@@ -38,14 +50,17 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
             style={{
                 transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
+                color: s.textColor
             }}
-            className={`w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[10pt] leading-relaxed font-sans relative mb-20 origin-top ${printing ? '' : 'shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60'}`}
+            className={`w-[210mm] min-h-[297mm] bg-white relative mb-20 origin-top
+                ${printing ? '' : 'shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60'}
+                ${s.fontFamily} ${s.fontSize} ${s.lineHeight}
+            `}
         >
             {/* Realistic Paper Effects */}
             {!printing && <div className="no-print absolute inset-0 rounded-sm pointer-events-none bg-gradient-to-b from-white to-slate-50/20"></div>}
 
             <div className={`p-[10mm] ${printing ? 'block h-auto' : 'flex flex-col h-full'} relative z-10`}>
-
                 {/* 1. SELLER & INVOICE HEADER */}
                 {printing ? (
                     <table style={{ width: '100%', marginBottom: '20px', borderBottom: '2px solid #000', paddingBottom: '20px' }}>
@@ -63,7 +78,7 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                                     {/* Left Logo */}
                                     {logoAlign === 'left' && <div style={{ marginBottom: '15px' }}><Logo /></div>}
 
-                                    <h1 className="text-2xl font-bold uppercase tracking-wider text-slate-800">{data.invoiceTitle || 'Invoice'}</h1>
+                                    <h1 className="text-2xl font-bold uppercase tracking-wider mb-2" style={{ color: s.headingColor }}>{data.invoiceTitle || 'Invoice'}</h1>
                                     <div className="mt-4 text-sm">
                                         <h2 className="font-bold text-lg"><RenderField value={data.sellerName} placeholder="[Your Company Name]" /></h2>
                                         <div className="text-slate-600 max-w-[250px] whitespace-pre-wrap"><RenderField value={data.sellerAddress} placeholder="[Full Address]" /></div>
@@ -105,7 +120,7 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                                 {/* Left Logo */}
                                 {logoAlign === 'left' && <div className="mb-4"><Logo /></div>}
 
-                                <h1 className="text-2xl font-bold uppercase tracking-wider text-slate-800">{data.invoiceTitle || 'Invoice'}</h1>
+                                <h1 className="text-2xl font-bold uppercase tracking-wider mb-4" style={{ color: s.headingColor }}>{data.invoiceTitle || 'Invoice'}</h1>
                                 <div className="mt-4 text-sm">
                                     <h2 className="font-bold text-lg"><RenderField value={data.sellerName} placeholder="[Your Company Name]" /></h2>
                                     <div className="text-slate-600 max-w-[250px] whitespace-pre-wrap"><RenderField value={data.sellerAddress} placeholder="[Full Address]" /></div>

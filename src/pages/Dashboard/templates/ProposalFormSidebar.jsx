@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { ChevronDown, Layers, Edit3, Plus, Trash2, GripVertical, FileText, User, List, DollarSign, Palette } from 'lucide-react';
+import { ChevronDown, Layers, Edit3, Plus, Trash2, GripVertical, FileText, User, List, DollarSign, Palette, Type } from 'lucide-react';
 import { BrandingControls } from '../../../components/Common/BrandingControls';
 import { BuilderSectionCard, BuilderAddButton } from '../../../components/Common/BuilderComponents';
+import StyleEditor from '../../../components/Common/StyleEditor';
 
 const AccordionItem = ({ title, icon: Icon, isOpen, onClick, children }) => (
     <div className="border-b border-slate-100 last:border-none">
@@ -77,10 +78,14 @@ const ProposalFormSidebar = ({
     // Timeline Props
     updateTimeline,
     addTimelineRow,
-    removeTimelineRow
+    removeTimelineRow,
+    // Style Props
+    styles,
+    onStyleUpdate,
+    onStyleReset
 }) => {
     const [openSection, setOpenSection] = useState('cover');
-    const [mode, setMode] = useState('fill'); // 'fill' or 'edit'
+    const [mode, setMode] = useState('fill'); // 'fill', 'edit', 'style'
 
     const toggleSection = (section) => {
         setOpenSection(openSection === section ? null : section);
@@ -105,14 +110,25 @@ const ProposalFormSidebar = ({
                         <Edit3 size={16} />
                         Builder
                     </button>
+                    <button
+                        onClick={() => setMode('style')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${mode === 'style' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        <Type size={16} />
+                        Style
+                    </button>
                 </div>
                 <div>
-                    <h2 className="text-lg font-bold text-slate-900">{mode === 'fill' ? 'Proposal Details' : 'Structure Builder'}</h2>
-                    <p className="text-xs text-slate-500 mt-1">{mode === 'fill' ? 'Enter project specifics and pricing' : 'Customize layout and clauses'}</p>
+                    <h2 className="text-lg font-bold text-slate-900">
+                        {mode === 'fill' ? 'Proposal Details' : mode === 'edit' ? 'Structure Builder' : 'Styling & Appearance'}
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1">
+                        {mode === 'fill' ? 'Enter project specifics and pricing' : mode === 'edit' ? 'Customize layout and clauses' : 'Fonts, colors and spacing'}
+                    </p>
                 </div>
             </div>
 
-            {mode === 'fill' ? (
+            {mode === 'fill' && (
                 // FILL MODE
                 <>
                     {/* Cover Page */}
@@ -233,7 +249,9 @@ const ProposalFormSidebar = ({
                         <InputGroup label="Jurisdiction" name="jurisdiction" value={formData.jurisdiction} onChange={onChange} placeholder="State/Country" />
                     </AccordionItem>
                 </>
-            ) : (
+            )}
+
+            {mode === 'edit' && (
                 // BUILDER MODE
                 <div className="p-4 space-y-4 pb-20">
                     <div className="relative">

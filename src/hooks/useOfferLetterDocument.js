@@ -4,6 +4,7 @@ import { createDocument, getDocument, updateDocument } from '../api/documents';
 import { getBusiness } from '../api/business';
 import { defaultContent, defaultFormData } from '../data/offerLetterDefaults';
 import { generateId } from '../utils/ndaUtils'; // Reusing ID generator
+import { useDocumentStyles } from './useDocumentStyles';
 
 export const useOfferLetterDocument = (id) => {
     const [formData, setFormData] = useState(defaultFormData);
@@ -12,6 +13,9 @@ export const useOfferLetterDocument = (id) => {
     const [sentAt, setSentAt] = useState(null);
     const [isLoading, setIsLoading] = useState(!!id);
     const [isSaving, setIsSaving] = useState(false);
+
+    // Style Integration
+    const { styles, updateStyle, resetStyles } = useDocumentStyles();
 
     // Track original state for preview mode to restore later
     const originalState = useRef(null);
@@ -26,15 +30,26 @@ export const useOfferLetterDocument = (id) => {
                     if (doc.data.name) setDocumentName(doc.data.name);
                     if (doc.data.sent_at) setSentAt(doc.data.sent_at);
 
-                    let content = doc.data?.content || doc.content;
-                    if (typeof content === 'string') {
-                        try { content = JSON.parse(content); } catch (e) { console.error(e); }
-                    }
-                    content = content || {};
+                    let contentToParse = doc.data?.content || doc.content;
+                    if (contentToParse) {
+                        let parsedContent = contentToParse;
+                        if (typeof parsedContent === 'string') {
+                            try {
+                                parsedContent = JSON.parse(parsedContent);
+                            } catch (e) {
+                                console.error("Failed to parse document content JSON", e);
+                            }
+                        }
+                        parsedContent = parsedContent || {}; // Ensure it's an object even if parsing failed or was empty
 
-                    if (content.formData) setFormData(prev => ({ ...prev, ...content.formData }));
-                    if (content.docContent) setDocContent(content.docContent);
-                    if (content.signatures) setSignatures(content.signatures);
+                        setFormData(prev => ({ ...prev, ...(parsedContent.formData || defaultFormData) }));
+                        setDocContent(parsedContent.docContent || defaultContent);
+                        if (parsedContent.styles) {
+                            // Batch update styles
+                            Object.entries(parsedContent.styles).forEach(([k, v]) => updateStyle(k, v));
+                        }
+                        if (parsedContent.signatures) setSignatures(parsedContent.signatures);
+                    }
                 } catch (error) {
                     console.error("Failed to load document", error);
                     toast.error("Failed to load document");
@@ -108,10 +123,17 @@ export const useOfferLetterDocument = (id) => {
     const saveDocument = async (navigate) => {
         setIsSaving(true);
         try {
+            const contentToSave = {
+                formData,
+                docContent,
+                styles, // Save styles
+                signatures
+            };
+
             const payload = {
                 name: documentName,
                 type_slug: 'offer-letter',
-                content: { formData, docContent, signatures },
+                content: contentToSave,
                 status: 'draft'
             };
 
@@ -212,6 +234,10 @@ export const useOfferLetterDocument = (id) => {
         saveDocument,
         enterPreviewMode,
         exitPreviewMode,
-        restoreVersion
+        restoreVersion,
+        // Style Exports
+        styles,
+        updateStyle,
+        resetStyles
     };
 };

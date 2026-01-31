@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Clock, Eye, X, Loader2, Bell, Wand, AlertCircle, FileText, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Check, Download, Printer, ZoomIn, ZoomOut, Save, Mail, Clock, Eye, X, Loader2, Bell, Wand, AlertCircle, FileText, MoreHorizontal, Minus, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { DndContext, useSensor, useSensors, PointerSensor, TouchSensor, DragOverlay } from '@dnd-kit/core';
 
@@ -58,7 +58,11 @@ const OfferLetterEditor = () => {
         saveDocument,
         enterPreviewMode,
         exitPreviewMode,
-        restoreVersion
+        restoreVersion,
+        // Style Exports
+        styles,
+        updateStyle,
+        resetStyles
     } = useOfferLetterDocument(id);
 
     // Signature Modal State
@@ -95,6 +99,20 @@ const OfferLetterEditor = () => {
 
     const convertUrlToBase64 = async (url) => {
         try {
+            // Check if URL is from our backend storage
+            if (url && url.includes('/storage/')) {
+                // Use the proxy endpoint to bypass CORS
+                const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/file-proxy?path=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+
             const response = await fetch(url);
             const blob = await response.blob();
             return new Promise((resolve, reject) => {
@@ -134,12 +152,7 @@ const OfferLetterEditor = () => {
         try {
             await saveDocument(navigate);
         } catch (error) {
-            if (error.response && error.response.status === 422 && error.response.data.suggested_name) {
-                const suggestion = error.response.data.suggested_name;
-                setNameError(`Name "${trimmedName}" is already taken.`);
-                setNameSuggestion(suggestion);
-                if (nameInputRef.current) nameInputRef.current.focus();
-            }
+            console.error("Failed to save", error);
         }
     };
 
@@ -241,9 +254,27 @@ const OfferLetterEditor = () => {
                 if (base64) logoBase64 = base64;
             }
 
-            const fullHtml = generateOfferLetterHtml(formData, docContent, documentName, signatures, logoBase64);
-            const response = await generateDocumentPdf(id, fullHtml, documentName);
+            const printData = {
+                ...formData,
+                brandingEnabled: formData.brandingEnabled !== false && formData.brandingEnabled !== 'false',
+                logoAlignment: formData.logoAlignment || 'center',
+                logoSize: formData.logoSize || 70,
+                businessLogo: logoBase64
+            };
 
+            const documentHtml = renderToStaticMarkup(
+                <OfferLetterDocumentPreview
+                    data={printData}
+                    content={docContent}
+                    signatures={signatures}
+                    zoom={1}
+                    printing={true}
+                    styles={styles}
+                    businessLogo={logoBase64}
+                />
+            );
+
+            const response = await generateDocumentPdf(id, documentHtml, documentName);
             if (response.url) {
                 window.open(response.url, '_blank');
             }
@@ -372,6 +403,8 @@ const OfferLetterEditor = () => {
         );
     }
 
+    const showMobilePreview = !isDesktop && activeTab === 'preview';
+
     return (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="flex flex-col h-screen bg-slate-100 overflow-hidden">
@@ -450,7 +483,7 @@ const OfferLetterEditor = () => {
                         <button onClick={handleBack} className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors flex-shrink-0">
                             <ArrowLeft size={20} />
                         </button>
-                        <div className="min-w-0 relative">
+                        <div className="min-w-0 relative group/input">
                             <div className="flex items-center gap-2">
                                 <div className="relative">
                                     <input
@@ -465,22 +498,22 @@ const OfferLetterEditor = () => {
                                         placeholder="Enter Document Name"
                                     />
                                     {nameError && (
-                                        <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-red-100 z-50 p-3">
+                                        <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-red-100 z-50 p-3 animate-in fade-in slide-in-from-top-2">
                                             <div className="flex items-start gap-2 text-red-600 mb-2">
                                                 <AlertCircle size={16} />
                                                 <p className="text-xs font-semibold">{nameError}</p>
                                             </div>
                                             {nameSuggestion && (
-                                                <div className="bg-slate-50 rounded p-2">
+                                                <div className="bg-slate-50 rounded p-2 border border-slate-100">
                                                     <p className="text-[10px] text-slate-500 mb-1 uppercase font-bold">Suggestion:</p>
-                                                    <button onClick={() => { setDocumentName(nameSuggestion); setNameError(null); }} className="text-sm font-bold text-indigo-600 hover:underline">{nameSuggestion}</button>
+                                                    <button onClick={() => { setDocumentName(nameSuggestion); setNameError(null); }} className="text-sm font-bold text-indigo-600 hover:text-indigo-700 hover:underline">{nameSuggestion}</button>
                                                 </div>
                                             )}
                                         </div>
                                     )}
                                 </div>
                                 <button onClick={generateSmartName} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"><Wand size={16} /></button>
-                                {sentAt && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-100"><Check size={10} /> Sent</span>}
+                                {sentAt && <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-100"><Check size={10} /> Sent</span>}
                             </div>
                             <p className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap hidden sm:block mt-0.5">{id ? 'Autosaved locally' : 'Draft'}</p>
                         </div>
@@ -488,9 +521,9 @@ const OfferLetterEditor = () => {
 
                     <div className="flex items-center gap-2 md:gap-3">
                         <div className="hidden lg:flex items-center bg-slate-100 rounded-lg p-1 mr-4">
-                            <button onClick={handleZoomOut} className="p-1.5 hover:bg-white rounded-md text-slate-500"><ZoomOut size={16} /></button>
+                            <button onClick={handleZoomOut} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomOut size={16} /></button>
                             <span className="text-xs font-semibold text-slate-600 w-12 text-center">{Math.round(zoom * 100)}%</span>
-                            <button onClick={handleZoomIn} className="p-1.5 hover:bg-white rounded-md text-slate-500"><ZoomIn size={16} /></button>
+                            <button onClick={handleZoomIn} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomIn size={16} /></button>
                         </div>
                         <button onClick={() => setShowHistory(true)} className="hidden lg:flex items-center gap-2 px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"><Clock size={18} /><span>History</span></button>
                         <button onClick={handlePrint} disabled={isGeneratingPdf} className="hidden lg:flex items-center gap-2 px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50">{isGeneratingPdf ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}<span>Print</span></button>
@@ -501,7 +534,12 @@ const OfferLetterEditor = () => {
                 </header>
 
                 <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative pb-[70px] lg:pb-0">
-                    <div className={`no-print w-full lg:w-[400px] h-full bg-white border-r border-slate-200 overflow-y-auto z-20 shadow-sm flex-shrink-0 lg:order-1 ${isDesktop ? 'block' : (activeTab === 'edit' ? 'block' : 'hidden')}`}>
+                    {/* Left Panel: Editor Sidebar */}
+                    <div className={`
+                        no-print w-full lg:w-[400px] h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200 
+                        overflow-y-auto z-20 shadow-sm flex-shrink-0 lg:order-1
+                        ${isDesktop ? 'block' : (activeTab === 'edit' ? 'block' : 'hidden')}
+                    `}>
                         <OfferLetterFormSidebar
                             formData={formData}
                             onChange={handleFormChange}
@@ -511,10 +549,24 @@ const OfferLetterEditor = () => {
                             removeSection={removeSection}
                             updateSection={updateSection}
                             reorderSections={reorderSections}
+                            // Style Props
+                            styles={styles}
+                            onStyleUpdate={updateStyle}
+                            onStyleReset={resetStyles}
                         />
                     </div>
 
-                    <div className={`flex-1 h-full overflow-y-auto bg-slate-50/50 p-4 md:p-8 sm:p-12 flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 lg:order-2 ${isDesktop ? 'flex' : (activeTab === 'preview' ? 'flex' : 'hidden')}`} style={{ backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+                    {/* Right Panel: Live Preview */}
+                    <div className={`
+                        flex-1 h-full overflow-y-auto bg-slate-50/50 p-4 md:p-8 sm:p-12 
+                        flex justify-center items-start scrollbar-thin scrollbar-thumb-slate-300 lg:order-2
+                        ${isDesktop ? 'flex' : (activeTab === 'preview' ? 'flex' : 'hidden')}
+                    `}
+                        style={{
+                            backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+                            backgroundSize: '20px 20px'
+                        }}
+                    >
                         <OfferLetterDocumentPreview
                             data={deferredFormData}
                             content={deferredDocContent}
@@ -524,9 +576,11 @@ const OfferLetterEditor = () => {
                             onRemoveSignature={removeSignature}
                             onEditSignature={handleEditSignature}
                             businessLogo={businessLogo}
+                            // Style Props
+                            styles={styles}
                         />
                         {!isDesktop && activeTab === 'preview' && (
-                            <button onClick={handleAddSignatureMobile} className="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center z-30">+</button>
+                            <button onClick={handleAddSignatureMobile} className="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-600/30 flex items-center justify-center hover:bg-indigo-700 transition-transform active:scale-95 z-30"><span className="text-2xl font-bold">+</span></button>
                         )}
                     </div>
                 </div>
@@ -542,10 +596,41 @@ const OfferLetterEditor = () => {
 
                 {!isDesktop && (
                     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-between items-center px-6 py-3 pb-safe z-40 safe-area-bottom">
-                        <button onClick={() => setActiveTab('edit')} className={`flex flex-col items-center gap-1 ${activeTab === 'edit' ? 'text-indigo-600' : 'text-slate-400'}`}><FileText size={24} /><span className="text-[10px]">Editor</span></button>
-                        <button onClick={() => setActiveTab('preview')} className={`flex flex-col items-center gap-1 ${activeTab === 'preview' ? 'text-indigo-600' : 'text-slate-400'}`}><Eye size={24} /><span className="text-[10px]">Preview</span></button>
-                        <button onClick={onSave} className={`flex flex-col items-center gap-1 ${isSaving ? 'text-emerald-500' : 'text-slate-400'}`}><Save size={24} /><span className="text-[10px]">Save</span></button>
-                        <button onClick={() => setShowMobileMenu(true)} className={`flex flex-col items-center gap-1 ${showMobileMenu ? 'text-indigo-600' : 'text-slate-400'}`}><MoreHorizontal size={24} /><span className="text-[10px]">More</span></button>
+                        <button onClick={() => setActiveTab('edit')} className={`flex flex-col items-center gap-1 ${activeTab === 'edit' ? 'text-indigo-600' : 'text-slate-400'}`}><FileText size={24} strokeWidth={activeTab === 'edit' ? 2.5 : 2} /><span className="text-[10px] font-medium">Editor</span></button>
+                        <button onClick={() => setActiveTab('preview')} className={`flex flex-col items-center gap-1 ${activeTab === 'preview' ? 'text-indigo-600' : 'text-slate-400'}`}><Eye size={24} strokeWidth={activeTab === 'preview' ? 2.5 : 2} /><span className="text-[10px] font-medium">Preview</span></button>
+                        <button onClick={onSave} className={`flex flex-col items-center gap-1 ${isSaving ? 'text-emerald-500' : 'text-slate-400 transition-colors active:text-indigo-600'}`}>
+                            {isSaving ? <Check size={24} strokeWidth={2.5} /> : <Save size={24} />}
+                            <span className="text-[10px] font-medium">{isSaving ? 'Saved' : 'Save'}</span>
+                        </button>
+                        <button onClick={() => setShowMobileMenu(true)} className={`flex flex-col items-center gap-1 ${showMobileMenu ? 'text-indigo-600' : 'text-slate-400'}`}><MoreHorizontal size={24} /><span className="text-[10px] font-medium">More</span></button>
+                    </div>
+                )}
+
+                {/* Mobile "More" Menu Sheet */}
+                {!isDesktop && showMobileMenu && (
+                    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+                        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in" onClick={() => setShowMobileMenu(false)} />
+                        <div className="relative bg-white rounded-t-2xl p-6 pb-safe animate-in slide-in-from-bottom shadow-2xl space-y-2">
+                            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
+                            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2 px-2">Actions</h3>
+                            <button onClick={() => { setShowMobileMenu(false); setShowHistory(true); }} className="w-full flex items-center gap-3 p-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl transition-colors">
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><Clock size={20} /></div>
+                                Version History
+                            </button>
+                            <button onClick={() => { setShowMobileMenu(false); handleSendEmail(); }} className="w-full flex items-center gap-3 p-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl transition-colors">
+                                <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">{sentAt ? <Bell size={20} /> : <Mail size={20} />}</div>
+                                {sentAt ? 'Send Reminder' : 'Send to Client'}
+                            </button>
+                            <button onClick={() => { setShowMobileMenu(false); handlePrint(); }} disabled={isGeneratingPdf} className="w-full flex items-center gap-3 p-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl transition-colors disabled:opacity-50">
+                                <div className="p-2 bg-sky-50 text-sky-600 rounded-lg">{isGeneratingPdf ? <Loader2 size={20} className="animate-spin" /> : <Printer size={20} />}</div>
+                                {isGeneratingPdf ? 'Generating PDF...' : 'Print / Download PDF'}
+                            </button>
+                            <button onClick={() => { setShowMobileMenu(false); handleExport(); }} disabled={isExporting} className="w-full flex items-center gap-3 p-3 text-slate-700 font-medium hover:bg-slate-50 rounded-xl transition-colors disabled:opacity-50">
+                                <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">{isExporting ? <Loader2 size={20} className="animate-spin" /> : <Download size={20} />}</div>
+                                {isExporting ? 'Exporting...' : 'Export'}
+                            </button>
+                            <button onClick={() => setShowMobileMenu(false)} className="w-full mt-4 p-3 bg-slate-100 text-slate-600 font-semibold rounded-xl">Cancel</button>
+                        </div>
                     </div>
                 )}
             </div>

@@ -56,7 +56,11 @@ const ConsultingAgreementEditor = () => {
         saveDocument,
         enterPreviewMode,
         exitPreviewMode,
-        restoreVersion
+        restoreVersion,
+        // Style parameters
+        styles,
+        updateStyle,
+        resetStyles
     } = useConsultingAgreementDocument(id);
 
     const [sigModal, setSigModal] = useState({ isOpen: false, data: null });
@@ -89,6 +93,20 @@ const ConsultingAgreementEditor = () => {
 
     const convertUrlToBase64 = async (url) => {
         try {
+            // Check if URL is from our backend storage
+            if (url && url.includes('/storage/')) {
+                // Use the proxy endpoint to bypass CORS
+                const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/file-proxy?path=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+
             const response = await fetch(url);
             const blob = await response.blob();
             return new Promise((resolve, reject) => {
@@ -118,22 +136,10 @@ const ConsultingAgreementEditor = () => {
     }, []);
 
     const onSave = async () => {
-        const trimmedName = documentName?.trim();
-        if (!trimmedName || ['Untitled Consulting Agreement'].includes(trimmedName)) {
-            setNameError("Please enter a valid document name.");
-            if (nameInputRef.current) nameInputRef.current.focus();
-            return;
-        }
-
         try {
             await saveDocument(navigate);
         } catch (error) {
-            if (error.response && error.response.status === 422 && error.response.data.suggested_name) {
-                const suggestion = error.response.data.suggested_name;
-                setNameError(`Name "${trimmedName}" is already taken.`);
-                setNameSuggestion(suggestion);
-                if (nameInputRef.current) nameInputRef.current.focus();
-            }
+            console.error("Failed to save", error);
         }
     };
 
@@ -227,13 +233,26 @@ const ConsultingAgreementEditor = () => {
         }
         setIsGeneratingPdf(true);
         try {
+            // Robust Base64 Logic
             let logoBase64 = businessLogo;
             if (businessLogo && !businessLogo.startsWith('data:')) {
                 const base64 = await convertUrlToBase64(businessLogo);
                 if (base64) logoBase64 = base64;
             }
-            const fullHtml = generateConsultingAgreementHtml(formData, docContent, documentName, signatures, logoBase64);
-            const response = await generateDocumentPdf(id, fullHtml, documentName);
+
+            const documentHtml = renderToStaticMarkup(
+                <ConsultingAgreementDocumentPreview
+                    data={formData}
+                    content={docContent}
+                    zoom={1}
+                    printing={true}
+                    styles={styles}
+                    signatures={signatures}
+                    businessLogo={logoBase64} // Pass Base64 explicitly
+                />
+            );
+
+            const response = await generateDocumentPdf(id, documentHtml, documentName);
             if (response.url) window.open(response.url, '_blank');
         } catch (error) {
             console.error("PDF Generation failed", error);
@@ -488,6 +507,10 @@ const ConsultingAgreementEditor = () => {
                             removeSection={removeSection}
                             updateSection={updateSection}
                             reorderSections={reorderSections}
+                            // Style Props
+                            styles={styles}
+                            onStyleUpdate={updateStyle}
+                            onStyleReset={resetStyles}
                         />
                     </div>
 
@@ -497,10 +520,11 @@ const ConsultingAgreementEditor = () => {
                             content={deferredDocContent}
                             zoom={zoom}
                             signatures={signatures}
-                            onUpdateSignature={updateSignature}
                             onRemoveSignature={removeSignature}
                             onEditSignature={handleEditSignature}
                             businessLogo={businessLogo}
+                            // Style Props
+                            styles={styles}
                         />
                         {!isDesktop && activeTab === 'preview' && (
                             <button onClick={handleAddSignatureMobile} className="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg flex items-center justify-center z-30">+</button>

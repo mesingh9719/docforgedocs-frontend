@@ -243,28 +243,43 @@ const SignatureModule = () => {
                         <>
                             {/* Left Sidebar - Only show if file is uploaded */}
                             {pdfFile && (
-                                <div className="w-72 bg-white border-r border-slate-200 flex flex-col z-20">
-                                    <div className="p-4 border-b border-slate-100">
-                                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Tools</h3>
+                                <div className="w-72 bg-white border-r border-slate-200 flex flex-col z-20 h-full shadow-lg">
+                                    <div className="p-4 border-b border-slate-100 bg-white sticky top-0 z-10">
+                                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                            <SettingsIcon size={14} />
+                                            Signature Tools
+                                        </h3>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                        <p className="text-xs text-slate-500 mb-2">Drag fields to place them.</p>
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-200">
+                                        <p className="text-xs text-slate-500 mb-2 font-medium">Drag fields onto the document</p>
                                         <SignatureToolbar />
 
                                         <div className="mt-6 pt-6 border-t border-slate-100">
-                                            <div className="flex items-center justify-between text-sm">
-                                                <span className="text-slate-600">Fields Added</span>
-                                                <span className="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-xs">{signatures.length}</span>
+                                            <div className="flex items-center justify-between text-sm mb-3">
+                                                <span className="text-slate-600 font-medium">Signers Required</span>
+                                                <span className="font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-xs">{signers.length}</span>
+                                            </div>
+
+                                            {/* Mini Signer List */}
+                                            <div className="space-y-2">
+                                                {signers.map((signer) => (
+                                                    <div key={signer.id} className="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
+                                                        <div className="w-5 h-5 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-[10px]">
+                                                            {signer.order}
+                                                        </div>
+                                                        <span className="truncate flex-1">{signer.name || signer.email || 'New Signer'}</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Sidebar Footer */}
-                                    <div className="p-4 border-t border-slate-200 bg-slate-50">
+                                    <div className="p-4 border-t border-slate-200 bg-slate-50 sticky bottom-0 z-10">
                                         <button
                                             onClick={handleProceedToReview}
                                             disabled={signatures.length === 0}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                                         >
                                             <span>Review & Send</span>
                                             <CheckCircle size={16} />
@@ -273,18 +288,18 @@ const SignatureModule = () => {
                                 </div>
                             )}
 
-                            {/* Main Content */}
-                            <div className="flex-1 bg-slate-100/50 relative overflow-hidden flex flex-col">
+                            {/* Main Content - Independent Scroll Area */}
+                            <div className="flex-1 bg-slate-100/50 relative flex flex-col h-full overflow-hidden">
                                 {!pdfFile ? (
-                                    <div className="w-full h-full p-8 flex items-center justify-center">
+                                    <div className="w-full h-full p-8 flex items-center justify-center overflow-y-auto">
                                         <div className="max-w-xl w-full">
                                             <PDFUploader onFileUpload={handleFileUpload} />
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 p-8 flex justify-center bg-slate-100">
-                                        <div className="bg-white shadow-sm border border-slate-200 h-fit">
-                                            <div ref={pdfViewerRef} className="relative">
+                                    <div className="w-full h-full p-4 md:p-8 flex justify-center bg-slate-200/50 relative overflow-hidden">
+                                        <div className="w-full h-full bg-white border border-slate-200 relative rounded-xl overflow-hidden">
+                                            <div ref={pdfViewerRef} className="h-full w-full relative">
                                                 <PDFViewer
                                                     pdfUrl={pdfUrl}
                                                     signatures={signatures}
@@ -304,13 +319,13 @@ const SignatureModule = () => {
                     {currentStep === 2 && (
                         <div className="w-full h-full flex bg-slate-50">
                             {/* Review Sidebar */}
-                            <div className="w-96 border-r border-slate-200 bg-white flex flex-col">
-                                <div className="p-5 border-b border-slate-100">
+                            <div className="w-96 border-r border-slate-200 bg-white flex flex-col h-full shadow-lg z-10">
+                                <div className="p-5 border-b border-slate-100 bg-white sticky top-0">
                                     <h2 className="text-lg font-bold text-slate-800">Review Signers</h2>
                                     <p className="text-xs text-slate-500 mt-1">Verify details before sending.</p>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto flex flex-col p-2">
+                                <div className="flex-1 overflow-y-auto flex flex-col p-2 scrollbar-thin scrollbar-thumb-slate-200">
                                     <SignerManagement
                                         signers={signers}
                                         onUpdateSigners={setSigners}
@@ -318,7 +333,7 @@ const SignatureModule = () => {
                                     />
                                 </div>
 
-                                <div className="p-5 border-t border-slate-200 bg-slate-50 space-y-3">
+                                <div className="p-5 border-t border-slate-200 bg-slate-50 space-y-3 sticky bottom-0">
                                     <button
                                         onClick={handleSendDocument}
                                         className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm transition-all text-sm"
@@ -336,9 +351,9 @@ const SignatureModule = () => {
                             </div>
 
                             {/* Preview */}
-                            <div className="flex-1 bg-slate-100/50 relative overflow-hidden flex flex-col">
-                                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 p-8 flex justify-center bg-slate-100">
-                                    <div className="bg-white shadow-sm border border-slate-200 h-fit">
+                            <div className="flex-1 bg-slate-100/50 relative flex flex-col h-full overflow-hidden">
+                                <div className="w-full h-full p-4 md:p-8 flex justify-center bg-slate-200/50 relative overflow-hidden">
+                                    <div className="w-full h-full bg-white border border-slate-200 relative rounded-xl overflow-hidden">
                                         <PDFViewer
                                             pdfUrl={pdfUrl}
                                             signatures={signatures}

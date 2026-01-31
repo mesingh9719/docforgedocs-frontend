@@ -12,6 +12,7 @@ import { getBusiness } from '../../../api/business';
 import { generateDocumentPdf, wrapHtmlForPdf } from '../../../utils/pdfGenerator';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
+import { useDocumentStyles } from '../../../hooks/useDocumentStyles';
 
 const InvoiceEditor = () => {
     const navigate = useNavigate();
@@ -81,6 +82,9 @@ const InvoiceEditor = () => {
         amountInWords: 'Zero Only'
     });
 
+    // Style Integration
+    const { styles, updateStyle, resetStyles } = useDocumentStyles();
+
     // Performance Optimization: Defer the preview data
     const deferredFormData = React.useDeferredValue(formData);
     const deferredTotals = React.useDeferredValue(totals);
@@ -100,12 +104,18 @@ const InvoiceEditor = () => {
             // Set tracking data
             if (doc.data.sent_at) setSentAt(doc.data.sent_at);
 
-            const content = doc.data.content || {};
+            let content = doc.data.content || {};
+            if (typeof content === 'string') {
+                try { content = JSON.parse(content); } catch (e) { console.error(e); }
+            }
             if (content.formData) {
                 setFormData(prev => ({
                     ...prev,
                     ...content.formData
                 }));
+            }
+            if (content.styles) {
+                Object.entries(content.styles).forEach(([k, v]) => updateStyle(k, v));
             }
         } catch (error) {
             console.error("Failed to load invoice", error);
@@ -226,7 +236,8 @@ const InvoiceEditor = () => {
                 name: `Invoice #${formData.invoiceNumber}` || 'Untitled Invoice',
                 type_slug: 'invoice',
                 content: {
-                    formData
+                    formData,
+                    styles
                 },
                 status: 'draft'
             };
@@ -251,8 +262,24 @@ const InvoiceEditor = () => {
     const lastGeneratedData = React.useRef(null);
     const [cachedPdfUrl, setCachedPdfUrl] = useState(null);
 
+
+
     const convertUrlToBase64 = async (url) => {
         try {
+            // Check if URL is from our backend storage
+            if (url && url.includes('/storage/')) {
+                // Use the proxy endpoint to bypass CORS
+                const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/file-proxy?path=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+
             const response = await fetch(url);
             const blob = await response.blob();
             return new Promise((resolve, reject) => {
@@ -295,7 +322,7 @@ const InvoiceEditor = () => {
             };
 
             const documentHtml = renderToStaticMarkup(
-                <InvoiceDocumentPreview data={printData} totals={totals} zoom={1} printing={true} />
+                <InvoiceDocumentPreview data={printData} totals={totals} zoom={1} printing={true} styles={styles} />
             );
 
             const response = await generateDocumentPdf(
@@ -620,6 +647,10 @@ const InvoiceEditor = () => {
                         addItem={addItem}
                         removeItem={removeItem}
                         totals={totals}
+                        // Style Props
+                        styles={styles}
+                        onStyleUpdate={updateStyle}
+                        onStyleReset={resetStyles}
                     />
                 </div>
 
@@ -638,6 +669,7 @@ const InvoiceEditor = () => {
                         data={deferredFormData}
                         totals={deferredTotals}
                         zoom={zoom}
+                        styles={styles}
                     />
                 </div>
             </div>

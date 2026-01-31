@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Reorder } from 'framer-motion';
-import { PenTool, Edit3, Layers, User, Calendar, DollarSign, Palette } from 'lucide-react';
+import { PenTool, Edit3, Layers, User, Calendar, DollarSign, Palette, Type } from 'lucide-react';
 import { SidebarSection, SidebarInput } from '../../../components/Nda/SidebarComponents';
 import { BuilderSectionCard, BuilderAddButton } from '../../../components/Common/BuilderComponents';
 import { BrandingControls } from '../../../components/Common/BrandingControls';
+import StyleEditor from '../../../components/Common/StyleEditor';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import { getBusiness } from '../../../api/business';
 import toast from 'react-hot-toast';
@@ -17,7 +18,11 @@ const ConsultingAgreementFormSidebar = ({
     addSection,
     removeSection,
     updateSection,
-    reorderSections
+    reorderSections,
+    // Style Props
+    styles,
+    onStyleUpdate,
+    onStyleReset
 }) => {
     const [openSection, setOpenSection] = useState('parties');
     const [mode, setMode] = useState('fill');
@@ -84,16 +89,24 @@ const ConsultingAgreementFormSidebar = ({
                     <button
                         onClick={() => setMode('edit')}
                         className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${mode === 'edit' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        title="Structure"
                     >
                         <Edit3 size={16} />
+                    </button>
+                    <button
+                        onClick={() => setMode('style')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${mode === 'style' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        title="Appearance"
+                    >
+                        <Type size={16} />
                     </button>
                 </div>
                 <div>
                     <h2 className="text-lg font-bold text-slate-900">
-                        {mode === 'fill' ? 'Contract Details' : 'Structure Builder'}
+                        {mode === 'fill' ? 'Contract Details' : mode === 'edit' ? 'Structure Builder' : 'Styling & Appearance'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-1">
-                        {mode === 'fill' ? 'Enter contract terms' : 'Customize layout'}
+                        {mode === 'fill' ? 'Enter contract terms' : mode === 'edit' ? 'Customize layout' : 'Fonts, colors and spacing'}
                     </p>
                 </div>
             </div>
@@ -252,6 +265,16 @@ const ConsultingAgreementFormSidebar = ({
 
                         <BuilderAddButton onClick={addSection} />
                     </div>
+                </div>
+            )}
+
+            {mode === 'style' && (
+                <div className="p-4 pb-20">
+                    <StyleEditor
+                        styles={styles}
+                        onUpdate={onStyleUpdate}
+                        onReset={onStyleReset}
+                    />
                 </div>
             )}
         </div>

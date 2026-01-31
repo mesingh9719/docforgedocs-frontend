@@ -12,7 +12,7 @@ const PDFUploader = ({ onFileUpload }) => {
 
     const validateFile = (file) => {
         setError(null);
-        
+
         if (file.type !== 'application/pdf') {
             setError('Only PDF files are allowed');
             return false;
@@ -29,7 +29,7 @@ const PDFUploader = ({ onFileUpload }) => {
     const handleDrag = useCallback((e) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         if (e.type === 'dragenter' || e.type === 'dragover') {
             setDragActive(true);
         } else if (e.type === 'dragleave') {
@@ -49,16 +49,18 @@ const PDFUploader = ({ onFileUpload }) => {
 
     const handleFileSelection = (file) => {
         setIsValidating(true);
-        
+
         setTimeout(() => {
             if (validateFile(file)) {
                 setSelectedFile(file);
                 setError(null);
+                // Auto-proceed immediately
+                onFileUpload(file);
             } else {
                 setSelectedFile(null);
             }
             setIsValidating(false);
-        }, 500);
+        }, 800); // Slightly longer delay for visual feedback
     };
 
     const handleInputChange = (e) => {
@@ -109,11 +111,11 @@ const PDFUploader = ({ onFileUpload }) => {
                     onDrop={handleDrop}
                     className={`
                         relative border-2 border-dashed rounded-2xl p-12 transition-all duration-300
-                        ${dragActive 
-                            ? 'border-indigo-500 bg-indigo-50' 
-                            : selectedFile 
-                                ? 'border-emerald-300 bg-emerald-50/50' 
-                                : error 
+                        ${dragActive
+                            ? 'border-indigo-500 bg-indigo-50'
+                            : selectedFile
+                                ? 'border-emerald-300 bg-emerald-50/50'
+                                : error
                                     ? 'border-red-300 bg-red-50/50'
                                     : 'border-slate-300 bg-slate-50/50 hover:border-indigo-400 hover:bg-indigo-50/30'
                         }
@@ -219,20 +221,7 @@ const PDFUploader = ({ onFileUpload }) => {
                     </ul>
                 </div>
 
-                {selectedFile && !error && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-8 text-center"
-                    >
-                        <button
-                            onClick={handleProceed}
-                            className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg rounded-xl shadow-xl shadow-indigo-200 hover:shadow-2xl hover:shadow-indigo-300 transition-all transform hover:scale-105"
-                        >
-                            Continue to Place Signatures
-                        </button>
-                    </motion.div>
-                )}
+                {/* Continue button removed for auto-redirect */}
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

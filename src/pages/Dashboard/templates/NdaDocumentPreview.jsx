@@ -13,7 +13,8 @@ function NdaDocumentPreview({
     onUpdateSignature,
     onRemoveSignature,
     onEditSignature,
-    businessLogo
+    businessLogo,
+    styles // Add styles prop
 }) {
 
     // Helper to get consistent color for a variable name
@@ -73,6 +74,17 @@ function NdaDocumentPreview({
         );
     };
 
+    const s = styles || {
+        fontFamily: 'font-serif',
+        fontSize: 'text-[11pt]',
+        lineHeight: 'leading-relaxed',
+        textColor: '#1e293b',
+        headingColor: '#0f172a',
+        accentColor: '#4f46e5',
+        pageMargin: 'p-[25mm]',
+        paragraphSpacing: 'mb-4',
+    };
+
     const Container = printing ? 'div' : motion.div;
     const Section = printing ? 'div' : motion.section;
 
@@ -86,8 +98,12 @@ function NdaDocumentPreview({
             style={{
                 transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
+                color: s.textColor,
             }}
-            className={`w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[11pt] leading-relaxed font-serif relative mb-20 origin-top ${printing ? '' : 'shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60'}`}
+            className={`w-[210mm] min-h-[297mm] bg-white relative mb-20 origin-top 
+                ${printing ? '' : 'shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60'}
+                ${s.fontFamily} ${s.fontSize} ${s.lineHeight} ${s.pageMargin}
+            `}
         >
             {/* Realistic Paper Effects - Hide when printing */}
             {!printing && (

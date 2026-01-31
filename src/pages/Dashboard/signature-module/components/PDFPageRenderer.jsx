@@ -14,7 +14,7 @@ const PDFPageRenderer = ({ pageNumber, scale, children }) => {
     return (
         <div
             ref={setNodeRef}
-            className={`relative mb-6 transition-colors shadow-md ${isOver ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
+            className={`relative mb-6 transition-colors ${isOver ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
             style={{ width: 'fit-content', margin: '0 auto 1.5rem auto' }}
         >
             <Page
@@ -22,7 +22,7 @@ const PDFPageRenderer = ({ pageNumber, scale, children }) => {
                 scale={scale}
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
-                className="shadow-sm"
+                className=""
                 loading={
                     <div className="w-[600px] h-[800px] bg-white animate-pulse rounded-lg flex items-center justify-center">
                         <span className="text-slate-400 font-medium">Loading Page {pageNumber}...</span>

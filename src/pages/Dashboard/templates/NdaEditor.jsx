@@ -57,7 +57,11 @@ const NdaEditor = () => {
         saveDocument,
         enterPreviewMode,
         exitPreviewMode,
-        restoreVersion
+        restoreVersion,
+        // Style parameters
+        styles,
+        updateStyle,
+        resetStyles
     } = useNdaDocument(id);
 
     // Signature Modal State
@@ -109,6 +113,20 @@ const NdaEditor = () => {
 
     const convertUrlToBase64 = async (url) => {
         try {
+            // Check if URL is from our backend storage
+            if (url && url.includes('/storage/')) {
+                // Use the proxy endpoint to bypass CORS
+                const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/file-proxy?path=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+
             const response = await fetch(url);
             const blob = await response.blob();
             return new Promise((resolve, reject) => {
@@ -139,29 +157,10 @@ const NdaEditor = () => {
     }, []);
 
     const onSave = async () => {
-        const trimmedName = documentName?.trim();
-        const defaultNames = ['Untitled NDA', 'Untitled Proposal'];
-
-        setNameError(null);
-        setNameSuggestion(null);
-
-        if (!trimmedName || defaultNames.some(name => trimmedName.toLowerCase() === name.toLowerCase())) {
-            setNameError("Please enter a valid document name.");
-            if (nameInputRef.current) {
-                nameInputRef.current.focus();
-            }
-            return;
-        }
-
         try {
             await saveDocument(navigate);
         } catch (error) {
-            if (error.response && error.response.status === 422 && error.response.data.suggested_name) {
-                const suggestion = error.response.data.suggested_name;
-                setNameError(`Name "${trimmedName}" is already taken.`);
-                setNameSuggestion(suggestion);
-                if (nameInputRef.current) nameInputRef.current.focus();
-            }
+            console.error("Failed to save", error);
         }
     };
 
@@ -273,17 +272,27 @@ const NdaEditor = () => {
         }
 
         setIsGeneratingPdf(true);
-        setIsGeneratingPdf(true);
         try {
+            // Robust Base64 Logic
             let logoBase64 = businessLogo;
             if (businessLogo && !businessLogo.startsWith('data:')) {
                 const base64 = await convertUrlToBase64(businessLogo);
                 if (base64) logoBase64 = base64;
             }
 
-            const fullHtml = generateNdaHtml(formData, docContent, documentName, signatures, logoBase64);
-            const response = await generateDocumentPdf(id, fullHtml, documentName);
+            const documentHtml = renderToStaticMarkup(
+                <NdaDocumentPreview
+                    data={formData}
+                    content={docContent}
+                    zoom={1}
+                    printing={true}
+                    styles={styles}
+                    signatures={signatures} // Pass Signatures
+                    businessLogo={logoBase64} // Pass Base64 explicitly
+                />
+            );
 
+            const response = await generateDocumentPdf(id, documentHtml, documentName);
             if (response.url) {
                 window.open(response.url, '_blank');
             }
@@ -642,6 +651,10 @@ const NdaEditor = () => {
                             removeSection={removeSection}
                             updateSection={updateSection}
                             reorderSections={reorderSections}
+                            // Style Props
+                            styles={styles}
+                            onStyleUpdate={updateStyle}
+                            onStyleReset={resetStyles}
                         />
                     </div>
 
@@ -665,6 +678,8 @@ const NdaEditor = () => {
                             onRemoveSignature={removeSignature}
                             onEditSignature={handleEditSignature}
                             businessLogo={businessLogo}
+                            // Style Props
+                            styles={styles}
                         />
 
                         {/* Mobile Add Signature FAB */}

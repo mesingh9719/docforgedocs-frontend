@@ -12,7 +12,8 @@ function ConsultingAgreementDocumentPreview({
     onUpdateSignature,
     onRemoveSignature,
     onEditSignature,
-    businessLogo
+    businessLogo,
+    styles
 }) {
 
     const getVariableColor = (name) => {
@@ -68,6 +69,18 @@ function ConsultingAgreementDocumentPreview({
     const Container = printing ? 'div' : motion.div;
     const Section = printing ? 'div' : motion.section;
 
+    // Default styles for backward compatibility
+    const s = styles || {
+        fontFamily: 'font-serif',
+        fontSize: 'text-[11pt]',
+        lineHeight: 'leading-relaxed',
+        textColor: '#1e293b',
+        headingColor: '#0f172a',
+        accentColor: '#4f46e5',
+        pageMargin: 'p-[10mm]',
+        paragraphSpacing: 'mb-6',
+    };
+
     return (
         <Container
             id="printable-document"
@@ -78,8 +91,13 @@ function ConsultingAgreementDocumentPreview({
             style={{
                 transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
+                color: s.textColor,
             }}
-            className={`w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[11pt] leading-relaxed font-serif relative mb-20 origin-top ${printing ? '' : 'shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60'}`}
+            className={`
+                w-[210mm] min-h-[297mm] bg-white relative mb-20 origin-top 
+                ${printing ? '' : 'shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60'}
+                ${s.fontFamily} ${s.fontSize} ${s.lineHeight}
+            `}
         >
             {!printing && (
                 <div className="no-print absolute inset-0 rounded-sm pointer-events-none bg-gradient-to-b from-white to-slate-50/20"></div>
@@ -122,7 +140,7 @@ function ConsultingAgreementDocumentPreview({
                 </div>
             )}
 
-            <div className="p-[10mm] relative z-10">
+            <div className={`${s.pageMargin} relative z-10`}>
 
                 {businessLogo && data.brandingEnabled !== false && data.brandingEnabled !== 'false' && (
                     <div
@@ -137,27 +155,30 @@ function ConsultingAgreementDocumentPreview({
                     </div>
                 )}
 
-                <h1 className="text-xl font-bold text-center mb-10 uppercase tracking-widest border-b-2 border-slate-900 pb-2">
+                <h1
+                    className="text-xl font-bold text-center mb-10 uppercase tracking-widest border-b-2 border-slate-900 pb-2"
+                    style={{ borderColor: s.headingColor, color: s.headingColor }}
+                >
                     {content.title}
                 </h1>
 
-                <p className="mb-6 text-justify">
+                <p className={`text-justify ${s.paragraphSpacing}`}>
                     <DynamicText template={content.preamble} values={data} />
                 </p>
 
-                <div className="mb-8 pl-4 border-l-4 border-slate-100">
+                <div className={`mb-8 pl-4 border-l-4 border-slate-100`}>
                     <p className="font-bold text-xs uppercase text-slate-400 mb-1">BY AND BETWEEN</p>
-                    <p className="mb-4 text-justify">
+                    <p className={`text-justify ${s.paragraphSpacing}`}>
                         <DynamicText template={content.partiesDisclosing} values={data} />
                     </p>
 
                     <p className="font-bold text-xs uppercase text-slate-400 mb-1">AND</p>
-                    <p className="mb-2 text-justify">
+                    <p className={`text-justify ${s.paragraphSpacing}`}>
                         <DynamicText template={content.partiesReceiving} values={data} />
                     </p>
                 </div>
 
-                <p className="text-justify mb-8">
+                <p className={`text-justify ${s.paragraphSpacing}`}>
                     <DynamicText template={content.partiesFooter} values={data} />
                 </p>
 
@@ -166,6 +187,7 @@ function ConsultingAgreementDocumentPreview({
                         {content.sections && content.sections.map((section, index) => (
                             <Section
                                 key={section.id}
+                                className={s.paragraphSpacing}
                                 {...(!printing ? {
                                     layout: true,
                                     initial: { opacity: 0, y: 10 },
@@ -173,8 +195,11 @@ function ConsultingAgreementDocumentPreview({
                                     exit: { opacity: 0, scale: 0.95 }
                                 } : {})}
                             >
-                                <h2 className="font-bold text-sm uppercase mb-2">
-                                    {index + 1}. {section.title}
+                                <h2
+                                    className="font-bold text-sm uppercase mb-2"
+                                    style={{ color: s.headingColor }}
+                                >
+                                    {section.title}
                                 </h2>
                                 <p className="text-justify">
                                     <DynamicText template={section.content} values={data} />
@@ -185,9 +210,15 @@ function ConsultingAgreementDocumentPreview({
                 </div>
 
                 <div className="mt-12 break-inside-avoid">
-                    <h2 className="font-bold text-sm uppercase mb-6 border-b border-slate-900 pb-1">{content.sections.length + 1}. Signatures</h2>
+                    <h2
+                        className="font-bold text-sm uppercase mb-6 border-b border-slate-900 pb-1"
+                        style={{ borderColor: s.headingColor, color: s.headingColor }}
+                    >
+                        {content.sections.length + 1}. Signatures
+                    </h2>
                     <p className="mb-8">IN WITNESS WHEREOF, the Parties have executed this Agreement as of the date first written above.</p>
 
+                    {/* ... Signatures Table/Grid ... */}
                     {printing ? (
                         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
                             <tbody>

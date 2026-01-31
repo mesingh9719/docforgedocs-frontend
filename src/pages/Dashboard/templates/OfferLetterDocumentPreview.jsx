@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SignatureLayer from '../../../components/Nda/Signatures/SignatureLayer';
 
-function NdaDocumentPreview({
+function OfferLetterDocumentPreview({
     data,
     content,
     zoom = 1,
@@ -65,6 +65,11 @@ function NdaDocumentPreview({
                 {parts.map((part, index) => {
                     if (part.startsWith('{{') && part.endsWith('}}')) {
                         const key = part.slice(2, -2).trim();
+                        // Handle multiline address
+                        const val = values[key];
+                        if (key.toLowerCase().includes('address') && val) {
+                            return <span key={index} className="whitespace-pre-line"><RenderField value={val} name={key} placeholder={`[${key}]`} /></span>
+                        }
                         return <RenderField key={index} value={values[key]} name={key} placeholder={`[${key}]`} />;
                     }
                     return <span key={index}>{part}</span>;
@@ -141,19 +146,6 @@ function NdaDocumentPreview({
                             }}>
                                 {sig.metadata.type === 'date' ? 'Date' : 'Authorized Signature'}
                             </div>
-
-                            {/* Optional Email/Details */}
-                            {sig.metadata.signeeEmail && (
-                                <div style={{
-                                    fontSize: '7pt',
-                                    color: '#94a3b8',
-                                    position: 'absolute',
-                                    bottom: '-14px',
-                                    left: '0'
-                                }}>
-                                    {sig.metadata.signeeEmail}
-                                </div>
-                            )}
                         </div>
                     ))}
                 </div>
@@ -165,7 +157,7 @@ function NdaDocumentPreview({
                 {businessLogo && data.brandingEnabled !== false && data.brandingEnabled !== 'false' && (
                     <div
                         className={`flex mb-8 ${data.logoAlignment === 'left' ? 'justify-start' : data.logoAlignment === 'right' ? 'justify-end' : 'justify-center'}`}
-                        style={printing ? { textAlign: data.logoAlignment || 'center' } : {}}
+                        style={printing ? { textAlign: data.logoAlignment || 'left' } : {}}
                     >
                         <img
                             src={businessLogo}
@@ -175,29 +167,24 @@ function NdaDocumentPreview({
                     </div>
                 )}
 
-                <h1 className="text-xl font-bold text-center mb-10 uppercase tracking-widest border-b-2 border-slate-900 pb-2">
-                    {content.title}
-                </h1>
-
-                <p className="mb-6 text-justify">
-                    <DynamicText template={content.preamble} values={data} />
-                </p>
-
-                <div className="mb-8 pl-4 border-l-4 border-slate-100">
-                    <p className="font-bold text-xs uppercase text-slate-400 mb-1">BY AND BETWEEN</p>
-                    <p className="mb-4 text-justify">
-                        <DynamicText template={content.partiesDisclosing} values={data} />
+                {/* Letter Header */}
+                <div className="mb-8">
+                    <p className="mb-6 font-medium">
+                        <DynamicText template={content.preamble} values={data} />
                     </p>
 
-                    <p className="font-bold text-xs uppercase text-slate-400 mb-1">AND</p>
-                    <p className="mb-2 text-justify">
-                        <DynamicText template={content.partiesReceiving} values={data} />
+                    <div className="mb-6 whitespace-pre-line">
+                        <DynamicText template={content.partiesDisclosing} values={data} />
+                    </div>
+
+                    <p className="mb-6">
+                        <DynamicText template={content.partiesFooter} values={data} />
                     </p>
                 </div>
 
-                <p className="text-justify mb-8">
-                    <DynamicText template={content.partiesFooter} values={data} />
-                </p>
+                <div className="text-justify mb-8">
+                    {/* Standard Letter Intro if not part of sections */}
+                </div>
 
                 {/* Dynamic Sections Loop */}
                 <div className="space-y-6 min-h-[100px]">
@@ -213,7 +200,7 @@ function NdaDocumentPreview({
                                 } : {})}
                             >
                                 <h2 className="font-bold text-sm uppercase mb-2">
-                                    {index + 1}. {section.title}
+                                    {section.title}
                                 </h2>
                                 <p className="text-justify">
                                     <DynamicText template={section.content} values={data} />
@@ -225,23 +212,21 @@ function NdaDocumentPreview({
 
                 {/* Signatures (Fixed at bottom) */}
                 <div className="mt-12 break-inside-avoid">
-                    <h2 className="font-bold text-sm uppercase mb-6 border-b border-slate-900 pb-1">{content.sections.length + 1}. Signatures</h2>
-                    <p className="mb-8">IN WITNESS WHEREOF, the Parties have executed this Agreement as of the date first written above.</p>
+                    <p className="mb-8">Sincerely,</p>
 
                     {printing ? (
-                        /* Table Layout for PDF Generation (DomPDF is robust with tables) */
+                        /* Table Layout for PDF Generation */
                         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
                             <tbody>
                                 <tr>
-                                    {/* Column 1: Disclosing Party */}
+                                    {/* Column 1: Employer */}
                                     <td style={{ width: '48%', verticalAlign: 'top', paddingRight: '2%' }}>
-                                        <p className="font-bold uppercase text-xs tracking-wider mb-8">For Disclosing Party</p>
+                                        <p className="font-bold uppercase text-xs tracking-wider mb-8">For {data.employerName || 'The Company'}</p>
 
                                         <div className="relative border-b border-slate-800 h-8 mb-2" style={{ borderBottom: '1px solid #000', height: '40px', marginBottom: '10px' }}>
-                                            {/* Signature - Text representation for PDF or Image if needed */}
-                                            {data.disclosingSignatoryName && (
+                                            {data.employerSignatoryName && (
                                                 <span style={{ fontFamily: 'cursive', fontSize: '16pt', color: '#1e3a8a' }}>
-                                                    {data.disclosingSignatoryName}
+                                                    {data.employerSignatoryName}
                                                 </span>
                                             )}
                                         </div>
@@ -251,47 +236,42 @@ function NdaDocumentPreview({
                                             <tbody>
                                                 <tr>
                                                     <td style={{ width: '60px', fontWeight: 'bold', fontSize: '10pt' }}>Name:</td>
-                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.disclosingSignatoryName}</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.employerSignatoryName}</td>
                                                 </tr>
-                                                <tr>
-                                                    <td style={{ paddingBottom: '5px' }}></td><td></td>
-                                                </tr>
+                                                <tr><td style={{ paddingBottom: '5px' }}></td><td></td></tr>
                                                 <tr>
                                                     <td style={{ width: '60px', fontWeight: 'bold', fontSize: '10pt' }}>Title:</td>
-                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.disclosingSignatoryDesignation}</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.employerSignatoryTitle}</td>
                                                 </tr>
                                             </tbody>
                                         </table>
                                     </td>
 
-                                    {/* Spacer */}
                                     <td style={{ width: '4%' }}></td>
 
-                                    {/* Column 2: Receiving Party */}
+                                    {/* Column 2: Candidate */}
                                     <td style={{ width: '48%', verticalAlign: 'top' }}>
-                                        <p className="font-bold uppercase text-xs tracking-wider mb-8">For Receiving Party</p>
+                                        <p className="font-bold uppercase text-xs tracking-wider mb-8">Accepted By</p>
 
                                         <div className="relative border-b border-slate-800 h-8 mb-2" style={{ borderBottom: '1px solid #000', height: '40px', marginBottom: '10px' }}>
-                                            {data.receivingSignatoryName && (
+                                            {data.candidateSignatoryName && (
                                                 <span style={{ fontFamily: 'cursive', fontSize: '16pt', color: '#1e3a8a' }}>
-                                                    {data.receivingSignatoryName}
+                                                    {data.candidateSignatoryName}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-xs uppercase text-slate-500">Authorized Signature</p>
+                                        <p className="text-xs uppercase text-slate-500">Candidate Signature</p>
 
                                         <table style={{ width: '100%', marginTop: '15px' }}>
                                             <tbody>
                                                 <tr>
                                                     <td style={{ width: '60px', fontWeight: 'bold', fontSize: '10pt' }}>Name:</td>
-                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.receivingSignatoryName}</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.candidateName}</td>
                                                 </tr>
+                                                <tr><td style={{ paddingBottom: '5px' }}></td><td></td></tr>
                                                 <tr>
-                                                    <td style={{ paddingBottom: '5px' }}></td><td></td>
-                                                </tr>
-                                                <tr>
-                                                    <td style={{ width: '60px', fontWeight: 'bold', fontSize: '10pt' }}>Title:</td>
-                                                    <td style={{ borderBottom: '1px solid #ccc' }}>{data.receivingSignatoryDesignation}</td>
+                                                    <td style={{ width: '60px', fontWeight: 'bold', fontSize: '10pt' }}>Date:</td>
+                                                    <td style={{ borderBottom: '1px solid #ccc' }}></td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -301,55 +281,47 @@ function NdaDocumentPreview({
                         </table>
                     ) : (
                         /* Grid Layout for Browser View */
-                        /* Grid Layout for Browser View */
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
                             <div className="space-y-1">
-                                <p className="font-bold uppercase text-xs tracking-wider mb-8">For Disclosing Party</p>
+                                <p className="font-bold uppercase text-xs tracking-wider mb-8">For {data.employerName || 'The Company'}</p>
 
                                 <div className="relative border-b border-slate-800 h-8 mb-2">
-                                    {/* Simulated Signature */}
-                                    {data.disclosingSignatoryName && (
+                                    {data.employerSignatoryName && (
                                         <span className="absolute bottom-1 left-2 font-cursive text-xl text-blue-900 opacity-80 rotate-[-2deg]">
-                                            {data.disclosingSignatoryName}
+                                            {data.employerSignatoryName}
                                         </span>
                                     )}
                                 </div>
                                 <p className="text-xs uppercase text-slate-500">Authorized Signature</p>
-
-                                <div className="pt-4 grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 items-baseline">
+                                <div className="pt-4 grid grid-cols-[60px_1fr] gap-x-2 gap-y-1 items-baseline">
                                     <span className="text-sm font-medium">Name:</span>
-                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.disclosingSignatoryName}</span>
-
+                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.employerSignatoryName}</span>
                                     <span className="text-sm font-medium">Title:</span>
-                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.disclosingSignatoryDesignation}</span>
+                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.employerSignatoryTitle}</span>
                                 </div>
                             </div>
 
                             <div className="space-y-1">
-                                <p className="font-bold uppercase text-xs tracking-wider mb-8">For Receiving Party</p>
+                                <p className="font-bold uppercase text-xs tracking-wider mb-8">Accepted By</p>
                                 <div className="relative border-b border-slate-800 h-8 mb-2">
-                                    {/* Simulated Signature */}
-                                    {data.receivingSignatoryName && (
+                                    {data.candidateSignatoryName && (
                                         <span className="absolute bottom-1 left-2 font-cursive text-xl text-blue-900 opacity-80 rotate-[-2deg]">
-                                            {data.receivingSignatoryName}
+                                            {data.candidateSignatoryName}
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-xs uppercase text-slate-500">Authorized Signature</p>
-
-                                <div className="pt-4 grid grid-cols-[80px_1fr] gap-x-2 gap-y-1 items-baseline">
+                                <p className="text-xs uppercase text-slate-500">Candidate Signature</p>
+                                <div className="pt-4 grid grid-cols-[60px_1fr] gap-x-2 gap-y-1 items-baseline">
                                     <span className="text-sm font-medium">Name:</span>
-                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.receivingSignatoryName}</span>
-
-                                    <span className="text-sm font-medium">Title:</span>
-                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.receivingSignatoryDesignation}</span>
+                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1">{data.candidateName}</span>
+                                    <span className="text-sm font-medium">Date:</span>
+                                    <span className="border-b border-slate-300 w-full inline-block h-5 pl-1"></span>
                                 </div>
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* Branding Footer specific to document */}
                 {!printing && (
                     <div className="absolute bottom-4 left-0 right-0 text-center">
                         <p className="text-[9px] text-slate-300 uppercase tracking-widest font-sans">Powered by DocForge</p>
@@ -360,4 +332,4 @@ function NdaDocumentPreview({
     );
 }
 
-export default NdaDocumentPreview;
+export default OfferLetterDocumentPreview;

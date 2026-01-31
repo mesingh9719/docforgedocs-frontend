@@ -17,6 +17,8 @@ import DashboardLayout from './components/Dashboard/DashboardLayout'
 import NdaEditor from './pages/Dashboard/templates/NdaEditor'
 import ProposalEditor from './pages/Dashboard/templates/ProposalEditor'
 import InvoiceEditor from './pages/Dashboard/templates/InvoiceEditor'
+import OfferLetterEditor from './pages/Dashboard/templates/OfferLetterEditor'
+import ConsultingAgreementEditor from './pages/Dashboard/templates/ConsultingAgreementEditor'
 import DocumentList from './pages/Dashboard/documents/DocumentList'
 import Settings from './pages/Dashboard/settings/Settings'
 import Team from './pages/Dashboard/team/Team'
@@ -137,6 +139,10 @@ function App() {
                   <Route path='/documents/proposal/:id' element={<ProposalEditor />} />
                   <Route path='/documents/invoice' element={<InvoiceEditor />} />
                   <Route path='/documents/invoice/:id' element={<InvoiceEditor />} />
+                  <Route path='/documents/offer-letter' element={<OfferLetterEditor />} />
+                  <Route path='/documents/offer-letter/:id' element={<OfferLetterEditor />} />
+                  <Route path='/documents/consulting-agreement' element={<ConsultingAgreementEditor />} />
+                  <Route path='/documents/consulting-agreement/:id' element={<ConsultingAgreementEditor />} />
                 </Route>
 
                 {/* Team - View Permission */}

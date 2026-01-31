@@ -19,10 +19,10 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
 
     const RenderField = ({ value, placeholder, className = "" }) => {
         if (!value) {
-            if (readOnly) return <span className={`text-slate-500 italic ${className}`}>{placeholder}</span>;
+            if (readOnly || printing) return <span className={`text-slate-500 italic ${className}`}>{placeholder}</span>;
             return <span className={`bg-blue-50/50 px-1 border-b border-blue-200 text-slate-400 italic transition-colors hover:bg-blue-100 ${className}`}>{placeholder}</span>;
         }
-        if (readOnly) return <span className={`font-medium text-slate-900 ${className}`}>{value}</span>;
+        if (readOnly || printing) return <span className={`font-medium text-slate-900 ${className}`}>{value}</span>;
         return <span className={`font-medium text-slate-900 border-b border-transparent hover:border-indigo-200 hover:bg-indigo-50 transition-all px-0.5 rounded ${className}`}>{value}</span>;
     };
 
@@ -39,12 +39,12 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                 transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
             }}
-            className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[10pt] leading-relaxed font-sans relative mb-20 origin-top shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60"
+            className={`w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[10pt] leading-relaxed font-sans relative mb-20 origin-top ${printing ? '' : 'shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60'}`}
         >
             {/* Realistic Paper Effects */}
             {!printing && <div className="no-print absolute inset-0 rounded-sm pointer-events-none bg-gradient-to-b from-white to-slate-50/20"></div>}
 
-            <div className="p-[10mm] h-full flex flex-col relative z-10 min-h-[297mm]">
+            <div className={`p-[10mm] ${printing ? 'block h-auto' : 'flex flex-col h-full'} relative z-10`}>
 
                 {/* 1. SELLER & INVOICE HEADER */}
                 {printing ? (
@@ -78,7 +78,7 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                                     {/* Right Logo */}
                                     {logoAlign === 'right' && <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'flex-end' }}><Logo /></div>}
 
-                                    <table style={{ float: 'right', width: 'auto', backgroundColor: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                    <table style={{ float: 'right', width: 'auto', padding: '10px' }}>
                                         <tbody>
                                             <tr><td style={{ fontWeight: 'bold', color: '#64748b', paddingRight: '10px' }}>Invoice #:</td><td className="font-mono"><RenderField value={data.invoiceNumber} placeholder="INV-0001" /></td></tr>
                                             <tr><td style={{ fontWeight: 'bold', color: '#64748b', paddingRight: '10px' }}>Date:</td><td><RenderField value={data.invoiceDate} placeholder="DD/MM/YYYY" /></td></tr>
@@ -244,7 +244,7 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
 
                 {/* 5. BANK & FOOTER */}
                 {printing ? (
-                    <div className="mt-auto pt-8 border-t border-slate-200">
+                    <div className="mt-4 pt-4 border-t border-slate-200" style={{ breakInside: 'avoid' }}>
                         <table style={{ width: '100%' }}>
                             <tbody>
                                 <tr>
@@ -262,7 +262,7 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                                         </div>
                                     </td>
                                     <td style={{ verticalAlign: 'bottom', width: '40%', textAlign: 'right' }}>
-                                        <p className="font-bold text-sm text-slate-900 mb-12">For {data.sellerName || '[Company Name]'}</p>
+                                        <p className="font-bold text-sm text-slate-900 mb-4">For {data.sellerName || '[Company Name]'}</p>
                                         <table style={{ width: '100%' }}>
                                             <tbody>
                                                 <tr>
@@ -307,9 +307,11 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
                     </div>
                 )}
 
-                <div className={`mt-auto pt-4 text-center ${printing ? 'no-absolute-print' : ''}`} style={printing ? { position: 'fixed', bottom: '0px', width: '100%', textAlign: 'center' } : {}}>
-                    <p className="text-[9px] text-slate-300 uppercase tracking-widest font-sans">Powered by DocForge</p>
-                </div>
+                {!printing && (
+                    <div className="mt-8 pt-4 text-center border-t border-transparent">
+                        <p className="text-[9px] text-slate-300 uppercase tracking-widest font-sans">Powered by DocForge</p>
+                    </div>
+                )}
 
             </div>
         </Container>

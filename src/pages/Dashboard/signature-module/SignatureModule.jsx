@@ -103,7 +103,7 @@ const SignatureModule = () => {
         if (over && over.id.startsWith('page-')) {
             const pageNumber = parseInt(over.id.replace('page-', ''));
             const activeRect = active.rect.current.translated;
-            const overRect = active.rect.current.translated;
+            const overRect = over.rect;
 
             if (activeRect && overRect) {
                 // Calculate position relative to the page

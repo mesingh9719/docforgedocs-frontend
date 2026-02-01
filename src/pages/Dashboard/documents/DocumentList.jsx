@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, FileText, MoreVertical, Search, Filter, LayoutGrid, List as ListIcon, Clock, User, ArrowUpRight, CheckSquare, Square, Trash2, RotateCcw, Eye, ChevronLeft, ChevronRight, X, CheckCircle, Download, Archive, RefreshCw } from 'lucide-react';
+import { Plus, FileText, MoreVertical, Search, Filter, LayoutGrid, List as ListIcon, Clock, User, ArrowUpRight, CheckSquare, Square, Trash2, RotateCcw, Eye, ChevronLeft, ChevronRight, X, CheckCircle, Download, Archive, RefreshCw, PenTool } from 'lucide-react';
 import { getDocuments, getDocumentShares, getDocument } from '../../../api/documents';
 import TemplateModal from '../../../components/Dashboard/TemplateModal';
 import ShareHistoryModal from '../../../components/ShareHistoryModal';
@@ -30,16 +30,16 @@ const DocumentSkeleton = ({ viewMode }) => (
     </div>
 );
 
-const DocumentGridItem = ({ doc, navigate, getStatusStyle, variants, onViewHistory }) => (
+const DocumentGridItem = ({ doc, navigate, getStatusStyle, variants, onViewHistory, handleView }) => (
     <motion.div
         variants={variants}
         className="bg-white rounded-lg border border-slate-200 p-5 cursor-pointer shadow-sm hover:shadow-md hover:border-indigo-300 transition-all group flex flex-col justify-between h-full"
-        onClick={() => navigate(`/documents/${doc.type?.slug || doc.type}/${doc.id}`)}
+        onClick={() => handleView(doc)}
     >
         <div>
             <div className="flex justify-between items-start mb-4">
-                <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                    <FileText size={20} strokeWidth={2} />
+                <div className={`p-2.5 rounded-lg transition-colors ${doc.signers_count > 0 ? 'bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white' : 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white'}`}>
+                    {doc.signers_count > 0 ? <PenTool size={20} strokeWidth={2} /> : <FileText size={20} strokeWidth={2} />}
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -87,7 +87,7 @@ const DocumentListItem = ({ doc, navigate, getStatusStyle, variants, permissions
     <motion.div
         variants={variants}
         className={`px-6 py-3 grid grid-cols-[auto_2fr_1fr_1fr_1fr_1fr_auto] gap-6 items-center hover:bg-slate-50 transition-colors group cursor-pointer border-l-2 border-transparent hover:border-indigo-600 border-b border-slate-50 last:border-b-0 ${isSelected ? 'bg-indigo-50/30' : ''}`}
-        onClick={() => navigate(`/documents/${doc.type?.slug || doc.type}/${doc.id}`)}
+        onClick={() => handleView(doc)}
     >
         {/* Checkbox */}
         <div onClick={(e) => { e.stopPropagation(); toggleSelect(doc.id); }}>
@@ -95,11 +95,14 @@ const DocumentListItem = ({ doc, navigate, getStatusStyle, variants, permissions
         </div>
 
         <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg transition-colors ${isSelected ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-600 group-hover:text-white'}`}>
-                <FileText size={18} strokeWidth={2} />
+            <div className={`p-2 rounded-lg transition-colors ${doc.signers_count > 0 ? 'bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-600 group-hover:text-white'}`}>
+                {doc.signers_count > 0 ? <PenTool size={18} strokeWidth={2} /> : <FileText size={18} strokeWidth={2} />}
             </div>
             <div>
-                <span className={`font-semibold block text-sm transition-colors ${isSelected ? 'text-indigo-900' : 'text-slate-900 group-hover:text-indigo-600'}`}>{doc.title || doc.name}</span>
+                <span className={`font-semibold block text-sm transition-colors ${isSelected ? 'text-indigo-900' : 'text-slate-900 group-hover:text-indigo-600'}`}>
+                    {doc.title || doc.name}
+                    {doc.signers_count > 0 && <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-700">Signature</span>}
+                </span>
             </div>
         </div>
         <div className="text-sm font-medium text-slate-500 capitalize">{doc.type?.name || doc.type}</div>
@@ -156,7 +159,7 @@ const DocumentListItem = ({ doc, navigate, getStatusStyle, variants, permissions
                             <>
                                 <button
                                     onClick={() => {
-                                        navigate(`/documents/${doc.type?.slug || doc.type}/${doc.id}`);
+                                        handleView(doc);
                                         setActiveMenuId(null);
                                     }}
                                     className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition-colors"
@@ -210,7 +213,8 @@ const DocumentList = () => {
     const [filters, setFilters] = useState({
         search: '',
         status: 'all',
-        type: 'all'
+        type: 'all',
+        category: 'all'
     });
 
     // Permission checks memoized
@@ -236,6 +240,7 @@ const DocumentList = () => {
                 search: filters.search,
                 status: filters.status,
                 type: filters.type,
+                category: filters.category,
                 view_mode: trashMode ? 'trash' : 'active'
             };
             const response = await axios.get('/documents', { params });
@@ -380,10 +385,11 @@ const DocumentList = () => {
     };
 
     const handleView = (doc) => {
-        if (doc.signers_count > 0 || (doc.type && doc.type.slug === 'general' && doc.signers_count > 0)) {
+        if (doc.signers_count > 0 || (doc.type?.slug === 'general' && doc.signers_count > 0)) {
             handleDrawerOpen(doc.id);
         } else {
-            navigate(`/documents/${doc.document_type?.slug || doc.type || 'general'}/${doc.id}`);
+            const typeSlug = doc.type?.slug || 'general';
+            navigate(`/documents/${typeSlug}/${doc.id}`);
         }
     };
 
@@ -467,6 +473,18 @@ const DocumentList = () => {
                             <option value="invoice">Invoice</option>
                         </select>
                     </div>
+
+                    <div className="w-px h-6 bg-slate-200 hidden sm:block"></div>
+
+                    <select
+                        value={filters.category}
+                        onChange={(e) => handleFilterChange('category', e.target.value)}
+                        className="px-3 py-2 bg-slate-50 border-transparent hover:bg-slate-100 rounded-lg text-sm text-slate-600 font-medium outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer transition-colors w-full sm:w-auto"
+                    >
+                        <option value="all">All Categories</option>
+                        <option value="generated">Generated Docs</option>
+                        <option value="signature">Signature Requests</option>
+                    </select>
 
                     <div className="w-px h-6 bg-slate-200 hidden sm:block"></div>
 
@@ -574,16 +592,15 @@ const DocumentList = () => {
                             </div>
                         ) : (
                             // GRID VIEW
-                            documents.map((doc) => (
-                                <DocumentGridItem
-                                    key={doc.id}
-                                    doc={doc}
-                                    navigate={navigate}
-                                    getStatusStyle={getStatusStyle}
-                                    variants={itemVariants}
-                                    onViewHistory={handleViewHistory}
-                                />
-                            ))
+                            <DocumentGridItem
+                                key={doc.id}
+                                doc={doc}
+                                navigate={navigate}
+                                getStatusStyle={getStatusStyle}
+                                variants={itemVariants}
+                                onViewHistory={handleViewHistory}
+                                handleView={handleView}
+                            />
                         )}
                     </motion.div>
                 )}

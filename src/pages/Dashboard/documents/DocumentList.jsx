@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, FileText, MoreVertical, Search, Filter, LayoutGrid, List as ListIcon, Clock, User, ArrowUpRight, CheckSquare, Square, Trash2, RotateCcw, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getDocuments, getDocumentShares } from '../../../api/documents';
+import { Plus, FileText, MoreVertical, Search, Filter, LayoutGrid, List as ListIcon, Clock, User, ArrowUpRight, CheckSquare, Square, Trash2, RotateCcw, Eye, ChevronLeft, ChevronRight, X, CheckCircle, Download, Archive, RefreshCw } from 'lucide-react';
+import { getDocuments, getDocumentShares, getDocument } from '../../../api/documents';
 import TemplateModal from '../../../components/Dashboard/TemplateModal';
 import ShareHistoryModal from '../../../components/ShareHistoryModal';
 import { Mail } from 'lucide-react';
@@ -203,6 +203,8 @@ const DocumentList = () => {
         to: 0
     });
     const [activeMenuId, setActiveMenuId] = useState(null);
+    const [activeDrawer, setActiveDrawer] = useState(null);
+    const [drawerDoc, setDrawerDoc] = useState(null);
 
     // Filter States
     const [filters, setFilters] = useState({
@@ -300,8 +302,32 @@ const DocumentList = () => {
             case 'draft': return 'bg-slate-100 text-slate-700 border-slate-200';
             case 'sent': return 'bg-blue-50 text-blue-700 border-blue-200';
             case 'signed': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+            case 'completed': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
             default: return 'bg-slate-100 text-slate-700 border-slate-200';
         }
+    };
+
+    const handleDrawerOpen = async (docId, type = 'preview') => {
+        try {
+            // Optimistic set if we have the doc (but list doc doesn't have signers)
+            // safer to fetch.
+            const response = await axios.get(`/documents/${docId}`);
+            setDrawerDoc(response.data.data);
+            setActiveDrawer(type);
+        } catch (error) {
+            toast.error("Failed to load document details");
+        }
+    };
+
+    const handleResendReminder = async (docId) => {
+        toast.promise(
+            axios.post(`/documents/${docId}/remind`, { email: drawerDoc?.signers?.find(s => s.status !== 'signed')?.email }),
+            {
+                loading: 'Sending reminder...',
+                success: 'Reminder sent!',
+                error: 'Failed to send reminder'
+            }
+        );
     };
 
     // Selection Logic
@@ -354,7 +380,11 @@ const DocumentList = () => {
     };
 
     const handleView = (doc) => {
-        navigate(`/documents/${doc.document_type?.slug || doc.type}/${doc.id}`);
+        if (doc.signers_count > 0 || (doc.type && doc.type.slug === 'general' && doc.signers_count > 0)) {
+            handleDrawerOpen(doc.id);
+        } else {
+            navigate(`/documents/${doc.document_type?.slug || doc.type || 'general'}/${doc.id}`);
+        }
     };
 
 
@@ -625,6 +655,145 @@ const DocumentList = () => {
                 history={shareHistory}
                 loading={isHistoryLoading}
             />
+
+            {/* Side Drawer (Shared for Audit & Preview) */}
+            <AnimatePresence>
+                {activeDrawer && drawerDoc && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
+                            onClick={() => setActiveDrawer(null)}
+                        />
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="fixed inset-y-0 right-0 w-full max-w-lg bg-white shadow-2xl z-50 flex flex-col border-l border-slate-200"
+                        >
+                            {/* Drawer Header */}
+                            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-800">
+                                        {activeDrawer === 'audit' ? 'Audit Trail' : 'Document Details'}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 mt-0.5">{drawerDoc.name}</p>
+                                </div>
+                                <button
+                                    onClick={() => setActiveDrawer(null)}
+                                    className="p-2 rounded-full hover:bg-white hover:shadow-md transition-all text-slate-400 hover:text-slate-700"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Drawer Content */}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                {activeDrawer === 'preview' ? (
+                                    <div className="space-y-6">
+                                        {/* Quick Actions */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {drawerDoc.status === 'completed' && (
+                                                <button
+                                                    onClick={() => navigate(`/signatures/${drawerDoc.id}/view-signed`)}
+                                                    className="col-span-2 flex items-center justify-center gap-2 p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-colors shadow-lg shadow-emerald-200"
+                                                >
+                                                    <Eye size={18} /> View Signed Document
+                                                </button>
+                                            )}
+                                            {drawerDoc.pdf_url && (
+                                                <a
+                                                    href={drawerDoc.pdf_url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 hover:border-indigo-300 text-slate-700 rounded-xl font-medium transition-all"
+                                                >
+                                                    <FileText size={18} /> Original PDF
+                                                </a>
+                                            )}
+                                            {drawerDoc.final_pdf_url && (
+                                                <a
+                                                    href={drawerDoc.final_pdf_url}
+                                                    download
+                                                    className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 hover:border-indigo-300 text-slate-700 rounded-xl font-medium transition-all"
+                                                >
+                                                    <Download size={18} /> Signed PDF
+                                                </a>
+                                            )}
+                                        </div>
+
+                                        {/* Meta Data */}
+                                        <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-slate-500 font-medium">Status</span>
+                                                <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${drawerDoc.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'
+                                                    }`}>
+                                                    {drawerDoc.status}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-slate-500 font-medium">Created On</span>
+                                                <span className="text-sm font-semibold text-slate-700">
+                                                    {new Date(drawerDoc.created_at).toLocaleString()}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-slate-500 font-medium">Last Activity</span>
+                                                <span className="text-sm font-semibold text-slate-700">
+                                                    {new Date(drawerDoc.updated_at).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Signers List */}
+                                        {drawerDoc.signers && drawerDoc.signers.length > 0 && (
+                                            <div>
+                                                <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                                    <User size={18} className="text-indigo-600" />
+                                                    Signers ({drawerDoc.signers.length})
+                                                </h4>
+                                                <div className="space-y-3">
+                                                    {drawerDoc.signers.map((signer, idx) => (
+                                                        <div key={idx} className="flex items-center gap-3 p-3 bg-white border border-slate-100 rounded-xl shadow-sm">
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${signer.status === 'signed' ? 'bg-emerald-500' : 'bg-indigo-400'
+                                                                }`}>
+                                                                {signer.name.charAt(0)}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="font-semibold text-slate-800 text-sm">{signer.name}</p>
+                                                                <p className="text-xs text-slate-400">{signer.email}</p>
+                                                            </div>
+                                                            {signer.status === 'signed' ? (
+                                                                <CheckCircle size={18} className="text-emerald-500" />
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleResendReminder(drawerDoc.id)}
+                                                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium bg-indigo-50 px-2 py-1 rounded transition-colors"
+                                                                >
+                                                                    Resend
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    // Audit Log Content (Placeholder or limited for now if audit logs not loaded)
+                                    <div className="text-center py-10 text-slate-500">
+                                        <Clock size={40} className="mx-auto mb-4 text-slate-300" />
+                                        <p>Audit Trail details not fully loaded.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

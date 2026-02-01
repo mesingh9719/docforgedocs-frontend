@@ -24,6 +24,7 @@ import Settings from './pages/Dashboard/settings/Settings'
 import Team from './pages/Dashboard/team/Team'
 import SignatureModule from './pages/Dashboard/signature-module/SignatureModule'
 import SignatureDocumentList from './pages/Dashboard/signature-module/SignatureDocumentList'
+import SignedDocumentViewer from './pages/Dashboard/signature-module/SignedDocumentViewer';
 import DocumentEditor from './components/DocumentEngine/DocumentEditor'
 import AuthLayout from './components/auth/AuthLayout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -38,6 +39,7 @@ import Changelog from './pages/Landing/Changelog'
 import BlogList from './pages/Landing/BlogList'
 import BlogPost from './pages/Landing/BlogPost'
 import PublicDocumentViewer from './pages/PublicDocumentViewer'
+import SignDocument from './pages/Public/SignDocument'
 
 import GuestRoute from './components/GuestRoute'
 import ScrollToTop from './components/ScrollToTop'
@@ -115,6 +117,7 @@ function App() {
 
             {/* Public Viewer Route */}
             <Route path="/view/:token" element={<PublicDocumentViewer />} />
+            <Route path="/sign/:token" element={<SignDocument />} />
 
             {/* Auth Routes - Redirect if logged in */}
             <Route element={<GuestRoute />}>
@@ -154,6 +157,7 @@ function App() {
                 <Route element={<ProtectedRoute permission="settings.signature" />}>
                   <Route path='/signatures' element={<SignatureModule />} />
                   <Route path='/signatures/list' element={<SignatureDocumentList />} />
+                  <Route path='/signatures/:documentId/view-signed' element={<SignedDocumentViewer />} />
                 </Route>
 
                 {/* Unified Engine Test Route */}

@@ -1,6 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, FileText, Users, CheckCircle, Download, Eye, Settings as SettingsIcon, UserPlus, Send } from 'lucide-react';
+import { Upload, FileText, Users, CheckCircle, Download, Eye, Settings as SettingsIcon, UserPlus, Send, ArrowRight, LayoutDashboard, ExternalLink, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import PDFUploader from './components/PDFUploader';
 import PDFViewer from './components/PDFViewer';
 import SignatureCanvas from './components/SignatureCanvas';
@@ -12,7 +14,7 @@ import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, MouseSen
 import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHeader';
 
 const SignatureModule = () => {
-    // ... (state)
+    const navigate = useNavigate();
 
     // Configure sensors for better compatibility
     const sensors = useSensors(
@@ -23,10 +25,6 @@ const SignatureModule = () => {
         })
     );
 
-    // ... (rest of component)
-
-    // In return statement, update DndContext:
-    // <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
     const [currentStep, setCurrentStep] = useState(1);
     const [pdfFile, setPdfFile] = useState(null);
     const [pdfUrl, setPdfUrl] = useState(null);
@@ -39,12 +37,52 @@ const SignatureModule = () => {
     const [activeDragData, setActiveDragData] = useState(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
 
+    // Sending State
+    const [isSending, setIsSending] = useState(false);
+    const [sendSuccess, setSendSuccess] = useState(false);
+    const [sendError, setSendError] = useState(null);
+    const [createdDocumentId, setCreatedDocumentId] = useState(null); // Store ID for redirect
+
+    // Auto-Redirect State
+    const [redirectProgress, setRedirectProgress] = useState(0);
+
     const pdfViewerRef = useRef(null);
 
     const steps = [
         { id: 1, title: 'Upload & Place', icon: Upload, description: 'Prepare document' },
         { id: 2, title: 'Review & Send', icon: Send, description: 'Finalize and send' }
     ];
+
+    // Effect for Auto-Redirect
+    useEffect(() => {
+        let interval;
+        if (sendSuccess) {
+            setRedirectProgress(0);
+            const duration = 5000; // 5 seconds
+            const intervalTime = 50; // Update every 50ms
+            const steps = duration / intervalTime;
+
+            interval = setInterval(() => {
+                setRedirectProgress(prev => {
+                    const next = prev + (100 / steps);
+                    if (next >= 100) {
+                        clearInterval(interval);
+                        // Trigger Redirect
+                        toast.success('Document sent successfully!', {
+                            icon: '✅',
+                            style: {
+                                fontWeight: 'bold'
+                            }
+                        });
+                        navigate('/signatures/list');
+                        return 100;
+                    }
+                    return next;
+                });
+            }, intervalTime);
+        }
+        return () => clearInterval(interval);
+    }, [sendSuccess, navigate]);
 
     const handleFileUpload = (file) => {
         setPdfFile(file);
@@ -65,7 +103,7 @@ const SignatureModule = () => {
         if (over && over.id.startsWith('page-')) {
             const pageNumber = parseInt(over.id.replace('page-', ''));
             const activeRect = active.rect.current.translated;
-            const overRect = over.rect;
+            const overRect = active.rect.current.translated;
 
             if (activeRect && overRect) {
                 // Calculate position relative to the page
@@ -113,6 +151,12 @@ const SignatureModule = () => {
     };
 
     const handleUpdateSignature = (updatedMetadata) => {
+        // Safety check: ensure editingSignature exists
+        if (!editingSignature) {
+            console.error('No signature being edited');
+            return;
+        }
+
         // 1. Update the signature's metadata
         setSignatures(signatures.map(sig =>
             sig.id === editingSignature.id
@@ -183,17 +227,92 @@ const SignatureModule = () => {
         setCurrentStep(2);
     };
 
-    const handleSendDocument = () => {
-        // Mock email notification
-        const signersToNotify = signers.length > 0 ? signers : signatures.map(sig => sig.metadata);
-        const uniqueSigners = [...new Set(signersToNotify.map(s => s.email || s.signeeEmail))];
-
-        if (uniqueSigners.length > 0) {
-            alert(`📧 sent to: \n${uniqueSigners.filter(Boolean).join('\n')}`);
+    const handleSendDocument = async () => {
+        if (!pdfFile) {
+            alert("Please upload a document to proceed.");
+            return;
         }
-        alert("Document Sent Successfully!");
-        // Reset or redirect
+
+        setIsSending(true);
+        setSendError(null);
+
+        try {
+            // 1. Upload the Document first to get an ID
+            const formData = new FormData();
+            formData.append('file', pdfFile);
+            formData.append('name', pdfFile.name);
+
+            // Use the dedicated signature upload endpoint
+            const uploadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/signatures/upload`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            if (!uploadRes.ok) {
+                const err = await uploadRes.json();
+                throw new Error(err.message || 'Failed to upload document');
+            }
+
+            const uploadData = await uploadRes.json();
+            const documentId = uploadData.data.id;
+            setCreatedDocumentId(documentId);
+
+            // 2. Prepare Payload for Signature Request
+            const fields = signatures.map(sig => ({
+                signerId: signers.find(s => s.email === sig.metadata.signeeEmail)?.id,
+                type: 'signature',
+                pageNumber: sig.pageNumber,
+                x: sig.position.x,
+                y: sig.position.y,
+                width: 200,
+                height: 60,
+                metadata: sig.metadata
+            }));
+
+            const payloadSigners = signers.map(s => ({
+                id: s.id,
+                name: s.name,
+                email: s.email,
+                order: s.order
+            }));
+
+            const sendPayload = {
+                document_id: documentId,
+                signers: payloadSigners,
+                fields: fields
+            };
+
+            // 3. Send Signature Request
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/signatures/send`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Accept': 'application/json' // Prevent redirects
+                },
+                body: JSON.stringify(sendPayload)
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || 'Failed to send signature request');
+            }
+
+            setSendSuccess(true);
+            // No automatic timeout - let user choose
+
+        } catch (error) {
+            console.error('Sending Error:', error);
+            setSendError(error.message || 'Failed to send the document. Please try again.');
+        } finally {
+            setIsSending(false);
+        }
     };
+
 
     // ... (keep pdf generation logic but rename if needed, mainly for "Download" option) ...
 
@@ -401,6 +520,98 @@ const SignatureModule = () => {
                 onSave={handleUpdateSignature}
                 initialData={editingSignature?.metadata}
             />
+
+            {/* Premium Send Progress/Success Modal */}
+            <AnimatePresence>
+                {(isSending || sendSuccess || sendError) && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="bg-white rounded-2xl shadow-2xl p-0 w-full max-w-lg overflow-hidden border border-white/20"
+                        >
+                            <div className="relative overflow-hidden">
+                                {/* Decorative Gradient */}
+                                <div className={`absolute inset-0 opacity-10 ${sendError ? 'bg-red-500' : 'bg-gradient-to-br from-indigo-500 to-purple-600'}`}></div>
+
+                                <div className="p-8 pb-10 flex flex-col items-center text-center relative z-10">
+                                    {isSending && (
+                                        <>
+                                            <div className="w-20 h-20 relative mb-6">
+                                                <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+                                                <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <Send size={24} className="text-indigo-600" />
+                                                </div>
+                                            </div>
+                                            <h3 className="text-2xl font-bold text-slate-800 mb-2">Sending Document...</h3>
+                                            <p className="text-slate-500">Please wait while we dispatch emails to signers.</p>
+                                        </>
+                                    )}
+
+                                    {sendSuccess && (
+                                        <>
+                                            <motion.div
+                                                initial={{ scale: 0 }}
+                                                animate={{ scale: 1 }}
+                                                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                                                className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white rounded-full flex items-center justify-center mb-6 shadow-xl shadow-emerald-200"
+                                            >
+                                                <CheckCircle size={40} strokeWidth={3} />
+                                            </motion.div>
+                                            <h3 className="text-2xl font-bold text-slate-800 mb-2">Sent Successfully!</h3>
+                                            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+                                                Redirecting to document list in 5 seconds...
+                                            </p>
+
+                                            {/* Progress Bar */}
+                                            <div className="w-full max-w-xs h-2 bg-slate-100 rounded-full overflow-hidden mb-4 ring-1 ring-slate-100">
+                                                <motion.div
+                                                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+                                                    style={{ width: `${redirectProgress}%` }}
+                                                    transition={{ ease: "linear" }}
+                                                />
+                                            </div>
+
+                                            <button
+                                                onClick={() => navigate('/signatures/list')}
+                                                className="text-sm text-slate-400 hover:text-indigo-600 transition-colors font-medium flex items-center gap-1"
+                                            >
+                                                <span>Redirect Now</span>
+                                                <ArrowRight size={14} />
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {sendError && (
+                                        <>
+                                            <div className="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-6">
+                                                <Users size={32} />
+                                            </div>
+                                            <h3 className="text-2xl font-bold text-slate-800 mb-2">Sending Failed</h3>
+                                            <p className="text-red-500 mb-6 bg-red-50 px-4 py-2 rounded-lg text-sm border border-red-100">
+                                                {sendError}
+                                            </p>
+                                            <button
+                                                onClick={() => setSendError(null)}
+                                                className="px-6 py-2.5 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors"
+                                            >
+                                                Close & Try Again
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

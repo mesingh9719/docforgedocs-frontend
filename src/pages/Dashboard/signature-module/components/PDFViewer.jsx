@@ -1,14 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Document, pdfjs } from 'react-pdf';
-import { ZoomIn, ZoomOut, RotateCw, Maximize2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import PDFPageRenderer from './PDFPageRenderer';
-import SignatureField from '../../../../components/Nda/Signatures/SignatureField';
 
 // Configure worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-const PDFViewer = ({ pdfUrl, signatures = [], onUpdateSignature, onRemoveSignature, onEditSignature, readOnly = false }) => {
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+
+const PDFViewer = ({ pdfUrl, signatures = [], onUpdateSignature, onRemoveSignature, onEditSignature, readOnly = false, onFieldClick }) => {
     const [numPages, setNumPages] = useState(null);
     const [scale, setScale] = useState(1.0);
     const [rotation, setRotation] = useState(0);
@@ -20,13 +21,17 @@ const PDFViewer = ({ pdfUrl, signatures = [], onUpdateSignature, onRemoveSignatu
     const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 2.0));
     const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
 
-    // Group signatures by page
-    const signaturesByPage = signatures.reduce((acc, sig) => {
-        const page = sig.pageNumber || 1;
-        if (!acc[page]) acc[page] = [];
-        acc[page].push(sig);
-        return acc;
-    }, {});
+    // Group signatures by page using useMemo for performance
+    const signaturesByPage = useMemo(() => {
+        return signatures.reduce((acc, sig) => {
+            const page = sig.pageNumber || 1;
+            if (!acc[page]) acc[page] = [];
+            acc[page].push(sig);
+            return acc;
+        }, {});
+    }, [signatures]);
+
+    if (!pdfUrl) return null;
 
     return (
         <div className="relative flex flex-col items-center bg-slate-100/50 h-full w-full rounded-xl border border-slate-200 overflow-hidden">
@@ -58,7 +63,7 @@ const PDFViewer = ({ pdfUrl, signatures = [], onUpdateSignature, onRemoveSignatu
                 <Document
                     file={pdfUrl}
                     onLoadSuccess={onDocumentLoadSuccess}
-                    className="flex flex-col items-center gap-8" // Gap between pages
+                    className="flex flex-col items-center gap-8"
                     loading={
                         <div className="flex flex-col items-center justify-center py-20">
                             <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
@@ -72,32 +77,20 @@ const PDFViewer = ({ pdfUrl, signatures = [], onUpdateSignature, onRemoveSignatu
                         </div>
                     }
                 >
-                    {Array.from(new Array(numPages), (el, index) => {
-                        const pageNumber = index + 1;
-                        const pageSignatures = signaturesByPage[pageNumber] || [];
-
-                        return (
-                            <div key={`page_${pageNumber}`}>
-                                <PDFPageRenderer
-                                    pageNumber={pageNumber}
-                                    scale={scale}
-                                >
-                                    {pageSignatures.map(sig => (
-                                        <SignatureField
-                                            key={sig.id}
-                                            id={sig.id}
-                                            data={sig.metadata}
-                                            left={sig.position.x}
-                                            top={sig.position.y}
-                                            onEdit={() => onEditSignature(sig)}
-                                            onDelete={() => onRemoveSignature(sig.id)}
-                                            readOnly={readOnly}
-                                        />
-                                    ))}
-                                </PDFPageRenderer>
-                            </div>
-                        );
-                    })}
+                    {numPages && Array.from({ length: numPages }, (_, index) => (
+                        <PDFPageRenderer
+                            key={`page_${index + 1}`}
+                            pageNumber={index + 1}
+                            signatures={signaturesByPage[index + 1] || []}
+                            onUpdateSignature={onUpdateSignature}
+                            onRemoveSignature={onRemoveSignature}
+                            onEditSignature={onEditSignature}
+                            readOnly={readOnly}
+                            onFieldClick={onFieldClick}
+                            scale={scale}
+                            rotation={rotation}
+                        />
+                    ))}
                 </Document>
 
                 {/* Explicit Bottom Spacer to ensure scrolling past the last page */}

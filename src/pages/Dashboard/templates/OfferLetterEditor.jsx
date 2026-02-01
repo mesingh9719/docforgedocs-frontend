@@ -102,7 +102,7 @@ const OfferLetterEditor = () => {
             // Check if URL is from our backend storage
             if (url && url.includes('/storage/')) {
                 // Use the proxy endpoint to bypass CORS
-                const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/file-proxy?path=${encodeURIComponent(url)}`;
+                const proxyUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'}/file-proxy?path=${encodeURIComponent(url)}`;
                 const response = await fetch(proxyUrl);
                 const blob = await response.blob();
                 return new Promise((resolve, reject) => {

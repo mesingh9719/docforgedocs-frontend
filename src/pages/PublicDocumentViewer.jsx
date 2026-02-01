@@ -7,8 +7,9 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { Loader2, AlertCircle, Download, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText } from 'lucide-react';
 
 // Configure PDF Worker
-// Replicating configuration from signature module's PDFViewer.jsx
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const PublicDocumentViewer = () => {
     const { token } = useParams();

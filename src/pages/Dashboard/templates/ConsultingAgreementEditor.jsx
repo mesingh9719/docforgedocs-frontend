@@ -15,9 +15,18 @@ import { generateDocumentPdf } from '../../../utils/pdfGenerator';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { generateConsultingAgreementHtml } from '../../../utils/consultingAgreementUtils';
 import { generateId } from '../../../utils/ndaUtils';
+// --- END IMPORT ---
+import DocumentEditor from '../../../components/DocumentEngine/DocumentEditor';
+
+const DocumentEditorOverride = () => <DocumentEditor />;
+
+// ... existing imports ...
 import { getBusiness } from '../../../api/business';
 
 const ConsultingAgreementEditor = () => {
+    // ...
+    // Note: The previous edits inserted isNewEngine extraction. We just need to clean up the dummy block below.
+
     const navigate = useNavigate();
     const { id } = useParams();
     const isDesktop = useMediaQuery('(min-width: 1024px)');
@@ -60,8 +69,13 @@ const ConsultingAgreementEditor = () => {
         // Style parameters
         styles,
         updateStyle,
-        resetStyles
+        resetStyles,
+        isNewEngine
     } = useConsultingAgreementDocument(id);
+
+    if (isNewEngine) {
+        return <DocumentEditorOverride />;
+    }
 
     const [sigModal, setSigModal] = useState({ isOpen: false, data: null });
     const deferredFormData = React.useDeferredValue(formData);

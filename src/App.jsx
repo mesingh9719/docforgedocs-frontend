@@ -40,6 +40,8 @@ import BlogList from './pages/Landing/BlogList'
 import BlogPost from './pages/Landing/BlogPost'
 import PublicDocumentViewer from './pages/PublicDocumentViewer'
 import SignDocument from './pages/Public/SignDocument'
+// import Landing from './pages/Public/document-generator/Landing'
+import GuestEditor from './pages/Public/document-generator/GuestEditor'
 
 import GuestRoute from './components/GuestRoute'
 import ScrollToTop from './components/ScrollToTop'
@@ -58,30 +60,22 @@ function App() {
             position="top-right"
             toastOptions={{
               duration: 4000,
+              className: 'text-sm font-medium text-slate-800',
               style: {
-                background: '#fff',
-                color: '#334155',
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                background: '#ffffff',
+                color: '#1e293b',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
                 border: '1px solid #e2e8f0',
-                padding: '16px',
-                borderRadius: '12px',
-                fontFamily: 'inherit',
-                fontSize: '14px',
-                fontWeight: 500
+                padding: '12px 16px',
+                borderRadius: '8px',
               },
               success: {
-                style: {
-                  borderLeft: '4px solid #10b981',
-                },
                 iconTheme: {
                   primary: '#10b981',
                   secondary: '#fff',
                 },
               },
               error: {
-                style: {
-                  borderLeft: '4px solid #ef4444',
-                },
                 iconTheme: {
                   primary: '#ef4444',
                   secondary: '#fff',
@@ -119,6 +113,10 @@ function App() {
             <Route path="/view/:token" element={<PublicDocumentViewer />} />
             <Route path="/sign/:token" element={<SignDocument />} />
 
+            {/* Guest Document Generator */}
+            {/* Route path="/create-document" element={<Landing />}  REMOVED - Merged into Welcome */}
+            <Route path="/create-document/:template" element={<GuestEditor />} />
+
             {/* Auth Routes - Redirect if logged in */}
             <Route element={<GuestRoute />}>
               <Route path="/login" element={<Login />} />
@@ -146,6 +144,7 @@ function App() {
                   <Route path='/documents/offer-letter/:id' element={<OfferLetterEditor />} />
                   <Route path='/documents/consulting-agreement' element={<ConsultingAgreementEditor />} />
                   <Route path='/documents/consulting-agreement/:id' element={<ConsultingAgreementEditor />} />
+                  <Route path='/documents/general/:id' element={<DocumentEditor />} />
                 </Route>
 
                 {/* Team - View Permission */}

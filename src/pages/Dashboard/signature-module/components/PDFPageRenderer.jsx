@@ -21,6 +21,7 @@ const PDFPageRenderer = ({
     return (
         <div
             ref={setNodeRef}
+            id={`pdf-page-${pageNumber}`}
             className={`relative mb-6 transition-colors ${isOver ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
             style={{ width: 'fit-content', margin: '0 auto 1.5rem auto' }}
         >

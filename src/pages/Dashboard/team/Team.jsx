@@ -4,10 +4,11 @@ import { getTeamMembers, inviteMember, updateMember, removeMember } from '../../
 import { useAuth } from '../../../context/AuthContext';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { Plus, Search, MoreVertical, Shield, Trash2, Mail, User, Briefcase, CheckCircle, Edit3, Lock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import InviteMemberModal from './InviteMemberModal';
 import EditMemberModal from './EditMemberModal';
 import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHeader';
+import DashboardPage from '../../../components/Dashboard/DashboardPage';
 
 const Team = () => {
     const { user } = useAuth();
@@ -100,7 +101,7 @@ const Team = () => {
 
 
     return (
-        <div className="max-w-7xl mx-auto">
+        <DashboardPage>
             <DashboardPageHeader
                 title="Team Management"
                 subtitle="Manage your team members and their roles."
@@ -164,7 +165,8 @@ const Team = () => {
 
                         {/* List */}
                         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden min-h-[400px]">
-                            <div className="overflow-x-auto">
+                            {/* Desktop Table */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="bg-slate-50 border-b border-slate-200">
@@ -236,12 +238,11 @@ const Team = () => {
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
-                                                                    // Calculate position
                                                                     const rect = e.currentTarget.getBoundingClientRect();
                                                                     setActiveMenu(activeMenu === member.id ? null : {
                                                                         id: member.id,
                                                                         top: rect.bottom + window.scrollY,
-                                                                        left: rect.right - 192 // 192px is w-48 (12rem)
+                                                                        left: rect.right - 192
                                                                     });
                                                                 }}
                                                                 className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
@@ -255,6 +256,61 @@ const Team = () => {
                                         )}
                                     </tbody>
                                 </table>
+                            </div>
+
+                            {/* Mobile Card View */}
+                            <div className="md:hidden divide-y divide-slate-100">
+                                {loading ? (
+                                    <div className="p-8 text-center text-slate-500">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                                    </div>
+                                ) : filteredMembers.length === 0 ? (
+                                    <div className="p-8 text-center flex flex-col items-center">
+                                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+                                            <Shield className="text-slate-300" size={24} />
+                                        </div>
+                                        <p className="text-slate-500 text-sm">No members found.</p>
+                                    </div>
+                                ) : (
+                                    filteredMembers.map((member) => (
+                                        <div key={member.id} className="p-4 flex flex-col gap-3">
+                                            <div className="flex justify-between items-start">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
+                                                        {member.child?.name?.charAt(0).toUpperCase() || '?'}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-medium text-slate-900">{member.child?.name || 'Unknown User'}</div>
+                                                        <div className="text-sm text-slate-500">{member.child?.email}</div>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                        setActiveMenu(activeMenu === member.id ? null : {
+                                                            id: member.id,
+                                                            top: rect.bottom + window.scrollY,
+                                                            left: rect.right - 192
+                                                        });
+                                                    }}
+                                                    className="p-1 text-slate-400"
+                                                >
+                                                    <MoreVertical size={20} />
+                                                </button>
+                                            </div>
+                                            <div className="flex items-center gap-3 pl-13">
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getRoleColor(member.role)} capitalize`}>
+                                                    {member.role || 'Member'}
+                                                </span>
+                                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(member.status)}`}>
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${member.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                                    {member.status === 'active' ? 'Active' : 'Pending'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     </motion.div>
@@ -361,7 +417,7 @@ const Team = () => {
                 member={editingMember}
                 onUpdate={handleUpdateMember}
             />
-        </div>
+        </DashboardPage>
     );
 };
 

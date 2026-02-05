@@ -13,6 +13,9 @@ import { generateDocumentPdf, wrapHtmlForPdf } from '../../../utils/pdfGenerator
 import { renderToStaticMarkup } from 'react-dom/server';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useDocumentStyles } from '../../../hooks/useDocumentStyles';
+import DocumentEditor from '../../../components/DocumentEngine/DocumentEditor';
+
+const DocumentEditorOverride = () => <DocumentEditor />;
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -147,6 +150,8 @@ const ProposalEditor = () => {
         }
     }, [id]);
 
+    const [isNewEngine, setIsNewEngine] = useState(false);
+
     const loadDocument = async (docId) => {
         try {
             const doc = await getDocument(docId);
@@ -155,6 +160,13 @@ const ProposalEditor = () => {
             if (typeof content === 'string') {
                 try { content = JSON.parse(content); } catch (e) { console.error(e); }
             }
+
+            // Check for new engine
+            if (content.blocks) {
+                setIsNewEngine(true);
+                return;
+            }
+
             if (content.formData) {
                 setFormData(prev => ({ ...prev, ...content.formData }));
             }
@@ -166,6 +178,10 @@ const ProposalEditor = () => {
             console.error("Failed to load", error);
         }
     };
+
+    if (isNewEngine) {
+        return <DocumentEditorOverride />;
+    }
 
     // Load Business Details for Defaults
     useEffect(() => {

@@ -13,6 +13,7 @@ export const useNdaDocument = (id) => {
     const [sentAt, setSentAt] = useState(null);
     const [isLoading, setIsLoading] = useState(!!id);
     const [isSaving, setIsSaving] = useState(false);
+    const [isNewEngine, setIsNewEngine] = useState(false);
 
     // Style Integration
     const { styles, updateStyle, resetStyles } = useDocumentStyles();
@@ -35,6 +36,10 @@ export const useNdaDocument = (id) => {
                         try { content = JSON.parse(content); } catch (e) { console.error(e); }
                     }
                     content = content || {};
+
+                    if (content.blocks) {
+                        setIsNewEngine(true);
+                    }
 
                     if (content.formData) setFormData(prev => ({ ...prev, ...content.formData }));
                     if (content.docContent) setDocContent(content.docContent);
@@ -242,6 +247,7 @@ export const useNdaDocument = (id) => {
         // Style Exports
         styles,
         updateStyle,
-        resetStyles
+        resetStyles,
+        isNewEngine // Expose flag
     };
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -6,11 +6,14 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import api from '../../../api/axios';
 import {
     Loader2, AlertCircle, Download,
-    ZoomIn, ZoomOut, Lock, History,
-    Clock, CheckCircle, ArrowLeft, Shield, User,
-    PenTool
+    ZoomIn, ZoomOut, History, ArrowLeft, Shield, Menu,
+    ChevronLeft, ChevronRight
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Sub Components
+import MobileAuditDrawer from './components/MobileAuditDrawer';
+import SignatureAuditSidebar from './components/SignatureAuditSidebar'; // Assuming you might extract desktop sidebar too, or inline it for now
 
 // Configure PDF Worker
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -19,6 +22,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 const SignedDocumentViewer = () => {
     const { documentId } = useParams();
     const navigate = useNavigate();
+    const containerRef = useRef(null);
 
     // Document State
     const [document, setDocument] = useState(null);
@@ -31,13 +35,28 @@ const SignedDocumentViewer = () => {
     const [numPages, setNumPages] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [scale, setScale] = useState(1.0);
-    const [pageDimensions, setPageDimensions] = useState({});
-    const [showAudit, setShowAudit] = useState(true);
+    const [showAudit, setShowAudit] = useState(false); // Default hidden on mobile
+    const [sidebarOpen, setSidebarOpen] = useState(true); // Desktop sidebar
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:8000';
 
     useEffect(() => {
+        // adjust initial scale based on window width
+        const handleResize = () => {
+            if (window.innerWidth < 768) {
+                setScale(0.6); // Start smaller on mobile
+                setSidebarOpen(false);
+            } else {
+                setScale(1.0);
+                setSidebarOpen(true);
+            }
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+
         fetchSignedDocument();
+        return () => window.removeEventListener('resize', handleResize);
     }, [documentId]);
 
     const fetchSignedDocument = async () => {
@@ -49,21 +68,11 @@ const SignedDocumentViewer = () => {
             setDocument(doc);
             setAuditLogs(response.data.audit_logs || []);
 
-            // Get the storage URL directly (has the correct file path)
             const storageUrl = doc.final_pdf_url || doc.pdf_url;
-
-            console.log('=== PDF Loading Debug ===');
-            console.log('Document ID:', documentId);
-            console.log('Document Status:', doc.status);
-            console.log('Storage URL:', storageUrl);
-            console.log('=======================');
-
             if (!storageUrl) {
                 setError('PDF URL not available. Document may not have been completed yet.');
                 return;
             }
-
-            // Use storage URL directly - CORS middleware should handle it
             setPdfUrl(storageUrl);
         } catch (err) {
             console.error("Failed to load signed document", err);
@@ -75,7 +84,6 @@ const SignedDocumentViewer = () => {
 
     const onDocumentLoadSuccess = ({ numPages }) => {
         setNumPages(numPages);
-        console.log('PDF loaded successfully:', numPages, 'pages');
     };
 
     const handleDownloadSigned = () => {
@@ -90,9 +98,9 @@ const SignedDocumentViewer = () => {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <div className="text-center">
-                    <Loader2 size={48} className="text-indigo-600 animate-spin mx-auto mb-4" />
-                    <p className="text-slate-600 font-medium">Loading signed document...</p>
+                <div className="flex flex-col items-center">
+                    <Loader2 size={48} className="text-indigo-600 animate-spin mb-4" />
+                    <p className="text-slate-600 font-medium">Retrieving secure document...</p>
                 </div>
             </div>
         );
@@ -100,61 +108,16 @@ const SignedDocumentViewer = () => {
 
     if (error || !document) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
-                <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-slate-200">
-                    <AlertCircle size={56} className="text-red-500 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-slate-800 mb-2">Document Unavailable</h2>
-                    <p className="text-slate-500 mb-6">{error || "This document could not be found."}</p>
-                    <button
-                        onClick={() => navigate('/signatures/list')}
-                        className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
-                    >
-                        Back to List
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // Verified Badge Component
-    const VerifiedBadge = () => (
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-full text-xs font-semibold shadow-sm">
-            <Shield size={12} className="fill-emerald-700" />
-            <span>Verified & Secured</span>
-        </div>
-    );
-
-    const formatFileSize = (bytes) => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-                <Loader2 size={40} className="text-indigo-600 animate-spin mb-4" />
-                <p className="text-slate-600 font-medium">Retrieving secure document...</p>
-            </div>
-        );
-    }
-
-    if (error || !document) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
+            <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
                 <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-slate-100">
-                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <AlertCircle size={32} className="text-red-500" />
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-800 mb-2">Document Unavailable</h2>
-                    <p className="text-slate-500 mb-6">{error || "This document is not accessible."}</p>
+                    <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-slate-800 mb-2">Unavailable</h2>
+                    <p className="text-slate-500 mb-6">{error || "Document not found."}</p>
                     <button
                         onClick={() => navigate('/signatures/list')}
-                        className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all shadow-md shadow-indigo-200"
+                        className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold active:scale-95 transition-transform"
                     >
-                        Return to Dashboard
+                        Go Back
                     </button>
                 </div>
             </div>
@@ -162,316 +125,167 @@ const SignedDocumentViewer = () => {
     }
 
     return (
-        <div className="h-screen bg-slate-50/50 flex flex-col overflow-hidden font-sans">
-            {/* Premium Header */}
-            <header className="bg-white h-16 border-b border-slate-200/60 px-6 flex items-center justify-between shadow-sm z-20 flex-shrink-0 backdrop-blur-sm bg-white/90 supports-[backdrop-filter]:bg-white/60">
-                <div className="flex items-center gap-4">
+        <div className="h-[100dvh] bg-slate-100/50 flex flex-col font-sans overflow-hidden">
+            {/* Header - Adaptive */}
+            <header className="bg-white/80 backdrop-blur-md h-14 md:h-16 border-b border-slate-200/60 px-4 md:px-6 flex items-center justify-between shadow-sm z-30 flex-shrink-0 relative">
+                <div className="flex items-center gap-3 overflow-hidden">
                     <button
                         onClick={() => navigate('/signatures/list')}
-                        className="p-2 -ml-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all"
-                        title="Back to List"
+                        className="p-2 -ml-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-colors"
                     >
                         <ArrowLeft size={20} />
                     </button>
 
-                    <div className="w-px h-6 bg-slate-200" />
-
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="font-bold text-slate-800 text-lg tracking-tight">{document.name}</h1>
-                            <VerifiedBadge />
+                    <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-2">
+                            <h1 className="font-bold text-slate-800 text-sm md:text-lg truncate max-w-[150px] md:max-w-xs leading-tight">
+                                {document.name}
+                            </h1>
+                            <div className="hidden md:flex items-center gap-1 px-2 py-0.5 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-full text-[10px] font-bold uppercase tracking-wide">
+                                <Shield size={10} className="fill-emerald-700" /> Verified
+                            </div>
                         </div>
-                        <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                            {document.file_size && formatFileSize(document.file_size)} • PDF Document
+                        <p className="text-[10px] text-slate-400 md:hidden flex items-center gap-1">
+                            <Shield size={8} className="text-emerald-500" />
+                            Signed & Verified
                         </p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <button
-                        onClick={() => setShowAudit(!showAudit)}
-                        className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${showAudit
+                        onClick={() => setShowAudit(true)}
+                        className="md:hidden p-2 text-slate-500 active:bg-slate-100 rounded-xl"
+                    >
+                        <History size={20} />
+                    </button>
+
+                    <button
+                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                        className={`hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${sidebarOpen
                             ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200'
-                            : 'text-slate-600 hover:bg-slate-100 border border-slate-200'
+                            : 'text-slate-600 hover:bg-slate-50 border border-slate-200'
                             }`}
                     >
                         <History size={16} />
-                        <span className="hidden lg:inline">{showAudit ? 'Hide Audit' : 'Audit Trail'}</span>
+                        <span className="hidden xl:inline">{sidebarOpen ? 'Hide Log' : 'Log'}</span>
                     </button>
 
                     <button
                         onClick={handleDownloadSigned}
-                        disabled={!document.final_pdf_url && !document.pdf_url}
-                        className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white text-sm font-semibold rounded-lg shadow-md shadow-indigo-200 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-semibold rounded-lg shadow-lg shadow-indigo-600/20 active:scale-95 transition-transform"
                     >
                         <Download size={16} />
-                        Download
+                        <span className="hidden md:inline">Download</span>
                     </button>
                 </div>
             </header>
 
             <div className="flex-1 flex overflow-hidden relative">
-                {/* Thumbnails Sidebar */}
-                <div className="w-72 bg-white border-r border-slate-200 overflow-y-auto hidden xl:block z-10 flex-col">
-                    <div className="p-4 border-b border-slate-100 bg-slate-50/30 sticky top-0 z-10 backdrop-blur-sm">
-                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            {numPages} Pages
-                        </h3>
+                {/* Desktop Thumbnails (Hidden on mobile) */}
+                <div className="w-64 bg-white border-r border-slate-200 overflow-y-auto hidden xl:block z-10 flex-col">
+                    <div className="p-4 border-b border-slate-100 bg-slate-50/50 sticky top-0 backdrop-blur-sm z-10">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{numPages} Pages</span>
                     </div>
-
                     <div className="p-4 space-y-4">
-                        {numPages && Array.from({ length: numPages }, (_, index) => {
-                            const pageNum = index + 1;
-                            const isActive = currentPage === pageNum;
-
-                            return (
-                                <button
-                                    key={`nav-page-${pageNum}`}
-                                    onClick={() => {
-                                        const element = document.getElementById(`pdf-page-${pageNum}`);
-                                        if (element) {
-                                            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                            setCurrentPage(pageNum);
-                                        }
-                                    }}
-                                    className={`group w-full relative transition-all duration-200 ${isActive ? 'scale-[1.02]' : 'hover:scale-[1.01]'
-                                        }`}
-                                >
-                                    <div className={`relative rounded-lg overflow-hidden border-2 transition-all ${isActive
-                                        ? 'border-indigo-600 shadow-md ring-2 ring-indigo-100'
-                                        : 'border-slate-100 group-hover:border-indigo-300'
-                                        }`}>
-                                        <div className="aspect-[3/4] bg-slate-100 relative">
-                                            {pdfUrl && (
-                                                <PdfDocument file={pdfUrl} className="opacity-90">
-                                                    <Page
-                                                        pageNumber={pageNum}
-                                                        width={240}
-                                                        renderTextLayer={false}
-                                                        renderAnnotationLayer={false}
-                                                        className="pointer-events-none"
-                                                    />
-                                                </PdfDocument>
-                                            )}
-                                        </div>
-
-                                        {/* Page Number Overlay */}
-                                        <div className={`absolute bottom-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold backdrop-blur-md ${isActive
-                                            ? 'bg-indigo-600 text-white'
-                                            : 'bg-black/50 text-white'
-                                            }`}>
-                                            {pageNum}
-                                        </div>
+                        {numPages && Array.from({ length: numPages }, (_, i) => (
+                            <button
+                                key={i}
+                                onClick={() => {
+                                    setCurrentPage(i + 1);
+                                    document.getElementById(`pdf-page-${i + 1}`)?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className={`w-full relative group transition-all ${currentPage === i + 1 ? 'ring-2 ring-indigo-500 rounded-lg scale-[1.02]' : 'hover:opacity-80'}`}
+                            >
+                                <div className="aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden relative border border-slate-200">
+                                    {pdfUrl && (
+                                        <PdfDocument file={pdfUrl} className="opacity-75 pointer-events-none">
+                                            <Page pageNumber={i + 1} width={200} renderTextLayer={false} renderAnnotationLayer={false} />
+                                        </PdfDocument>
+                                    )}
+                                    <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[10px] px-1.5 rounded font-medium backdrop-blur-sm">
+                                        {i + 1}
                                     </div>
-                                </button>
-                            );
-                        })}
+                                </div>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
-                {/* Main Content */}
-                <div className="flex-1 relative flex flex-col bg-slate-100/50">
-
-                    {/* Floating Toolbar */}
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40">
-                        <motion.div
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            className="bg-white/90 backdrop-blur-md border border-slate-200/60 p-1.5 rounded-full shadow-xl flex items-center gap-1 ring-1 ring-black/5"
-                        >
-                            <button
-                                onClick={() => setScale(prev => Math.max(prev - 0.1, 0.5))}
-                                className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
-                                title="Zoom Out"
-                            >
-                                <ZoomOut size={18} />
-                            </button>
-                            <span className="w-12 text-center text-xs font-semibold text-slate-600 tabular-nums">
-                                {Math.round(scale * 100)}%
-                            </span>
-                            <button
-                                onClick={() => setScale(prev => Math.min(prev + 0.1, 2.0))}
-                                className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
-                                title="Zoom In"
-                            >
-                                <ZoomIn size={18} />
-                            </button>
-                        </motion.div>
-                    </div>
-
-                    {/* Scrollable Document Area */}
-                    <div
-                        className="flex-1 w-full overflow-y-auto overflow-x-hidden p-8 lg:p-12 flex flex-col items-center scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent scroll-smooth"
-                        onScroll={(e) => {
-                            const container = e.target;
-                            const pages = container.querySelectorAll('[data-page-container]');
-                            pages.forEach((page) => {
-                                const rect = page.getBoundingClientRect();
-                                const containerRect = container.getBoundingClientRect();
-                                // More precise "in view" detection
-                                if (rect.top <= containerRect.top + containerRect.height / 3 && rect.bottom >= containerRect.top + containerRect.height / 3) {
-                                    const pageNum = parseInt(page.getAttribute('data-page-number'));
-                                    setCurrentPage(pageNum);
-                                }
-                            });
-                        }}
-                    >
-                        {pdfUrl ? (
-                            <PdfDocument
-                                file={pdfUrl}
-                                onLoadSuccess={onDocumentLoadSuccess}
-                                loading={
-                                    <div className="my-20 flex flex-col items-center">
-                                        <Loader2 size={32} className="text-indigo-500 animate-spin mb-3" />
-                                        <span className="text-slate-400 text-sm">Rendering pages...</span>
-                                    </div>
-                                }
-                                error={
-                                    <div className="bg-red-50 p-6 rounded-xl border border-red-100 text-center max-w-sm">
-                                        <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
-                                        <p className="text-red-700 font-medium">Failed to render PDF</p>
-                                    </div>
-                                }
-                                className="flex flex-col items-center gap-8 w-full max-w-5xl"
-                            >
-                                {numPages && Array.from({ length: numPages }, (_, index) => (
-                                    <div
-                                        key={`page_${index + 1}`}
-                                        id={`pdf-page-${index + 1}`}
-                                        data-page-container
-                                        data-page-number={index + 1}
-                                        className="relative group transition-all duration-300"
-                                        style={{ width: 'fit-content' }}
-                                    >
-                                        <div className="bg-white rounded shadow-2xl shadow-indigo-100/50 ring-1 ring-slate-900/5 overflow-hidden transition-shadow group-hover:shadow-indigo-200/50">
-                                            <Page
-                                                pageNumber={index + 1}
-                                                renderTextLayer={true}
-                                                renderAnnotationLayer={false}
-                                                width={800} // Standard Viewing Width
-                                                scale={scale}
-                                                className="bg-white"
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-                            </PdfDocument>
-                        ) : (
-                            <div className="flex items-center justify-center p-20 text-slate-400">
-                                Document not loaded
-                            </div>
-                        )}
-
-                        <div className="h-32 flex-shrink-0" /> {/* Spacer for floating toolbar */}
-                    </div>
-                </div>
-
-                {/* Audit Trail Sidebar */}
-                <motion.aside
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{
-                        width: showAudit ? 340 : 0,
-                        opacity: showAudit ? 1 : 0
+                {/* Main PDF Viewer */}
+                <div
+                    ref={containerRef}
+                    className="flex-1 w-full overflow-y-auto overflow-x-hidden p-4 md:p-8 flex flex-col items-center bg-slate-100 scroll-smooth"
+                    onScroll={(e) => {
+                        // Simple scroll spy logic
+                        const container = e.target;
+                        const height = container.clientHeight;
+                        const scroll = container.scrollTop;
+                        // Rough estimation if exact elements tracking is too heavy
+                        // Better: Use IntersectionObserver in a real app
                     }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="bg-white border-l border-slate-200 overflow-hidden flex flex-col shadow-2xl z-30 ring-1 ring-slate-900/5"
                 >
-                    <div className="p-5 border-b border-slate-200 bg-slate-50 flex-shrink-0">
-                        <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                            <History size={18} className="text-indigo-600" />
-                            Activity Log
-                        </h3>
-                    </div>
+                    {pdfUrl ? (
+                        <PdfDocument
+                            file={pdfUrl}
+                            onLoadSuccess={onDocumentLoadSuccess}
+                            loading={<Loader2 className="animate-spin text-indigo-500 mt-20" size={32} />}
+                            className="flex flex-col items-center gap-4 md:gap-8 pb-32 w-full max-w-4xl mx-auto"
+                        >
+                            {numPages && Array.from({ length: numPages }, (_, i) => (
+                                <div
+                                    key={`page-${i + 1}`}
+                                    id={`pdf-page-${i + 1}`}
+                                    className="relative shadow-xl shadow-slate-200/60 transition-transform duration-200 origin-top"
+                                    style={{
+                                        width: 'fit-content' // Allows scaling to effect layout
+                                    }}
+                                >
+                                    <Page
+                                        pageNumber={i + 1}
+                                        scale={scale}
+                                        renderTextLayer={true}
+                                        renderAnnotationLayer={false}
+                                        className="bg-white"
+                                        width={window.innerWidth < 768 ? window.innerWidth - 32 : 800} // Dynamic width
+                                    />
+                                    {/* Mobile Page Indicator Overlay */}
+                                    <div className="absolute top-2 right-2 bg-black/30 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-md md:hidden">
+                                        {i + 1} / {numPages}
+                                    </div>
+                                </div>
+                            ))}
+                        </PdfDocument>
+                    ) : (
+                        <div className="text-slate-400 mt-20">Document not loaded</div>
+                    )}
+                </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 bg-white scrollbar-thin scrollbar-thumb-slate-300">
-                        <div className="relative">
-                            {/* Timeline Line */}
-                            <div className="absolute left-[15px] top-4 bottom-0 w-0.5 bg-slate-200" />
+                {/* Floating Mobile Audit Fab (Optional) - Removed in favor of Header Action */}
 
-                            <div className="space-y-8 relative">
-                                {auditLogs.map((log, idx) => {
-                                    const isLast = idx === auditLogs.length - 1;
-                                    const getIcon = (action) => {
-                                        switch (action) {
-                                            case 'COMPLETED': return <CheckCircle size={16} className="text-emerald-600" />;
-                                            case 'SIGNED': return <PenTool size={16} className="text-indigo-600" />;
-                                            case 'VIEWED': return <User size={16} className="text-amber-600" />;
-                                            default: return <Clock size={16} className="text-slate-500" />;
-                                        }
-                                    };
+                {/* Mobile PDF Controls (Floating Bottom) */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2">
+                    <motion.div
+                        initial={{ y: 50, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        className="flex items-center gap-1 p-1.5 bg-slate-900/80 backdrop-blur-md text-white rounded-full shadow-2xl ring-1 ring-white/10"
+                    >
+                        <button onClick={() => setScale(s => Math.max(0.4, s - 0.1))} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ZoomOut size={18} /></button>
+                        <span className="w-10 text-center text-xs font-mono font-bold">{Math.round(scale * 100)}%</span>
+                        <button onClick={() => setScale(s => Math.min(2.0, s + 0.1))} className="p-2 hover:bg-white/10 rounded-full transition-colors"><ZoomIn size={18} /></button>
+                    </motion.div>
+                </div>
 
-                                    const getBg = (action) => {
-                                        switch (action) {
-                                            case 'COMPLETED': return 'bg-emerald-100 ring-emerald-200';
-                                            case 'SIGNED': return 'bg-indigo-100 ring-indigo-200';
-                                            case 'VIEWED': return 'bg-amber-100 ring-amber-200';
-                                            default: return 'bg-slate-100 ring-slate-200';
-                                        }
-                                    };
-
-                                    return (
-                                        <motion.div
-                                            key={log.id}
-                                            initial={{ x: 20, opacity: 0 }}
-                                            animate={{ x: 0, opacity: 1 }}
-                                            transition={{ delay: idx * 0.05 }}
-                                            className="relative pl-12"
-                                        >
-                                            {/* Node */}
-                                            <div className={`absolute left-0 top-0 w-8 h-8 rounded-full flex items-center justify-center ring-4 ring-white shadow-md z-10 ${getBg(log.action)}`}>
-                                                {getIcon(log.action)}
-                                            </div>
-
-                                            {/* content */}
-                                            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-all hover:border-indigo-200 group">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider px-2 py-0.5 bg-slate-100 rounded-md group-hover:bg-indigo-50 group-hover:text-indigo-700 transition-colors">
-                                                        {log.action}
-                                                    </span>
-                                                    <span className="text-[10px] text-slate-400 font-mono">
-                                                        {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
-                                                </div>
-
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center">
-                                                        <User size={12} className="text-slate-500" />
-                                                    </div>
-                                                    <p className="text-sm font-semibold text-slate-700 truncate max-w-[160px]" title={log.metadata?.signer_name}>
-                                                        {log.metadata?.signer_name || log.user || 'System'}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                                                    <div className="flex items-center gap-1.5 text-slate-500">
-                                                        <Clock size={10} />
-                                                        <span className="text-[10px] font-medium">
-                                                            {new Date(log.created_at).toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                    {log.ip_address && (
-                                                        <span className="text-[10px] text-slate-400 font-mono bg-slate-50 px-1.5 py-0.5 rounded" title="IP Address">
-                                                            {log.ip_address}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Secure Footer */}
-                    <div className="p-3 bg-slate-50 border-t border-slate-200 text-center">
-                        <p className="text-[10px] text-slate-400 flex items-center justify-center gap-1">
-                            <Lock size={10} />
-                            End-to-End Encrypted Audit Trail
-                        </p>
-                    </div>
-                </motion.aside>
+                {/* Desktop Audit Sidebar (Collapsible) */}
+                <SignatureAuditSidebar show={sidebarOpen} auditLogs={auditLogs} />
             </div>
+
+            {/* Mobile Audit Drawer */}
+            <MobileAuditDrawer
+                show={showAudit}
+                onClose={() => setShowAudit(false)}
+                auditLogs={auditLogs}
+            />
         </div>
     );
 };

@@ -9,13 +9,14 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
-const PDFViewer = ({ pdfUrl, signatures = [], onUpdateSignature, onRemoveSignature, onEditSignature, readOnly = false, onFieldClick }) => {
+const PDFViewer = ({ pdfUrl, signatures = [], onUpdateSignature, onRemoveSignature, onEditSignature, readOnly = false, onFieldClick, onLoadSuccess }) => {
     const [numPages, setNumPages] = useState(null);
     const [scale, setScale] = useState(1.0);
     const [rotation, setRotation] = useState(0);
 
     const onDocumentLoadSuccess = ({ numPages }) => {
         setNumPages(numPages);
+        if (onLoadSuccess) onLoadSuccess({ numPages });
     };
 
     const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 2.0));

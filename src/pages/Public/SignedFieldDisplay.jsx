@@ -55,14 +55,20 @@ const SignedFieldDisplay = ({ field, onClick, pageWidth, pageHeight }) => {
             {value ? (
                 // Show the actual signature
                 <div className="w-full h-full flex items-center justify-center p-2">
-                    {value.startsWith('data:image') ? (
+                    {metadata.fieldType === 'checkbox' ? (
+                        <div className={`w-6 h-6 border-2 rounded flex items-center justify-center transition-colors ${value === 'true' ? 'bg-indigo-600 border-indigo-600' : 'border-slate-400 bg-white'}`}>
+                            {value === 'true' && <CheckCircle size={16} className="text-white" />}
+                        </div>
+                    ) : value.startsWith('data:image') ? (
                         <img
                             src={value}
                             alt="Signature"
                             className="max-w-full max-h-full object-contain"
                         />
                     ) : (
-                        <span className="font-handwriting text-xl text-slate-700">{value}</span>
+                        <span className={`${metadata.fieldType === 'text' || metadata.fieldType === 'date' ? 'font-sans text-sm font-medium' : 'font-handwriting text-xl'} text-slate-700`}>
+                            {value}
+                        </span>
                     )}
                     {isMine && (
                         <CheckCircle size={16} className="absolute top-1 right-1 text-emerald-600" />
@@ -70,9 +76,13 @@ const SignedFieldDisplay = ({ field, onClick, pageWidth, pageHeight }) => {
                 </div>
             ) : (
                 // Show placeholder if not signed yet
-                <div className="text-xs font-semibold text-slate-600">
+                <div className="text-xs font-semibold text-slate-600 flex flex-col items-center justify-center h-full w-full">
                     {isMine ? (
-                        <span>Click to Sign</span>
+                        <span>
+                            {metadata.fieldType === 'checkbox' ? 'Toggle' :
+                                metadata.fieldType === 'date' ? 'Date' :
+                                    metadata.label || 'Click to Sign'}
+                        </span>
                     ) : (
                         <span>{signeeName || 'Pending'}</span>
                     )}

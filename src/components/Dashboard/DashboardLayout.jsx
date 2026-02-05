@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
@@ -9,6 +10,7 @@ function DashboardLayout() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
+        toast.dismiss(); // Dismiss all toasts when entering dashboard
         const fetchBusiness = async () => {
             try {
                 const data = await getBusiness();

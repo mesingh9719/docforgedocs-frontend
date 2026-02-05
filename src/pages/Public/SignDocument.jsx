@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { pdfjs, Document as PdfDocument, Page } from 'react-pdf';
-import { Loader, AlertCircle, CheckCircle, Save, PenTool, Type, Upload as UploadIcon, Trash2, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import { Loader, AlertCircle, CheckCircle, Save, PenTool, Type, Upload as UploadIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SignedFieldDisplay from './SignedFieldDisplay';
 import { useAuth } from '../../context/AuthContext'; // Optional, might not be logged in
@@ -37,6 +37,13 @@ const SignDocument = () => {
     const canvasRef = useRef(null);
     const contextRef = useRef(null);
     const [isDrawing, setIsDrawing] = useState(false);
+
+    // Guided Signing
+    const [activeFieldIndex, setActiveFieldIndex] = useState(-1);
+
+    // Derived state for required fields
+    const requiredFields = fields.filter(f => f.metadata?.isMine && f.metadata?.required && !f.metadata?.value)
+        .sort((a, b) => (a.pageNumber - b.pageNumber) || (a.position.y - b.position.y));
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -141,16 +148,69 @@ const SignDocument = () => {
         }
     };
 
+
+
+    const handleNextField = () => {
+        const nextField = requiredFields[0];
+        if (nextField) {
+            handleFieldClick(nextField);
+            // Also scroll to it
+            const pageEl = document.getElementById(`pdf-page-${nextField.pageNumber}`);
+            if (pageEl) {
+                pageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        } else {
+            toast.success("All required fields completed!");
+        }
+    };
+
     const onDocumentLoadSuccess = ({ numPages }) => {
         setNumPages(numPages);
     };
 
     const handleFieldClick = (field) => {
         // Only allow clicking my fields that haven't been signed yet
-        if (field.metadata.isMine && !field.metadata.value) {
+        if (field.metadata.isMine) {
+            const { fieldType } = field.metadata;
+            const isSigned = !!field.metadata.value;
+
+            // Checkbox: Toggle on/off even if "signed" (to allow unchecking)
+            if (fieldType === 'checkbox') {
+                const newValue = field.metadata.value === 'true' ? '' : 'true';
+                updateFieldValue(field.id, newValue, 'checkbox');
+                return;
+            }
+
+            // Date: Auto-fill if empty
+            if (fieldType === 'date') {
+                if (!field.metadata.value) {
+                    const today = new Date().toLocaleDateString();
+                    updateFieldValue(field.id, today, 'date');
+                    toast.success("Date filled");
+                }
+                return;
+            }
+
+            // If already signed (and not checkbox), prevent re-signing
+            if (isSigned) {
+                toast("You have already signed this field.");
+                return;
+            }
+
             setSigningField(field);
 
             // Determine allowed method
+            if (fieldType === 'text' || fieldType === 'initials') {
+                // If it is a text field, default to text input mode
+                if (fieldType === 'text') {
+                    setSignatureMethod('text_input');
+                    setTextSignature(field.metadata.value || '');
+                    return;
+                }
+                // If initials, maybe default to draw or text, but use standard signature modal for now
+            }
+
+            // Standard Signature Logic
             const allowedType = field.metadata.type || 'all';
             let defaultMethod = 'text';
             if (allowedType === 'draw') defaultMethod = 'draw';
@@ -161,9 +221,22 @@ const SignDocument = () => {
             setTextSignature('');
             setDrawnSignature(null);
             setUploadedSignature(null);
-        } else if (field.metadata.isMine && field.metadata.value) {
-            toast("You have already signed this field.");
         }
+    };
+
+    const updateFieldValue = (fieldId, val, type) => {
+        setFields(prev => prev.map(f =>
+            f.id === fieldId
+                ? {
+                    ...f,
+                    metadata: {
+                        ...f.metadata,
+                        value: val,
+                        signatureType: type
+                    }
+                }
+                : f
+        ));
     };
 
     const getSignatureValue = () => {
@@ -588,6 +661,20 @@ const SignDocument = () => {
                 </div>
             </main>
 
+            {/* Floating Action Button (Expert Mode) */}
+            <div className="fixed bottom-6 right-6 md:right-10 z-[60] flex flex-col items-end gap-3 pointer-events-none">
+                {/* Only show if there are required fields remaining */}
+                {requiredFields.length > 0 && (
+                    <button
+                        onClick={handleNextField}
+                        className="pointer-events-auto bg-indigo-600 text-white px-6 py-3 rounded-full font-bold shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 animate-bounce-subtle"
+                    >
+                        {fields.filter(f => f.metadata.isMine && f.metadata.value).length === 0 ? "Start Signing" : "Next Field"}
+                        <ArrowRight size={18} />
+                    </button>
+                )}
+            </div>
+
             {/* Signing Modal */}
             {signingField && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -599,32 +686,35 @@ const SignDocument = () => {
 
                         <div className="p-6 overflow-y-auto">
                             {/* Tabs */}
-                            <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-6">
-                                {showText && (
-                                    <button
-                                        onClick={() => setSignatureMethod('text')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'text' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
-                                    >
-                                        <Type size={16} /> Type
-                                    </button>
-                                )}
-                                {showDraw && (
-                                    <button
-                                        onClick={() => setSignatureMethod('draw')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'draw' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
-                                    >
-                                        <PenTool size={16} /> Draw
-                                    </button>
-                                )}
-                                {showUpload && (
-                                    <button
-                                        onClick={() => setSignatureMethod('upload')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'upload' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
-                                    >
-                                        <UploadIcon size={16} /> Upload
-                                    </button>
-                                )}
-                            </div>
+                            {/* Tabs - Hide if we are in direct text input mode */}
+                            {signatureMethod !== 'text_input' && (
+                                <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-6">
+                                    {showText && (
+                                        <button
+                                            onClick={() => setSignatureMethod('text')}
+                                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'text' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                                        >
+                                            <Type size={16} /> Type
+                                        </button>
+                                    )}
+                                    {showDraw && (
+                                        <button
+                                            onClick={() => setSignatureMethod('draw')}
+                                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'draw' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                                        >
+                                            <PenTool size={16} /> Draw
+                                        </button>
+                                    )}
+                                    {showUpload && (
+                                        <button
+                                            onClick={() => setSignatureMethod('upload')}
+                                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'upload' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                                        >
+                                            <UploadIcon size={16} /> Upload
+                                        </button>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Inputs */}
                             {signatureMethod === 'text' && (
@@ -638,6 +728,23 @@ const SignDocument = () => {
                                         placeholder={`Signed by ${currentUser.name}`}
                                         className="w-full text-xl font-handwriting px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
                                         style={{ fontFamily: 'Dancing Script, cursive' }}
+                                    />
+                                </div>
+                            )}
+
+                            {signatureMethod === 'text_input' && (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Type size={18} className="text-indigo-600" />
+                                        <h3 className="font-semibold text-slate-700">{signingField.metadata.label || "Enter Text"}</h3>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        value={textSignature}
+                                        onChange={(e) => setTextSignature(e.target.value)}
+                                        placeholder={signingField.metadata.placeholder || "Type here..."}
+                                        className="w-full text-base px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
                                     />
                                 </div>
                             )}

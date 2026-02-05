@@ -72,6 +72,18 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
                             {varParts.map((vPart, vIndex) => {
                                 if (vPart.startsWith('{{') && vPart.endsWith('}}')) {
                                     const key = vPart.slice(2, -2).trim();
+
+                                    // Handle List Variables
+                                    if (Array.isArray(values[key])) {
+                                        return (
+                                            <ul key={vIndex} className="list-disc pl-5 my-2 space-y-1">
+                                                {values[key].map((item, idx) => (
+                                                    <li key={idx}><RenderField value={item} name={`${key}_${idx}`} /></li>
+                                                ))}
+                                            </ul>
+                                        );
+                                    }
+
                                     return <RenderField key={vIndex} value={values[key]} name={key} placeholder={`[${key}]`} />;
                                 }
                                 // Handle newlines

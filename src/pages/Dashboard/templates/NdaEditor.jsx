@@ -15,6 +15,12 @@ import { generateDocumentPdf } from '../../../utils/pdfGenerator';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { generateNdaHtml, generateId } from '../../../utils/ndaUtils';
 import { getBusiness } from '../../../api/business';
+import DocumentEditor from '../../../components/DocumentEngine/DocumentEditor';
+
+// Wrapper for the Universal Editor when accessed via Legacy Routes
+const DocumentEditorOverride = () => {
+    return <DocumentEditor />;
+};
 
 const NdaEditor = () => {
     const navigate = useNavigate();
@@ -61,8 +67,21 @@ const NdaEditor = () => {
         // Style parameters
         styles,
         updateStyle,
-        resetStyles
+        resetStyles,
+        isNewEngine // DETECTED ENGINE TYPE
     } = useNdaDocument(id);
+
+    // --- NEW ENGINE REDIRECT ---
+    // If the document is detected as "Block-Based" (New Engine), we render the Universal Editor instead of the Legacy Form Editor.
+    // This allows Guest Users (who create Block docs) to seamlessly edit them in the Dashboard without hitting a Legacy UI mismatch.
+    if (isNewEngine) {
+        // We import DocumentEditor lazily or directly. Since it's in the same bundle mostly, direct import is fine.
+        // However, we need to ensure DocumentEditor is imported at the top. I will add the import in a separate edit or assume it's added.
+        // Actually, let's return the component.
+        return <DocumentEditorOverride />;
+    }
+
+    // --- END NEW ENGINE REDIRECT ---
 
     // Signature Modal State
     const [sigModal, setSigModal] = useState({

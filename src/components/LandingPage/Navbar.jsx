@@ -42,6 +42,7 @@ function Navbar() {
 
                 {/* Desktop Nav */}
                 <div className="hidden md:flex items-center gap-8">
+                    <a href="/#templates" className="text-slate-600 font-medium hover:text-slate-900 transition-colors">Create Document</a>
                     <NavLink to="/features">Features</NavLink>
                     <NavLink to="/pricing">Pricing</NavLink>
                     <NavLink to="/about">About</NavLink>
@@ -83,6 +84,7 @@ function Navbar() {
                         className="md:hidden bg-white border-b border-slate-200 overflow-hidden"
                     >
                         <div className="flex flex-col p-6 gap-4">
+                            <a href="/#templates" onClick={() => setMobileMenuOpen(false)} className="text-slate-600 font-medium text-lg py-2 block">Create Document</a>
                             <MobileNavLink to="/features" onClick={() => setMobileMenuOpen(false)}>Features</MobileNavLink>
                             <MobileNavLink to="/pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</MobileNavLink>
                             <MobileNavLink to="/about" onClick={() => setMobileMenuOpen(false)}>About</MobileNavLink>

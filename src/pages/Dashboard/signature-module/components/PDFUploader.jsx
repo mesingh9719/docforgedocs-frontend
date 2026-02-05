@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Upload, FileText, AlertCircle, CheckCircle, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, FileText, AlertCircle, CheckCircle, X, CloudUpload, Shield, Zap, Info, ArrowUp } from 'lucide-react';
 
 const PDFUploader = ({ onFileUpload }) => {
     const [dragActive, setDragActive] = useState(false);
@@ -12,24 +12,20 @@ const PDFUploader = ({ onFileUpload }) => {
 
     const validateFile = (file) => {
         setError(null);
-
         if (file.type !== 'application/pdf') {
-            setError('Only PDF files are allowed');
+            setError('Please upload a valid PDF document.');
             return false;
         }
-
         if (file.size > MAX_FILE_SIZE) {
-            setError('File size must be less than 10MB');
+            setError('File size must be under 10MB.');
             return false;
         }
-
         return true;
     };
 
     const handleDrag = useCallback((e) => {
         e.preventDefault();
         e.stopPropagation();
-
         if (e.type === 'dragenter' || e.type === 'dragover') {
             setDragActive(true);
         } else if (e.type === 'dragleave') {
@@ -41,7 +37,6 @@ const PDFUploader = ({ onFileUpload }) => {
         e.preventDefault();
         e.stopPropagation();
         setDragActive(false);
-
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             handleFileSelection(e.dataTransfer.files[0]);
         }
@@ -49,29 +44,21 @@ const PDFUploader = ({ onFileUpload }) => {
 
     const handleFileSelection = (file) => {
         setIsValidating(true);
-
         setTimeout(() => {
             if (validateFile(file)) {
                 setSelectedFile(file);
                 setError(null);
-                // Auto-proceed immediately
-                onFileUpload(file);
+                setTimeout(() => onFileUpload(file), 1500);
             } else {
                 setSelectedFile(null);
             }
             setIsValidating(false);
-        }, 800); // Slightly longer delay for visual feedback
+        }, 1000);
     };
 
     const handleInputChange = (e) => {
         if (e.target.files && e.target.files[0]) {
             handleFileSelection(e.target.files[0]);
-        }
-    };
-
-    const handleProceed = () => {
-        if (selectedFile) {
-            onFileUpload(selectedFile);
         }
     };
 
@@ -83,199 +70,176 @@ const PDFUploader = ({ onFileUpload }) => {
     const formatFileSize = (bytes) => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + ['Bytes', 'KB', 'MB'][i];
     };
 
     return (
-        <div className="space-y-6">
+        <div className="w-full h-full flex flex-col items-center justify-center p-4 lg:p-12 relative overflow-hidden">
+
+            {/* Dynamic Background */}
+            <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-200/30 rounded-full blur-[100px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-200/30 rounded-full blur-[100px]" />
+            </div>
+
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8 md:p-12"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="relative z-10 w-full max-w-5xl bg-white/60 backdrop-blur-xl rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.08)] border border-white/50 flex flex-col md:flex-row overflow-hidden min-h-[550px]"
             >
-                <div className="text-center mb-8">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-2">
-                        Upload Your Document
-                    </h2>
-                    <p className="text-slate-600">
-                        Upload a PDF document to add signatures
-                    </p>
-                </div>
-
-                <div
-                    onDragEnter={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDragOver={handleDrag}
-                    onDrop={handleDrop}
-                    className={`
-                        relative border-2 border-dashed rounded-2xl p-12 transition-all duration-300
-                        ${dragActive
-                            ? 'border-indigo-500 bg-indigo-50'
-                            : selectedFile
-                                ? 'border-emerald-300 bg-emerald-50/50'
-                                : error
-                                    ? 'border-red-300 bg-red-50/50'
-                                    : 'border-slate-300 bg-slate-50/50 hover:border-indigo-400 hover:bg-indigo-50/30'
-                        }
-                    `}
-                >
-                    {isValidating ? (
-                        <div className="text-center">
-                            <motion.div
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                                className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto mb-4"
-                            />
-                            <p className="text-slate-600 font-medium">Validating file...</p>
+                {/* Left Panel: Context & Features */}
+                <div className="hidden md:flex w-full md:w-5/12 bg-white/40 p-10 lg:p-14 flex-col justify-between border-r border-slate-100/50">
+                    <div>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider rounded-full mb-8">
+                            <Shield size={12} className="fill-indigo-700" />
+                            Secure Environment
                         </div>
-                    ) : selectedFile ? (
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="text-center"
-                        >
-                            <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-emerald-200">
-                                <CheckCircle size={40} className="text-white" strokeWidth={2.5} />
+                        <h1 className="text-3xl lg:text-4xl font-extrabold text-slate-800 leading-tight mb-4">
+                            Upload your <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Document</span>
+                        </h1>
+                        <p className="text-slate-500 text-base leading-relaxed">
+                            Drag and drop your PDF to get started. We use banking-grade encryption to ensure your documents remain private and secure throughout the signing workflow.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6">
+                        <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/50 border border-white/60 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl">
+                                <Zap size={20} />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-800 mb-2">
-                                {selectedFile.name}
-                            </h3>
-                            <p className="text-sm text-slate-500 mb-4">
-                                {formatFileSize(selectedFile.size)}
-                            </p>
-                            <button
-                                onClick={handleRemove}
-                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                            >
-                                <X size={16} />
-                                Remove File
-                            </button>
-                        </motion.div>
-                    ) : error ? (
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            className="text-center"
-                        >
-                            <div className="w-20 h-20 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <AlertCircle size={40} className="text-red-600" strokeWidth={2.5} />
+                            <div>
+                                <h3 className="font-bold text-slate-700 text-sm">Lightning Fast</h3>
+                                <p className="text-xs text-slate-500 mt-1">Instant processing and rendering.</p>
                             </div>
-                            <h3 className="text-lg font-bold text-red-600 mb-2">
-                                Upload Failed
-                            </h3>
-                            <p className="text-sm text-red-500 mb-4">
-                                {error}
-                            </p>
-                            <button
-                                onClick={() => setError(null)}
-                                className="text-sm font-medium text-red-600 hover:text-red-700"
-                            >
-                                Try Again
-                            </button>
-                        </motion.div>
-                    ) : (
-                        <div className="text-center">
-                            <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <Upload size={40} className="text-indigo-600" strokeWidth={2.5} />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-800 mb-2">
-                                {dragActive ? 'Drop your file here' : 'Drag & drop your PDF here'}
-                            </h3>
-                            <p className="text-sm text-slate-500 mb-6">
-                                or click to browse your files
-                            </p>
-                            <label className="inline-block cursor-pointer">
-                                <span className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium rounded-lg shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 transition-all inline-block">
-                                    Choose File
-                                </span>
-                                <input
-                                    type="file"
-                                    accept=".pdf,application/pdf"
-                                    onChange={handleInputChange}
-                                    className="hidden"
-                                />
-                            </label>
                         </div>
-                    )}
+                        <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/50 border border-white/60 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="p-2.5 bg-emerald-100 text-emerald-600 rounded-xl">
+                                <Shield size={20} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-slate-700 text-sm">Encrypted Storage</h3>
+                                <p className="text-xs text-slate-500 mt-1">Your data never leaves our secure loop.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
-                        File Requirements
-                    </h4>
-                    <ul className="space-y-2 text-sm text-slate-600">
-                        <li className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-                            File format: PDF only
-                        </li>
-                        <li className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-                            Maximum size: 10MB
-                        </li>
-                        <li className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-                            Ensure document is readable and properly formatted
-                        </li>
-                    </ul>
-                </div>
+                {/* Right Panel: Interactive Dropzone */}
+                <div className="w-full md:w-7/12 p-6 lg:p-12 flex flex-col items-center justify-center bg-gradient-to-br from-white to-slate-50/50 relative">
+                    <div
+                        onDragEnter={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDragOver={handleDrag}
+                        onDrop={handleDrop}
+                        onClick={() => !selectedFile && document.getElementById('file-upload').click()}
+                        className={`
+                            relative w-full h-full min-h-[350px] border-[3px] border-dashed rounded-[2rem] flex flex-col items-center justify-center text-center transition-all duration-300 cursor-pointer group
+                            ${dragActive
+                                ? 'border-indigo-500 bg-indigo-50/50 scale-[0.98]'
+                                : selectedFile
+                                    ? 'border-emerald-400 bg-emerald-50/30'
+                                    : error
+                                        ? 'border-red-300 bg-red-50/50'
+                                        : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'
+                            }
+                        `}
+                    >
+                        <AnimatePresence mode="wait">
+                            {isValidating ? (
+                                <motion.div
+                                    key="validating"
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    className="flex flex-col items-center p-8"
+                                >
+                                    <div className="relative w-24 h-24 mb-6">
+                                        <div className="absolute inset-0 border-4 border-indigo-100 rounded-full" />
+                                        <div className="absolute inset-0 border-4 border-t-indigo-600 rounded-full animate-spin" />
+                                        <FileText className="absolute inset-0 m-auto text-indigo-600" size={32} />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-800">Verifying...</h3>
+                                    <p className="text-slate-500 mt-2">Checking file integrity</p>
+                                </motion.div>
+                            ) : selectedFile ? (
+                                <motion.div
+                                    key="success"
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex flex-col items-center p-8 w-full max-w-sm"
+                                >
+                                    <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6 shadow-sm">
+                                        <CheckCircle size={48} className="text-emerald-600" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-800 break-words w-full px-4">{selectedFile.name}</h3>
+                                    <p className="text-sm font-mono text-slate-500 mt-2 mb-6 bg-white px-3 py-1 rounded-lg border border-slate-100 shadow-sm">
+                                        {formatFileSize(selectedFile.size)}
+                                    </p>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleRemove(); }}
+                                        className="text-rose-500 hover:text-rose-700 text-sm font-semibold flex items-center gap-2 px-4 py-2 hover:bg-rose-50 rounded-lg transition-colors"
+                                    >
+                                        <X size={16} /> Cancel
+                                    </button>
+                                </motion.div>
+                            ) : error ? (
+                                <motion.div
+                                    key="error"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex flex-col items-center p-8"
+                                >
+                                    <div className="w-20 h-20 bg-red-100 text-red-500 rounded-full flex items-center justify-center mb-4">
+                                        <AlertCircle size={40} />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-slate-800">Upload Failed</h3>
+                                    <p className="text-red-500 mt-1 text-center max-w-xs">{error}</p>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setError(null); }}
+                                        className="mt-6 text-slate-500 hover:text-slate-800 underline underline-offset-4"
+                                    >
+                                        Try again
+                                    </button>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="idle"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex flex-col items-center p-8"
+                                >
+                                    <div className="w-28 h-28 bg-indigo-50/80 rounded-full flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-300 shadow-sm group-hover:shadow-md">
+                                        <CloudUpload size={48} className="text-indigo-600 transition-colors group-hover:text-indigo-700" strokeWidth={1.5} />
+                                    </div>
+                                    <h3 className="text-2xl font-bold text-slate-800 mb-2 group-hover:text-indigo-700 transition-colors">Drag & Drop PDF</h3>
+                                    <p className="text-slate-500 mb-8 max-w-xs leading-relaxed">
+                                        Drop your file here or click to browse. <br />
+                                        <span className="text-xs text-slate-400 mt-1 block">Supports PDF up to 10MB</span>
+                                    </p>
 
-                {/* Continue button removed for auto-redirect */}
+                                    <button className="px-8 py-3.5 bg-slate-900 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex items-center gap-2 group-hover:bg-indigo-600">
+                                        <FileText size={18} />
+                                        <span>Choose Local File</span>
+                                    </button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                    <input
+                        id="file-upload"
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        onChange={handleInputChange}
+                        className="hidden"
+                    />
+                </div>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
-                >
-                    <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-4">
-                        <FileText size={24} className="text-indigo-600" />
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-800 mb-2">
-                        Secure Upload
-                    </h3>
-                    <p className="text-xs text-slate-600">
-                        Your documents are encrypted and secure
-                    </p>
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
-                >
-                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
-                        <CheckCircle size={24} className="text-purple-600" />
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-800 mb-2">
-                        Easy Process
-                    </h3>
-                    <p className="text-xs text-slate-600">
-                        Simple drag-and-drop signature placement
-                    </p>
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
-                >
-                    <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
-                        <Upload size={24} className="text-emerald-600" />
-                    </div>
-                    <h3 className="text-sm font-bold text-slate-800 mb-2">
-                        Instant Download
-                    </h3>
-                    <p className="text-xs text-slate-600">
-                        Get your signed document immediately
-                    </p>
-                </motion.div>
-            </div>
+            <p className="mt-8 text-center text-xs text-slate-400 font-medium">
+                By uploading, you agree to our <span className="underline cursor-pointer hover:text-slate-600">Terms of Service</span> and <span className="underline cursor-pointer hover:text-slate-600">Privacy Policy</span>.
+            </p>
         </div>
     );
 };

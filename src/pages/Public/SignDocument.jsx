@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { pdfjs, Document as PdfDocument, Page } from 'react-pdf';
-import { Loader, AlertCircle, CheckCircle, Save, PenTool, Type, Upload as UploadIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, ArrowRight } from 'lucide-react';
+import { Loader, AlertCircle, CheckCircle, Save, PenTool, Type, Upload as UploadIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, ArrowRight, Menu, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SignedFieldDisplay from './SignedFieldDisplay';
 import { useAuth } from '../../context/AuthContext'; // Optional, might not be logged in
@@ -40,6 +40,7 @@ const SignDocument = () => {
 
     // Guided Signing
     const [activeFieldIndex, setActiveFieldIndex] = useState(-1);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // Derived state for required fields
     const requiredFields = fields.filter(f => f.metadata?.isMine && f.metadata?.required && !f.metadata?.value)
@@ -86,6 +87,31 @@ const SignDocument = () => {
     }, [token]);
 
     // Canvas Logic
+    const [pdfWidth, setPdfWidth] = useState(800);
+
+    useEffect(() => {
+        const updateWidth = () => {
+            const container = document.getElementById('pdf-wrapper');
+            if (container) {
+                const newWidth = container.clientWidth - 32; // 32px padding
+                // Cap at 800px for desktop, but allow full width on mobile
+                setPdfWidth(Math.min(newWidth, 800));
+            }
+        };
+
+        // Initial measurement
+        updateWidth();
+
+        // Add listener
+        window.addEventListener('resize', updateWidth);
+        const timer = setTimeout(updateWidth, 500); // Check again after layout stabilizes
+
+        return () => {
+            window.removeEventListener('resize', updateWidth);
+            clearTimeout(timer);
+        };
+    }, []); // Run once on mount
+
     useEffect(() => {
         if (signingField && signatureMethod === 'draw' && canvasRef.current) {
             const canvas = canvasRef.current;
@@ -103,18 +129,42 @@ const SignDocument = () => {
         }
     }, [signingField, signatureMethod]);
 
-    const startDrawing = ({ nativeEvent }) => {
-        const { offsetX, offsetY } = nativeEvent;
-        contextRef.current.beginPath();
-        contextRef.current.moveTo(offsetX, offsetY);
+    const startDrawing = (e) => {
         setIsDrawing(true);
+        // Handle both mouse and touch events
+        const { offsetX, offsetY } = getCoordinates(e);
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const context = canvas.getContext('2d');
+        context.beginPath();
+        context.moveTo(offsetX, offsetY);
+        contextRef.current = context;
     };
 
-    const draw = ({ nativeEvent }) => {
+    const draw = (e) => {
         if (!isDrawing) return;
-        const { offsetX, offsetY } = nativeEvent;
-        contextRef.current.lineTo(offsetX, offsetY);
-        contextRef.current.stroke();
+        e.preventDefault(); // Stop scrolling on mobile
+
+        const { offsetX, offsetY } = getCoordinates(e);
+        if (contextRef.current) {
+            contextRef.current.lineTo(offsetX, offsetY);
+            contextRef.current.stroke();
+        }
+    };
+
+    const getCoordinates = (e) => {
+        if (e.touches && e.touches[0]) {
+            const rect = canvasRef.current.getBoundingClientRect();
+            return {
+                offsetX: e.touches[0].clientX - rect.left,
+                offsetY: e.touches[0].clientY - rect.top
+            };
+        }
+        return {
+            offsetX: e.nativeEvent.offsetX,
+            offsetY: e.nativeEvent.offsetY
+        };
     };
 
     const stopDrawing = () => {
@@ -240,7 +290,7 @@ const SignDocument = () => {
     };
 
     const getSignatureValue = () => {
-        if (signatureMethod === 'text') return textSignature.trim();
+        if (signatureMethod === 'text' || signatureMethod === 'text_input') return textSignature.trim();
         if (signatureMethod === 'draw') return drawnSignature;
         if (signatureMethod === 'upload') return uploadedSignature;
         return null;
@@ -376,7 +426,25 @@ const SignDocument = () => {
     return (
         <div className="min-h-screen bg-slate-100 flex flex-col">
             {/* Header */}
-            <header className="bg-white shadow px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+            {/* Mobile Header (Native App Style) */}
+            <header className="bg-white shadow-sm border-b border-slate-100 flex items-center justify-between px-4 h-14 sticky top-0 z-50 md:hidden">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsSidebarOpen(true)}
+                        className="p-2 -ml-2 text-slate-800 active:bg-slate-100 rounded-full transition-colors"
+                    >
+                        <Menu size={24} />
+                    </button>
+                    <h1 className="text-base font-semibold text-slate-900 truncate max-w-[200px]">{documentData?.name}</h1>
+                </div>
+                {/* Optional: Right side action or indicator */}
+                <div className="w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-700 font-bold text-xs ring-2 ring-indigo-100">
+                    {fields.filter(f => f.metadata?.value).length}/{fields.filter(f => f.metadata?.isMine).length}
+                </div>
+            </header>
+
+            {/* Desktop Header */}
+            <header className="bg-white shadow px-6 py-4 hidden md:flex items-center justify-between sticky top-0 z-50">
                 <div className="flex items-center gap-3">
                     <div className="bg-indigo-600 text-white p-2 rounded-lg"><CheckCircle size={20} /></div>
                     <div>
@@ -385,7 +453,7 @@ const SignDocument = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <p className="text-sm text-slate-600 hidden md:block">Signing as: <span className="font-semibold text-slate-900">{currentUser?.name}</span></p>
+                    <p className="text-sm text-slate-600">Signing as: <span className="font-semibold text-slate-900">{currentUser?.name}</span></p>
                     <button
                         onClick={handleFinishSigning}
                         disabled={isSubmitting}
@@ -397,8 +465,63 @@ const SignDocument = () => {
             </header>
 
             <main className="flex-1 overflow-hidden flex justify-center p-4 md:p-8">
-                <div className="w-full max-w-7xl h-[calc(100vh-180px)] bg-white border border-slate-200 relative rounded-xl overflow-hidden shadow-2xl flex">
-                    {/* Enhanced Page Navigation Sidebar */}
+                <div className="w-full max-w-7xl h-[calc(100vh-140px)] md:h-[calc(100vh-180px)] bg-white border border-slate-200 relative rounded-xl overflow-hidden shadow-2xl flex">
+
+                    {/* Mobile Sidebar Overlay */}
+                    {isSidebarOpen && (
+                        <div className="absolute inset-0 z-50 flex md:hidden">
+                            <div className="bg-white w-64 h-full shadow-2xl overflow-y-auto p-4 animate-in slide-in-from-left duration-200">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="font-bold text-slate-800 text-lg">Menu</h3>
+                                    <button onClick={() => setIsSidebarOpen(false)} className="p-1 hover:bg-slate-100 rounded-lg">
+                                        <X size={24} className="text-slate-500" />
+                                    </button>
+                                </div>
+                                {/* Reusing Sidebar Content Logic - Ideally this should be a component */}
+                                <div className="space-y-4">
+                                    <div className="bg-indigo-50 rounded-xl p-4 border border-indigo-100">
+                                        <p className="text-xs text-indigo-800 font-semibold uppercase tracking-wider mb-1">Your Progress</p>
+                                        <div className="text-2xl font-bold text-indigo-600 mb-2">
+                                            {fields.filter(f => f.metadata?.value).length}/{fields.filter(f => f.metadata?.isMine).length}
+                                        </div>
+                                        <div className="w-full bg-white rounded-full h-2 overflow-hidden border border-indigo-100">
+                                            <div
+                                                className="bg-indigo-500 h-2 rounded-full transition-all"
+                                                style={{
+                                                    width: `${fields.filter(f => f.metadata?.isMine).length === 0 ? 0 : (fields.filter(f => f.metadata?.value).length / fields.filter(f => f.metadata?.isMine).length) * 100}%`
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pages</p>
+                                        {numPages && Array.from({ length: numPages }, (_, index) => {
+                                            const pageNum = index + 1;
+                                            const isActive = currentPage === pageNum;
+                                            return (
+                                                <button
+                                                    key={`mob-nav-${pageNum}`}
+                                                    onClick={() => {
+                                                        const el = document.getElementById(`pdf-page-${pageNum}`);
+                                                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                                                        setCurrentPage(pageNum);
+                                                        setIsSidebarOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                >
+                                                    Page {pageNum}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex-1 bg-black/20 backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
+                        </div>
+                    )}
+
+                    {/* Enhanced Page Navigation Sidebar (Desktop) */}
                     <div className="w-64 bg-gradient-to-b from-slate-50 to-slate-100/50 border-r border-slate-200 overflow-y-auto p-4 hidden md:block scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200">
                         {/* Header */}
                         <div className="mb-4">
@@ -515,9 +638,9 @@ const SignDocument = () => {
                     </div>
 
                     {/* Enhanced PDF Viewer Container */}
-                    <div className="flex-1 relative flex flex-col items-center bg-gradient-to-br from-slate-50 to-slate-100/30 overflow-hidden">
-                        {/* Enhanced Toolbar */}
-                        <div className="w-full bg-white/90 backdrop-blur-xl border-b border-slate-200 p-3 flex items-center justify-between px-6 flex-shrink-0 shadow-sm">
+                    <div className="flex-1 relative flex flex-col items-center bg-slate-50 md:bg-gradient-to-br md:from-slate-50 md:to-slate-100/30 overflow-hidden">
+                        {/* Desktop Toolbar - Hidden on Mobile */}
+                        <div className="hidden md:flex w-full bg-white/90 backdrop-blur-xl border-b border-slate-200 p-3 items-center justify-between px-6 flex-shrink-0 shadow-sm">
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
@@ -562,7 +685,8 @@ const SignDocument = () => {
 
                         {/* Document Content - Scrollable */}
                         <div
-                            className="flex-1 w-full overflow-y-auto overflow-x-hidden p-8 flex flex-col items-center scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200"
+                            id="pdf-wrapper"
+                            className="flex-1 w-full overflow-y-auto overflow-x-hidden p-0 md:p-8 flex flex-col items-center scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200"
                             onScroll={(e) => {
                                 // Track current page based on scroll position
                                 const container = e.target;
@@ -605,24 +729,24 @@ const SignDocument = () => {
                                             id={`pdf-page-${index + 1}`}
                                             data-page-container
                                             data-page-number={index + 1}
-                                            className="relative mb-8 transition-all group"
-                                            style={{ width: 'fit-content', margin: '0 auto 2rem auto' }}
+                                            className="relative mb-2 md:mb-8 transition-all group"
+                                            style={{ width: 'fit-content', margin: window.innerWidth < 768 ? '0 auto 8px auto' : '0 auto 2rem auto' }}
                                         >
-                                            {/* Page Number Badge */}
-                                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                                            {/* Page Number Badge - Desktop Only */}
+                                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10 hidden md:block">
                                                 <div className="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
                                                     Page {index + 1}
                                                 </div>
                                             </div>
 
                                             {/* PDF Page */}
-                                            <div className="bg-white rounded-lg shadow-xl border-2 border-slate-200 overflow-hidden">
+                                            <div className="bg-white md:rounded-lg shadow-sm md:shadow-xl border-b md:border-2 border-slate-200 overflow-hidden">
                                                 <Page
                                                     pageNumber={index + 1}
                                                     renderTextLayer={true}
                                                     renderAnnotationLayer={false}
-                                                    className="rounded-lg"
-                                                    width={800}
+                                                    className="md:rounded-lg"
+                                                    width={pdfWidth}
                                                     scale={scale}
                                                     onLoadSuccess={(page) => {
                                                         const viewport = page.getViewport({ scale: 1.0 });
@@ -640,15 +764,23 @@ const SignDocument = () => {
                                             {/* Overlay signature fields */}
                                             {pageDimensions[index + 1] && fields
                                                 .filter(f => f.pageNumber === index + 1)
-                                                .map(field => (
-                                                    <SignedFieldDisplay
-                                                        key={field.id}
-                                                        field={field}
-                                                        onClick={handleFieldClick}
-                                                        pageWidth={pageDimensions[index + 1].width * scale}
-                                                        pageHeight={pageDimensions[index + 1].height * scale}
-                                                    />
-                                                ))}
+                                                .map(field => {
+                                                    // Calculate responsive dimensions
+                                                    const originalDims = pageDimensions[index + 1];
+                                                    const aspectRatio = originalDims.height / originalDims.width;
+                                                    const currentWidth = pdfWidth * scale; // current rendered width
+                                                    const currentHeight = currentWidth * aspectRatio;
+
+                                                    return (
+                                                        <SignedFieldDisplay
+                                                            key={field.id}
+                                                            field={field}
+                                                            onClick={handleFieldClick}
+                                                            pageWidth={currentWidth}
+                                                            pageHeight={currentHeight}
+                                                        />
+                                                    );
+                                                })}
                                         </div>
                                     ))}
                                 </PdfDocument>
@@ -661,8 +793,42 @@ const SignDocument = () => {
                 </div>
             </main>
 
-            {/* Floating Action Button (Expert Mode) */}
-            <div className="fixed bottom-6 right-6 md:right-10 z-[60] flex flex-col items-end gap-3 pointer-events-none">
+            {/* Mobile Sticky Bottom Action Bar */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 pb-safe z-[60] md:hidden flex items-center justify-between gap-4 shadow-[0_-4px_12px_-4px_rgba(0,0,0,0.1)]">
+                <div className="flex flex-col">
+                    <span className="text-xs text-slate-500 font-medium">{fields.filter(f => f.metadata?.value).length}/{fields.filter(f => f.metadata?.isMine).length} Signed</span>
+                    <span className="text-xs text-indigo-600 font-bold">{numPages} Pages</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    {/* Finish Button - Always visible in bottom bar */}
+                    <button
+                        onClick={handleFinishSigning}
+                        disabled={isSubmitting}
+                        className={`px-4 py-2.5 rounded-lg font-bold text-sm transition-colors border-2 ${isSubmitting ? 'border-slate-200 text-slate-400' : 'border-indigo-100 text-indigo-600 hover:bg-indigo-50'}`}
+                    >
+                        {isSubmitting ? 'Saving...' : 'Finish'}
+                    </button>
+
+                    {/* Next/Start Button - Prominent */}
+                    {requiredFields.length > 0 ? (
+                        <button
+                            onClick={handleNextField}
+                            className="bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-bold shadow-lg shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-2 text-sm"
+                        >
+                            {fields.filter(f => f.metadata.isMine && f.metadata.value).length === 0 ? "Start" : "Next"}
+                            <ArrowRight size={16} />
+                        </button>
+                    ) : (
+                        <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm px-4">
+                            <CheckCircle size={16} /> All Set!
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Desktop Floating Action Button */}
+            <div className="hidden md:flex fixed bottom-10 right-10 z-[60] flex-col items-end gap-3 pointer-events-none">
                 {/* Only show if there are required fields remaining */}
                 {requiredFields.length > 0 && (
                     <button
@@ -675,10 +841,10 @@ const SignDocument = () => {
                 )}
             </div>
 
-            {/* Signing Modal */}
+            {/* Signing Modal - Bottom Sheet on Mobile, Centered on Desktop */}
             {signingField && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+                <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm p-0 md:p-4">
+                    <div className="bg-white w-full md:w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom md:zoom-in duration-200 flex flex-col max-h-[85vh] md:max-h-[90vh]">
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <h3 className="font-bold text-slate-800">Sign Document</h3>
                             <button onClick={() => setSigningField(null)} className="text-slate-400 hover:text-slate-600">×</button>
@@ -802,7 +968,7 @@ const SignDocument = () => {
                             )}
                         </div>
 
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 filter-none z-10">
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 filter-none z-10 sticky bottom-0">
                             <button onClick={() => setSigningField(null)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
                             <button
                                 onClick={submitSignature}

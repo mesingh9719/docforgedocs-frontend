@@ -37,11 +37,11 @@ const SignedFieldDisplay = ({ field, onClick, pageWidth, pageHeight }) => {
     return (
         <div
             onClick={handleClick}
-            className={`absolute border-2 rounded-md flex items-center justify-center text-center overflow-hidden transition-all ${isMine && !value ? 'cursor-pointer' : 'cursor-default'
+            className={`absolute border rounded-lg flex items-center justify-center text-center overflow-hidden transition-all shadow-sm ${isMine && !value ? 'cursor-pointer animate-pulse-subtle bg-indigo-50/90 border-indigo-400 active:scale-95' : 'cursor-default'
                 } ${value
-                    ? 'border-emerald-400 bg-emerald-50/80 hover:bg-emerald-100'
+                    ? 'border-emerald-500 bg-emerald-50/90'
                     : isMine
-                        ? 'border-indigo-400 bg-indigo-50/80 hover:bg-indigo-100 border-dashed'
+                        ? 'hover:bg-indigo-100 hover:border-indigo-500 hover:shadow-md'
                         : 'border-slate-300 bg-slate-50/50'
                 }`}
             style={{
@@ -50,6 +50,9 @@ const SignedFieldDisplay = ({ field, onClick, pageWidth, pageHeight }) => {
                 width: `${widthPx}px`,
                 height: `${heightPx}px`,
                 zIndex: 10,
+                // Ensure minimum touch target size visually or via padding if possible, 
+                // but positioning is strict PDF coordinates. 
+                // We rely on the visual cue being strong.
             }}
         >
             {value ? (
@@ -76,15 +79,23 @@ const SignedFieldDisplay = ({ field, onClick, pageWidth, pageHeight }) => {
                 </div>
             ) : (
                 // Show placeholder if not signed yet
-                <div className="text-xs font-semibold text-slate-600 flex flex-col items-center justify-center h-full w-full">
+                <div className="flex flex-col items-center justify-center h-full w-full">
                     {isMine ? (
-                        <span>
-                            {metadata.fieldType === 'checkbox' ? 'Toggle' :
-                                metadata.fieldType === 'date' ? 'Date' :
-                                    metadata.label || 'Click to Sign'}
-                        </span>
+                        <div className="flex items-center gap-1.5 px-2">
+                            {/* Icon based on type */}
+                            {metadata.fieldType === 'checkbox' ? (
+                                <span className="text-indigo-600 font-bold text-xs uppercase">Tap to Toggle</span>
+                            ) : (
+                                <>
+                                    <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                                    <span className="text-xs md:text-sm font-bold text-indigo-700 truncate">
+                                        {metadata.label || (metadata.fieldType === 'date' ? 'Insert Date' : 'Tap to Sign')}
+                                    </span>
+                                </>
+                            )}
+                        </div>
                     ) : (
-                        <span>{signeeName || 'Pending'}</span>
+                        <span className="text-xs text-slate-400 font-medium italic px-1 truncate">{signeeName || 'Pending'}</span>
                     )}
                 </div>
             )}

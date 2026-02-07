@@ -9,7 +9,8 @@ import CurrencySettings from './CurrencySettings';
 import BrandingSettings from './BrandingSettings';
 import ProfileSettings from './ProfileSettings';
 import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHeader';
-import toast from 'react-hot-toast';
+import DashboardPage from '../../../components/Dashboard/DashboardPage';
+
 
 const Settings = () => {
     const [activeTab, setActiveTab] = useState('profile');
@@ -55,7 +56,7 @@ const Settings = () => {
 
 
     return (
-        <div className="max-w-6xl mx-auto">
+        <DashboardPage className="max-w-6xl">
             <DashboardPageHeader
                 title="Settings"
                 subtitle="Manage your personal and workspace preferences."
@@ -102,7 +103,7 @@ const Settings = () => {
                     </AnimatePresence>
                 </div>
             </div>
-        </div>
+        </DashboardPage>
     );
 };
 

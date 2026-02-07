@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { register } from '../../api/auth';
 import { Loader2, User, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -65,6 +65,9 @@ function RegisterForm() {
         return Object.keys(newErrors).length === 0;
     };
 
+    const [searchParams] = useSearchParams();
+    const redirectPath = searchParams.get('redirect');
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setGeneralError(null);
@@ -83,7 +86,9 @@ function RegisterForm() {
         try {
             const data = await register(formData);
             setToken(data.token);
-            navigate('/verify-email-message');
+            // If there is a redirect path, try to go there (ProtectedRoute handles verification check)
+            // otherwise go to the default verification message page
+            navigate(redirectPath || '/verify-email-message');
         } catch (err) {
             const apiMessage = err.response?.data?.message;
             const validationErrors = err.response?.data?.errors;

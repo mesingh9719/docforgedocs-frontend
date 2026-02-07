@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from '../api/axios';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+import { Loader2, AlertCircle, Download, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText } from 'lucide-react';
 
-import NdaDocumentPreview from './Dashboard/templates/NdaDocumentPreview';
-import InvoiceDocumentPreview from './Dashboard/templates/InvoiceDocumentPreview';
-import ProposalDocumentPreview from './Dashboard/templates/ProposalDocumentPreview';
-import { Loader2, AlertCircle, Download } from 'lucide-react';
+// Configure PDF Worker
+import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const PublicDocumentViewer = () => {
     const { token } = useParams();
@@ -13,12 +17,19 @@ const PublicDocumentViewer = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // PDF State
+    const [numPages, setNumPages] = useState(null);
+    const [pageNumber, setPageNumber] = useState(1);
+    const [scale, setScale] = useState(1.0);
+
+    // Use environment variable for API URL or fallback
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+
     useEffect(() => {
         const fetchDocument = async () => {
             try {
-                // We need to bypass the standard /documents endpoints that require auth
-                // and use our new public endpoint.
-                // We'll assume the axios instance base URL is correct.
+                // Ensure we hit the correct public endpoint
+                // Adjust path if route is not under /v1 in api.php
                 const response = await axios.get(`/public/documents/${token}`);
                 setDocument(response.data.data);
             } catch (err) {
@@ -34,6 +45,18 @@ const PublicDocumentViewer = () => {
         }
     }, [token]);
 
+    const onDocumentLoadSuccess = ({ numPages }) => {
+        setNumPages(numPages);
+    };
+
+    const handleDownload = () => {
+        // Trigger download via new endpoint which logs the action
+        // We use window.location.href to trigger a browser download
+        // Ensure the URL is constructed correctly based on where the route is mounted
+        // If API_URL includes /api/v1, we append /public/documents/...
+        window.location.href = `${API_URL}/public/documents/${token}/download`;
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -45,7 +68,7 @@ const PublicDocumentViewer = () => {
     if (error || !document) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
-                <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center">
+                <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-slate-100">
                     <AlertCircle size={48} className="text-red-500 mx-auto mb-4" />
                     <h2 className="text-xl font-bold text-slate-800 mb-2">Unavailable</h2>
                     <p className="text-slate-500">{error || "This document could not be found."}</p>
@@ -54,82 +77,123 @@ const PublicDocumentViewer = () => {
         );
     }
 
-    // Parse content if needed (API resource likely returns it as object already if cast, checking...)
-    let content = document.content;
-    if (typeof content === 'string') {
-        try {
-            content = JSON.parse(content);
-        } catch (e) { /* ignore */ }
-    }
-
-    // Determine which preview to render
-    // Determine which preview to render
-    // Backend Resource usually returns: type (object with slug), or document_type (object with slug), or type_slug (string)
-    const type = document.type?.slug || document.document_type?.slug || document.type_slug || document.type;
-    console.log("Detected Document Type:", type); // Debugging
-
-    const renderPreview = () => {
-        switch (type) {
-            case 'nda':
-                return <NdaDocumentPreview data={content.formData} content={content.docContent} zoom={1} readOnly={true} />;
-            case 'invoice':
-                // Invoice might need totals calculation if not stored. 
-                // Usually calculator logic is in Editor.
-                // Ideally document content should have everything needed for display.
-                // For now passing data as is.
-                return <InvoiceDocumentPreview data={content.formData} totals={content.totals || {}} zoom={1} readOnly={true} />;
-            case 'proposal':
-                return <ProposalDocumentPreview data={content.formData} content={content.docContent} zoom={1} readOnly={true} />;
-            default:
-                return (
-                    <div className="p-8 text-center">
-                        <AlertCircle className="mx-auto text-amber-500 mb-2" size={32} />
-                        <h3 className="text-lg font-bold text-slate-700">Unknown Document Type</h3>
-                        <p className="text-slate-500 mb-4">The document type "{type}" is not recognized by the viewer.</p>
-                        <div className="text-left bg-slate-100 p-4 rounded overflow-auto max-h-96 text-xs font-mono">
-                            {JSON.stringify(content, null, 2)}
-                        </div>
-                    </div>
-                );
-        }
-    };
-
     return (
-        <div className="min-h-screen bg-slate-100 flex flex-col">
-            <header className="bg-white h-16 border-b border-slate-200 px-6 flex items-center justify-between shadow-sm flex-shrink-0">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+        <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-900">
+            {/* Header */}
+            <header className="bg-white h-16 border-b border-slate-200 px-4 md:px-8 flex items-center justify-between shadow-sm sticky top-0 z-50">
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md shadow-indigo-200">
                         DF
                     </div>
-                    <span className="font-bold text-slate-700">DocForge</span>
+                    <div>
+                        <h1 className="font-bold text-slate-800 text-lg leading-tight truncate max-w-[200px] md:max-w-md">
+                            {document.name}
+                        </h1>
+                        <p className="text-xs text-slate-500">Shared via DocForge</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    {document.pdf_path || document.pdf_url ? (
-                        <a
-                            href={document.pdf_url || `/storage/${document.pdf_path}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
-                        >
-                            <Download size={16} />
-                            Download PDF
-                        </a>
-                    ) : (
-                        <button
-                            onClick={() => window.print()}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-medium rounded-lg transition-colors"
-                        >
-                            <Download size={16} />
-                            Print / Save
-                        </button>
-                    )}
+                    <button
+                        onClick={handleDownload}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-all shadow-md shadow-indigo-100 active:scale-95"
+                    >
+                        <Download size={18} />
+                        <span className="hidden sm:inline">Download PDF</span>
+                    </button>
                 </div>
             </header>
 
-            <div className="flex-1 overflow-auto p-4 md:p-8 flex justify-center">
-                <div className="bg-white shadow-2xl overflow-hidden print:shadow-none max-w-4xl w-full">
-                    {renderPreview()}
-                </div>
+            {/* Content */}
+            <div className="flex-1 overflow-auto bg-slate-100 p-4 md:p-8 flex flex-col items-center">
+
+                {document.pdf_url ? (
+                    <div className="w-full max-w-4xl flex flex-col items-center">
+                        {/* Controls */}
+                        <div className="bg-white rounded-full shadow-lg border border-slate-200 px-6 py-2 mb-6 flex items-center gap-6 sticky top-20 z-40 transition-all opacity-90 hover:opacity-100">
+                            <div className="flex items-center gap-2 border-r border-slate-200 pr-4">
+                                <button
+                                    onClick={() => setPageNumber(prev => Math.max(prev - 1, 1))}
+                                    disabled={pageNumber <= 1}
+                                    className="p-1.5 hover:bg-slate-100 rounded-full disabled:opacity-30 transition-colors text-slate-700"
+                                >
+                                    <ChevronLeft size={20} />
+                                </button>
+                                <span className="text-sm font-medium text-slate-600 min-w-[3rem] text-center">
+                                    {pageNumber} / {numPages || '--'}
+                                </span>
+                                <button
+                                    onClick={() => setPageNumber(prev => Math.min(prev + 1, numPages || 1))}
+                                    disabled={pageNumber >= numPages}
+                                    className="p-1.5 hover:bg-slate-100 rounded-full disabled:opacity-30 transition-colors text-slate-700"
+                                >
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setScale(prev => Math.max(prev - 0.1, 0.5))}
+                                    className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+                                    title="Zoom Out"
+                                >
+                                    <ZoomOut size={18} />
+                                </button>
+                                <span className="text-xs font-medium text-slate-500 w-12 text-center">{Math.round(scale * 100)}%</span>
+                                <button
+                                    onClick={() => setScale(prev => Math.min(prev + 0.1, 2.0))}
+                                    className="p-1.5 hover:bg-slate-100 rounded-full text-slate-600 transition-colors"
+                                    title="Zoom In"
+                                >
+                                    <ZoomIn size={18} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Document Canvas */}
+                        <div className="bg-white shadow-2xl rounded-sm overflow-hidden print:shadow-none transition-transform duration-200">
+                            <Document
+                                file={`${API_URL}/public/documents/${token}/preview`}
+                                onLoadSuccess={onDocumentLoadSuccess}
+                                loading={
+                                    <div className="h-96 w-full flex items-center justify-center bg-white">
+                                        <Loader2 className="animate-spin text-indigo-600" size={32} />
+                                    </div>
+                                }
+                                error={
+                                    <div className="h-64 w-full flex flex-col items-center justify-center p-8 text-slate-400 bg-white">
+                                        <FileText size={48} className="mb-2" />
+                                        <p>Failed to load PDF preview.</p>
+                                        <p className="text-xs text-slate-300 mt-2">Could not access the PDF file.</p>
+                                    </div>
+                                }
+                                className="pdf-document"
+                            >
+                                <Page
+                                    pageNumber={pageNumber}
+                                    scale={scale}
+                                    renderTextLayer={true}
+                                    renderAnnotationLayer={true}
+                                    className="pdf-page"
+                                />
+                            </Document>
+                        </div>
+                    </div>
+                ) : (
+                    /* Fallback to simple download view if PDF URL is missing (e.g. old docs) */
+                    <div className="w-full max-w-4xl bg-white shadow-2xl rounded-xl p-12 min-h-[400px] flex flex-col items-center justify-center text-center">
+                        <AlertCircle size={64} className="text-slate-300 mb-6" />
+                        <h3 className="text-2xl font-bold text-slate-800 mb-3">Preview Unavailable</h3>
+                        <p className="text-slate-500 mb-8 max-w-md text-lg">
+                            A PDF preview is not available for this document. You can download the file to view it.
+                        </p>
+                        <button
+                            onClick={handleDownload}
+                            className="px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transform hover:-translate-y-1"
+                        >
+                            Download Document
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

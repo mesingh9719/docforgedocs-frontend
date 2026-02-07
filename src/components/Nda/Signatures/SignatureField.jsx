@@ -1,10 +1,22 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Edit2, Trash2, PenTool } from 'lucide-react';
+import { GripVertical, Edit2, Trash2, PenTool, Calendar, Type, User, CheckSquare } from 'lucide-react';
 
 // Non-hook visual component for DragOverlay
 export const SignatureFieldVisual = ({ style, data, isSelected, isDragging, onEdit, onDelete, listeners, attributes, setNodeRef, readOnly = false }) => {
+    const getFieldDetails = () => {
+        switch (data.fieldType) {
+            case 'date': return { icon: Calendar, label: 'Date' };
+            case 'text': return { icon: Type, label: 'Text' };
+            case 'initials': return { icon: User, label: 'Initials' };
+            case 'checkbox': return { icon: CheckSquare, label: 'Check' };
+            default: return { icon: PenTool, label: 'Signature' };
+        }
+    };
+
+    const { icon: FieldIcon, label: FieldLabel } = getFieldDetails();
+
     return (
         <div
             ref={setNodeRef}
@@ -15,7 +27,7 @@ export const SignatureFieldVisual = ({ style, data, isSelected, isDragging, onEd
                 ${isSelected && !readOnly ? 'border-indigo-500 shadow-indigo-100 ring-2 ring-indigo-500/20' : 'border-slate-300'}
                 ${!readOnly ? 'hover:border-indigo-400 hover:shadow-md cursor-grab' : 'cursor-default'}
                 ${isDragging ? 'opacity-50 cursor-grabbing' : ''}
-                w-auto min-w-[100px] max-w-[220px] select-none
+                w-auto min-w-[120px] max-w-[240px] select-none
             `}
             {...listeners}
             {...attributes}
@@ -33,10 +45,20 @@ export const SignatureFieldVisual = ({ style, data, isSelected, isDragging, onEd
                 </div>
             )}
 
-            {/* Name */}
-            <span className={`text-xs font-semibold truncate select-none ${isSelected && !readOnly ? 'text-indigo-700' : 'text-slate-700'}`}>
-                {data.signeeName || "Signer"}
-            </span>
+            {/* Field Type Icon */}
+            <div className={`text-slate-400 ${isSelected ? 'text-indigo-500' : ''}`}>
+                <FieldIcon size={14} />
+            </div>
+
+            {/* Name & Type */}
+            <div className="flex flex-col leading-none">
+                <span className={`text-[10px] uppercase font-bold tracking-wider ${isSelected && !readOnly ? 'text-indigo-600' : 'text-slate-500'}`}>
+                    {FieldLabel}
+                </span>
+                <span className={`text-xs font-semibold truncate select-none ${isSelected && !readOnly ? 'text-indigo-700' : 'text-slate-700'}`}>
+                    {data.signeeName || "Signer"}
+                </span>
+            </div>
 
             {/* Divider & Actions - Hidden in ReadOnly */}
             {!readOnly && (

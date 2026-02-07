@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Reorder } from 'framer-motion';
-import { PenTool, Edit3, Layers, Plus, Trash2, GripVertical, Calendar, User, FileText, Globe, Palette } from 'lucide-react';
+import { PenTool, Edit3, Layers, Plus, Trash2, GripVertical, Calendar, User, FileText, Globe, Palette, Type } from 'lucide-react';
 import { SidebarSection, SidebarInput } from '../../../components/Nda/SidebarComponents';
 import { BuilderSectionCard, BuilderAddButton } from '../../../components/Common/BuilderComponents';
 import { BrandingControls } from '../../../components/Common/BrandingControls';
+import StyleEditor from '../../../components/Common/StyleEditor';
 import ConfirmationModal from '../../../components/ConfirmationModal';
 import { getBusiness } from '../../../api/business';
 import toast from 'react-hot-toast';
@@ -18,10 +19,14 @@ const NdaFormSidebar = ({
     addSection,
     removeSection,
     updateSection,
-    reorderSections
+    reorderSections,
+    // Style Props
+    styles,
+    onStyleUpdate,
+    onStyleReset
 }) => {
     const [openSection, setOpenSection] = useState('parties');
-    const [mode, setMode] = useState('fill'); // 'fill', 'edit', 'sign'
+    const [mode, setMode] = useState('fill'); // 'fill', 'edit', 'style'
 
     // Modal State
     const [confirmModal, setConfirmModal] = useState({
@@ -105,13 +110,20 @@ const NdaFormSidebar = ({
                     >
                         <Edit3 size={16} />
                     </button>
+                    <button
+                        onClick={() => setMode('style')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-medium transition-all ${mode === 'style' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                        title="Appearance"
+                    >
+                        <Type size={16} />
+                    </button>
                 </div>
                 <div>
                     <h2 className="text-lg font-bold text-slate-900">
-                        {mode === 'fill' ? 'Document Details' : 'Structure Builder'}
+                        {mode === 'fill' ? 'Document Details' : mode === 'edit' ? 'Structure Builder' : 'Styling & Appearance'}
                     </h2>
                     <p className="text-xs text-slate-500 mt-1">
-                        {mode === 'fill' ? 'Review and specify the agreement terms' : 'Customize layout and clauses'}
+                        {mode === 'fill' ? 'Review and specify the agreement terms' : mode === 'edit' ? 'Customize layout and clauses' : 'Fonts, colors and spacing'}
                     </p>
                 </div>
             </div>
@@ -310,6 +322,18 @@ const NdaFormSidebar = ({
 
                             <BuilderAddButton onClick={addSection} />
                         </div>
+                    </div>
+                )
+            }
+
+            {
+                mode === 'style' && (
+                    <div className="p-4 pb-20">
+                        <StyleEditor
+                            styles={styles}
+                            onUpdate={onStyleUpdate}
+                            onReset={onStyleReset}
+                        />
                     </div>
                 )
             }

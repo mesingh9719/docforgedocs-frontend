@@ -13,7 +13,8 @@ function NdaDocumentPreview({
     onUpdateSignature,
     onRemoveSignature,
     onEditSignature,
-    businessLogo
+    businessLogo,
+    styles // Add styles prop
 }) {
 
     // Helper to get consistent color for a variable name
@@ -40,11 +41,11 @@ function NdaDocumentPreview({
         const colorClass = getVariableColor(name);
 
         if (!value) {
-            if (readOnly) return <span className={`text-slate-500 italic ${className}`}>{placeholder}</span>;
+            if (readOnly || printing) return <span className={`text-slate-500 italic ${className}`}>{placeholder}</span>;
             return <span className={`px-1.5 py-0.5 rounded border border-dashed ${colorClass} bg-opacity-50 font-medium text-xs mx-0.5 ${className}`}>{placeholder}</span>;
         }
 
-        if (readOnly) return <span className={`font-medium text-slate-900 ${className}`}>{value}</span>;
+        if (readOnly || printing) return <span className={`font-medium text-slate-900 ${className}`}>{value}</span>;
 
         // Highlighted filled value
         return (
@@ -73,6 +74,17 @@ function NdaDocumentPreview({
         );
     };
 
+    const s = styles || {
+        fontFamily: 'font-serif',
+        fontSize: 'text-[11pt]',
+        lineHeight: 'leading-relaxed',
+        textColor: '#1e293b',
+        headingColor: '#0f172a',
+        accentColor: '#4f46e5',
+        pageMargin: 'p-[25mm]',
+        paragraphSpacing: 'mb-4',
+    };
+
     const Container = printing ? 'div' : motion.div;
     const Section = printing ? 'div' : motion.section;
 
@@ -86,8 +98,12 @@ function NdaDocumentPreview({
             style={{
                 transform: printing ? 'none' : `scale(${zoom})`,
                 transformOrigin: 'top center',
+                color: s.textColor,
             }}
-            className="w-[210mm] min-h-[297mm] bg-white text-slate-800 text-[11pt] leading-relaxed font-serif relative mb-20 origin-top shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60"
+            className={`w-[210mm] min-h-[297mm] bg-white relative mb-20 origin-top 
+                ${printing ? '' : 'shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60'}
+                ${s.fontFamily} ${s.fontSize} ${s.lineHeight} ${s.pageMargin}
+            `}
         >
             {/* Realistic Paper Effects - Hide when printing */}
             {!printing && (
@@ -350,9 +366,11 @@ function NdaDocumentPreview({
                 </div>
 
                 {/* Branding Footer specific to document */}
-                <div className={`absolute bottom-4 left-0 right-0 text-center ${printing ? 'no-absolute-print' : ''}`} style={printing ? { position: 'fixed', bottom: '0px', width: '100%', textAlign: 'center' } : {}}>
-                    <p className="text-[9px] text-slate-300 uppercase tracking-widest font-sans">Powered by DocForge</p>
-                </div>
+                {!printing && (
+                    <div className="absolute bottom-4 left-0 right-0 text-center">
+                        <p className="text-[9px] text-slate-300 uppercase tracking-widest font-sans">Powered by DocForge</p>
+                    </div>
+                )}
             </div>
         </Container>
     );

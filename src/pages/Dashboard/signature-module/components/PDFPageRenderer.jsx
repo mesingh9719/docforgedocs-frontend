@@ -1,35 +1,80 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Page } from 'react-pdf';
+import SignatureField, { SignatureFieldVisual } from '../../../../components/Nda/Signatures/SignatureField';
 
-const PDFPageRenderer = ({ pageNumber, scale, children }) => {
+const PDFPageRenderer = ({
+    pageNumber,
+    signatures,
+    onUpdateSignature,
+    onRemoveSignature,
+    onEditSignature,
+    readOnly,
+    onFieldClick,
+    scale = 1,
+    rotation = 0
+}) => {
     const { setNodeRef, isOver } = useDroppable({
         id: `page-${pageNumber}`,
-        data: {
-            type: 'pdf-page',
-            pageNumber: pageNumber
-        }
     });
 
     return (
         <div
             ref={setNodeRef}
-            className={`relative mb-6 transition-colors shadow-md ${isOver ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
+            id={`pdf-page-${pageNumber}`}
+            className={`relative mb-6 transition-colors ${isOver ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
             style={{ width: 'fit-content', margin: '0 auto 1.5rem auto' }}
         >
             <Page
                 pageNumber={pageNumber}
-                scale={scale}
+                className="" // Clean look
                 renderTextLayer={false}
                 renderAnnotationLayer={false}
-                className="shadow-sm"
-                loading={
-                    <div className="w-[600px] h-[800px] bg-white animate-pulse rounded-lg flex items-center justify-center">
-                        <span className="text-slate-400 font-medium">Loading Page {pageNumber}...</span>
-                    </div>
-                }
+                width={800} // Fixed width for consistency
+                scale={scale}
+                rotate={rotation}
             />
-            {children}
+
+            {/* Render Signatures for this page */}
+            {signatures.map(signature => (
+                readOnly ? (
+                    // In ReadOnly mode, we render just the visual.
+                    // If onFieldClick is provided, make it interactive.
+                    <div
+                        key={signature.id}
+                        className="absolute"
+                        style={{
+                            left: `${signature.position.x}%`,
+                            top: `${signature.position.y}%`,
+                            // If clickable (my field), add pointer cursor
+                            cursor: (onFieldClick && signature.metadata?.isMine && !signature.metadata?.value) ? 'pointer' : 'default',
+                            pointerEvents: 'auto' // Ensure it captures clicks overlaying the PDF
+                        }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onFieldClick) onFieldClick(signature);
+                        }}
+                    >
+                        <SignatureFieldVisual
+                            data={signature.metadata}
+                            isSelected={false}
+                            isDragging={false}
+                            readOnly={true}
+                        />
+                    </div>
+                ) : (
+                    <SignatureField
+                        key={signature.id}
+                        id={signature.id}
+                        data={signature.metadata}
+                        left={signature.position.x}
+                        top={signature.position.y}
+                        onUpdate={onUpdateSignature}
+                        onRemove={onRemoveSignature}
+                        onEdit={onEditSignature}
+                    />
+                )
+            ))}
         </div>
     );
 };

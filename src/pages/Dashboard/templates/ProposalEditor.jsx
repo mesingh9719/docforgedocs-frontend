@@ -12,6 +12,10 @@ import { getBusiness } from '../../../api/business';
 import { generateDocumentPdf, wrapHtmlForPdf } from '../../../utils/pdfGenerator';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
+import { useDocumentStyles } from '../../../hooks/useDocumentStyles';
+import DocumentEditor from '../../../components/DocumentEngine/DocumentEditor';
+
+const DocumentEditorOverride = () => <DocumentEditor />;
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -107,7 +111,6 @@ const ProposalEditor = () => {
         logoAlignment: 'center', // left, center, right
         brandingEnabled: true,
         referenceNo: '',
-        referenceNo: '',
         clientName: '',
         clientCompany: '',
         clientAddress: '',
@@ -131,6 +134,9 @@ const ProposalEditor = () => {
     // State for the Document Structure (Template Text)
     const [docContent, setDocContent] = useState(defaultContent);
 
+    // Style Integration
+    const { styles, updateStyle, resetStyles } = useDocumentStyles();
+
     // Performance Optimization: Defer the preview data
     const deferredFormData = React.useDeferredValue(formData);
     const deferredDocContent = React.useDeferredValue(docContent);
@@ -144,19 +150,38 @@ const ProposalEditor = () => {
         }
     }, [id]);
 
+    const [isNewEngine, setIsNewEngine] = useState(false);
+
     const loadDocument = async (docId) => {
         try {
             const doc = await getDocument(docId);
             if (doc.data.name) setDocumentName(doc.data.name);
-            const content = doc.data.content || {};
+            let content = doc.data.content || {};
+            if (typeof content === 'string') {
+                try { content = JSON.parse(content); } catch (e) { console.error(e); }
+            }
+
+            // Check for new engine
+            if (content.blocks) {
+                setIsNewEngine(true);
+                return;
+            }
+
             if (content.formData) {
                 setFormData(prev => ({ ...prev, ...content.formData }));
             }
             if (content.docContent) setDocContent(content.docContent);
+            if (content.styles) {
+                Object.entries(content.styles).forEach(([k, v]) => updateStyle(k, v));
+            }
         } catch (error) {
             console.error("Failed to load", error);
         }
     };
+
+    if (isNewEngine) {
+        return <DocumentEditorOverride />;
+    }
 
     // Load Business Details for Defaults
     useEffect(() => {
@@ -272,7 +297,8 @@ const ProposalEditor = () => {
                 type_slug: 'proposal',
                 content: {
                     formData,
-                    docContent
+                    docContent,
+                    styles
                 },
                 status: 'draft'
             };
@@ -293,6 +319,35 @@ const ProposalEditor = () => {
         }
     };
 
+    const convertUrlToBase64 = async (url) => {
+        try {
+            // Check if URL is from our backend storage
+            if (url && url.includes('/storage/')) {
+                const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/file-proxy?path=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+
+            const response = await fetch(url);
+            const blob = await response.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        } catch (error) {
+            console.error("Failed to convert image to base64", error);
+            return null;
+        }
+    };
+
     const [isPrinting, setIsPrinting] = useState(false);
     const lastGeneratedData = React.useRef(null);
     const [cachedPdfUrl, setCachedPdfUrl] = useState(null);
@@ -303,16 +358,28 @@ const ProposalEditor = () => {
             return;
         }
 
-        const currentDataString = JSON.stringify({ formData, docContent });
-        if (cachedPdfUrl && lastGeneratedData.current === currentDataString) {
-            window.open(cachedPdfUrl, '_blank');
-            return;
-        }
-
         setIsPrinting(true);
         try {
+            // Robust Base64 Logic
+            let logoBase64 = formData.businessLogo;
+            if (formData.businessLogo && !formData.businessLogo.startsWith('data:')) {
+                const base64 = await convertUrlToBase64(formData.businessLogo);
+                if (base64) logoBase64 = base64;
+            }
+
+            const printData = {
+                ...formData,
+                businessLogo: logoBase64
+            };
+
             const documentHtml = renderToStaticMarkup(
-                <ProposalDocumentPreview data={formData} content={docContent} zoom={1} printing={true} />
+                <ProposalDocumentPreview
+                    data={printData}
+                    content={docContent}
+                    zoom={1}
+                    printing={true}
+                    styles={styles}
+                />
             );
 
             const response = await generateDocumentPdf(
@@ -322,8 +389,6 @@ const ProposalEditor = () => {
             );
 
             if (response.url) {
-                setCachedPdfUrl(response.url);
-                lastGeneratedData.current = currentDataString;
                 window.open(response.url, '_blank');
             }
         } catch (error) {
@@ -612,6 +677,10 @@ const ProposalEditor = () => {
                         updateTimeline={updateTimeline}
                         addTimelineRow={addTimelineRow}
                         removeTimelineRow={removeTimelineRow}
+                        // Style Props
+                        styles={styles}
+                        onStyleUpdate={updateStyle}
+                        onStyleReset={resetStyles}
                     />
                 </div>
 
@@ -630,6 +699,7 @@ const ProposalEditor = () => {
                         data={deferredFormData}
                         content={deferredDocContent}
                         zoom={zoom}
+                        styles={styles}
                     />
                 </div>
             </div>

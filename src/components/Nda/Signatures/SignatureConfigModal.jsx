@@ -9,7 +9,9 @@ const SignatureConfigModal = ({ isOpen, onClose, onSave, initialData, parties })
         signeeEmail: '',
         type: 'all', // all, draw, upload, text
         required: true,
-        order: 1
+        order: 1,
+        placeholder: '',
+        label: ''
     });
 
     useEffect(() => {
@@ -20,7 +22,10 @@ const SignatureConfigModal = ({ isOpen, onClose, onSave, initialData, parties })
                 signeeEmail: initialData.signeeEmail || '',
                 type: initialData.type || 'all',
                 required: initialData.required ?? true,
-                order: initialData.order || 1
+                order: initialData.order || 1,
+                placeholder: initialData.placeholder || '',
+                label: initialData.label || '',
+                fieldType: initialData.fieldType || 'signature'
             });
         }
     }, [isOpen, initialData]);
@@ -140,8 +145,8 @@ const SignatureConfigModal = ({ isOpen, onClose, onSave, initialData, parties })
                                         <button
                                             onClick={() => setConfig({ ...config, required: !config.required })}
                                             className={`w-full py-2 px-3 rounded-lg border text-sm font-medium flex items-center justify-center gap-2 transition-all ${config.required
-                                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                                    : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
+                                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                                : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'
                                                 }`}
                                         >
                                             {config.required ? <Check size={16} /> : <span className="w-4 h-4 block border rounded-sm border-slate-300"></span>}
@@ -150,23 +155,50 @@ const SignatureConfigModal = ({ isOpen, onClose, onSave, initialData, parties })
                                     </div>
                                 </div>
 
-                                {/* Allowed Types */}
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-medium text-slate-700 flex items-center gap-2">
-                                        <Shield size={14} className="text-slate-400" />
-                                        Allowed Signature Types
-                                    </label>
-                                    <select
-                                        value={config.type}
-                                        onChange={e => setConfig({ ...config, type: e.target.value })}
-                                        className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white"
-                                    >
-                                        <option value="all">Any (Draw, Type, Upload)</option>
-                                        <option value="draw">Draw Only</option>
-                                        <option value="text">Type Only</option>
-                                        <option value="upload">Upload Only</option>
-                                    </select>
-                                </div>
+                                {config.fieldType === 'text' && (
+                                    <div className="space-y-3">
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-slate-700">Field Label</label>
+                                            <input
+                                                type="text"
+                                                value={config.label}
+                                                onChange={e => setConfig({ ...config, label: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                                placeholder="e.g. Full Address"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium text-slate-700">Placeholder Text</label>
+                                            <input
+                                                type="text"
+                                                value={config.placeholder}
+                                                onChange={e => setConfig({ ...config, placeholder: e.target.value })}
+                                                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                                placeholder="e.g. 123 Main St..."
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Allowed Types - Only for Signature Fields */}
+                                {(!config.fieldType || config.fieldType === 'signature') && (
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-slate-700 flex items-center gap-2">
+                                            <Shield size={14} className="text-slate-400" />
+                                            Allowed Signature Types
+                                        </label>
+                                        <select
+                                            value={config.type}
+                                            onChange={e => setConfig({ ...config, type: e.target.value })}
+                                            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white"
+                                        >
+                                            <option value="all">Any (Draw, Type, Upload)</option>
+                                            <option value="draw">Draw Only</option>
+                                            <option value="text">Type Only</option>
+                                            <option value="upload">Upload Only</option>
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Footer */}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { PenTool, Calendar, Stamp } from 'lucide-react';
+import { PenTool, Calendar, Stamp, Type, User, CheckSquare } from 'lucide-react';
 
 const DraggableToolbarItem = ({ type, icon: Icon, label }) => {
     const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -38,17 +38,29 @@ const SignatureToolbar = () => {
                 icon={PenTool}
                 label="Signature Field"
             />
-            {/* Added as placeholders for future expansion or if user requested multiple types */}
-            {/* <DraggableToolbarItem 
-                type="date" 
-                icon={Calendar} 
-                label="Date Signed" 
+            <DraggableToolbarItem
+                type="initials"
+                icon={User}
+                label="Initials"
             />
-            <DraggableToolbarItem 
-                type="stamp" 
-                icon={Stamp} 
-                label="Stamp / Seal" 
-            /> */}
+
+            <DraggableToolbarItem
+                type="date"
+                icon={Calendar}
+                label="Date Signed"
+            />
+
+            <DraggableToolbarItem
+                type="text"
+                icon={Type}
+                label="Text Box"
+            />
+
+            <DraggableToolbarItem
+                type="checkbox"
+                icon={CheckSquare}
+                label="Checkbox"
+            />
 
             <div className="mt-4 p-3 bg-indigo-50 rounded-lg text-xs text-indigo-700 border border-indigo-100">
                 <p>Drag fields onto the document to request information.</p>

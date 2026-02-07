@@ -100,40 +100,79 @@ const Features = () => {
             </section>
 
             {/* Deep Dive Section */}
-            <section className="py-20 bg-slate-50">
+            <section className="py-24 bg-slate-50 overflow-hidden">
                 <div className="max-w-7xl mx-auto px-6">
-                    <div className="flex flex-col md:flex-row items-center gap-12 mb-24">
-                        <div className="flex-1">
+                    <div className="flex flex-col lg:flex-row items-center gap-16">
+                        {/* Image Side */}
+                        <div className="flex-1 w-full relative">
+                            {/* Decorative Background Blob */}
+                            <div className="absolute -top-10 -left-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+                            <div className="absolute -bottom-10 -right-10 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+
                             <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                whileInView={{ opacity: 1, x: 0 }}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
                                 viewport={{ once: true }}
-                                className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200"
+                                transition={{ duration: 0.7 }}
+                                className="relative z-10 rounded-2xl shadow-2xl bg-white p-2 border border-slate-100"
                             >
-                                <div className="aspect-video bg-slate-200 flex items-center justify-center text-slate-400">
-                                    {/* Placeholder for Editor Screenshot */}
-                                    <span className="font-medium">Editor Interface Preview</span>
-                                </div>
+                                <img
+                                    src="/images/dashboard-preview.png"
+                                    alt="Dashboard Preview"
+                                    className="w-full h-auto rounded-xl border border-slate-200/50"
+                                />
+                                {/* Optional: Add a subtle reflection or overlay if desired, but clean is better for 'premium' */}
+                                <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-black/5 pointer-events-none"></div>
                             </motion.div>
                         </div>
+
+                        {/* Text Side */}
                         <div className="flex-1">
-                            <h2 className="text-3xl font-bold text-slate-900 mb-6">Unrivaled Editing Experience</h2>
-                            <p className="text-slate-600 mb-8 text-lg">
-                                Our purpose-built editors make customization intuitive. Forget complex formatting battles—just fill, click, and generate.
-                            </p>
-                            <ul className="space-y-4">
-                                {[
-                                    "Real-time preview updates",
-                                    "New! Version History & Restoration",
-                                    "New! Share Tracking & Analytics",
-                                    "One-click PDF export"
-                                ].map((item, i) => (
-                                    <li key={i} className="flex items-center gap-3 text-slate-700">
-                                        <CheckCircle className="text-indigo-500" size={20} />
-                                        {item}
-                                    </li>
-                                ))}
-                            </ul>
+                            <motion.div
+                                initial={{ opacity: 0, x: 20 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.6 }}
+                            >
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-sm font-medium mb-6">
+                                    <Zap size={16} /> Power & Simplicity
+                                </div>
+                                <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6 leading-tight">
+                                    Unrivaled Editing Experience
+                                </h2>
+                                <p className="text-slate-600 mb-8 text-lg leading-relaxed">
+                                    Our purpose-built editors make customization intuitive. Forget complex formatting battles—just fill, click, and generate documents that look professionally designed every time.
+                                </p>
+
+                                <ul className="space-y-4">
+                                    {[
+                                        "Real-time preview updates",
+                                        "Version History & Restoration",
+                                        "Share Tracking & Analytics",
+                                        "One-click PDF export"
+                                    ].map((item, i) => (
+                                        <motion.li
+                                            key={i}
+                                            initial={{ opacity: 0, x: 10 }}
+                                            whileInView={{ opacity: 1, x: 0 }}
+                                            viewport={{ once: true }}
+                                            transition={{ delay: 0.2 + (i * 0.1) }}
+                                            className="flex items-center gap-3 text-slate-700 font-medium"
+                                        >
+                                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                                                <CheckCircle size={14} strokeWidth={3} />
+                                            </div>
+                                            {item}
+                                        </motion.li>
+                                    ))}
+                                </ul>
+
+                                <div className="mt-10">
+                                    <Link to="/register" className="text-indigo-600 font-semibold hover:text-indigo-700 flex items-center gap-2 group">
+                                        Experience the editor <span className="group-hover:translate-x-1 transition-transform">→</span>
+                                    </Link>
+                                </div>
+                            </motion.div>
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { login } from '../../api/auth';
 import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthInput from './AuthInput';
 import GoogleLoginButton from './GoogleLoginButton';
+import toast from 'react-hot-toast';
 
 function LoginForm() {
     const location = useLocation();
@@ -17,8 +18,20 @@ function LoginForm() {
         password: ''
     });
     const [errors, setErrors] = useState({});
-    const [generalError, setGeneralError] = useState(location.state?.message || null);
+    const [generalError, setGeneralError] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (location.state?.message) {
+            toast.error(location.state.message, {
+                id: 'auth-error', // Prevents duplicates
+                icon: '🔒',
+                // Removed custom dark styles to inherit from global "corporate" theme
+            });
+            // Clear state so it doesn't show again on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     // Refs for focus management
     const emailRef = useRef(null);
@@ -63,8 +76,10 @@ function LoginForm() {
             const data = await login(formData);
             setToken(data.token);
             if (data.data.business) {
+                toast.dismiss(); // Clear any pending toasts (e.g., "Please log in")
                 navigate('/dashboard');
             } else {
+                toast.dismiss();
                 navigate('/onboarding');
             }
         } catch (err) {

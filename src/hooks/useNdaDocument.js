@@ -4,6 +4,7 @@ import { createDocument, getDocument, updateDocument } from '../api/documents';
 import { getBusiness } from '../api/business';
 import { defaultContent, defaultFormData } from '../data/ndaDefaults';
 import { generateId } from '../utils/ndaUtils';
+import { useDocumentStyles } from './useDocumentStyles';
 
 export const useNdaDocument = (id) => {
     const [formData, setFormData] = useState(defaultFormData);
@@ -12,6 +13,10 @@ export const useNdaDocument = (id) => {
     const [sentAt, setSentAt] = useState(null);
     const [isLoading, setIsLoading] = useState(!!id);
     const [isSaving, setIsSaving] = useState(false);
+    const [isNewEngine, setIsNewEngine] = useState(false);
+
+    // Style Integration
+    const { styles, updateStyle, resetStyles } = useDocumentStyles();
 
     // Track original state for preview mode to restore later
     const originalState = useRef(null);
@@ -32,9 +37,17 @@ export const useNdaDocument = (id) => {
                     }
                     content = content || {};
 
+                    if (content.blocks) {
+                        setIsNewEngine(true);
+                    }
+
                     if (content.formData) setFormData(prev => ({ ...prev, ...content.formData }));
                     if (content.docContent) setDocContent(content.docContent);
                     if (content.signatures) setSignatures(content.signatures);
+                    if (content.styles) {
+                        // Batch update styles
+                        Object.entries(content.styles).forEach(([k, v]) => updateStyle(k, v));
+                    }
                 } catch (error) {
                     console.error("Failed to load document", error);
                     toast.error("Failed to load document");
@@ -111,7 +124,12 @@ export const useNdaDocument = (id) => {
             const payload = {
                 name: documentName,
                 type_slug: 'nda',
-                content: { formData, docContent, signatures },
+                content: {
+                    formData,
+                    docContent,
+                    signatures,
+                    styles // Save styles
+                },
                 status: 'draft'
             };
 
@@ -171,6 +189,9 @@ export const useNdaDocument = (id) => {
             }
             if (content.formData) setFormData(content.formData);
             if (content.docContent) setDocContent(content.docContent);
+            if (content.styles) {
+                Object.entries(content.styles).forEach(([k, v]) => updateStyle(k, v));
+            }
         }
         originalState.current = null;
     };
@@ -221,6 +242,12 @@ export const useNdaDocument = (id) => {
         saveDocument,
         enterPreviewMode,
         exitPreviewMode,
-        restoreVersion
+        restoreVersion,
+
+        // Style Exports
+        styles,
+        updateStyle,
+        resetStyles,
+        isNewEngine // Expose flag
     };
 };

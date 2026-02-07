@@ -35,8 +35,8 @@ export const getNextInvoiceNumber = async () => {
     return response.data;
 };
 
-export const sendDocument = async (id, email, message) => {
-    const response = await axios.post(`/documents/${id}/send`, { email, message });
+export const sendDocument = async (id, email, message, htmlContent) => {
+    const response = await axios.post(`/documents/${id}/send`, { email, message, html_content: htmlContent });
     return response.data;
 };
 

@@ -407,15 +407,38 @@ const SignatureDocumentList = () => {
                                                     <FileText size={18} /> Original PDF
                                                 </a>
                                             )}
-                                            {selectedDoc.final_pdf_url && (
-                                                <a
-                                                    href={selectedDoc.final_pdf_url}
-                                                    download
-                                                    className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl font-medium transition-all"
-                                                >
-                                                    <Download size={18} /> Signed PDF
-                                                </a>
-                                            )}
+                                            <div className="relative group w-full">
+                                                {selectedDoc.final_pdf_url ? (
+                                                    <a
+                                                        href={selectedDoc.final_pdf_url}
+                                                        download
+                                                        className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl font-medium transition-all shadow-sm hover:shadow"
+                                                    >
+                                                        <Download size={18} /> Signed PDF
+                                                    </a>
+                                                ) : (
+                                                    <div className="flex items-center justify-center gap-2 p-3 bg-slate-50 border border-slate-200 text-slate-400 rounded-xl font-medium cursor-not-allowed select-none opacity-60">
+                                                        <Download size={18} /> Signed PDF
+                                                    </div>
+                                                )}
+
+                                                {/* Tooltip for Disabled State - Bottom Position to avoid clipping */}
+                                                {!selectedDoc.final_pdf_url && (
+                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-max max-w-[200px] hidden group-hover:block transition-all z-50">
+                                                        <div className="relative">
+                                                            {/* Arrow Pointing Up */}
+                                                            <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[6px] border-b-slate-800 absolute left-1/2 -translate-x-1/2 -top-[6px]"></div>
+
+                                                            {/* Tooltip Body */}
+                                                            <div className="bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded-lg shadow-xl text-center">
+                                                                {selectedDoc.status === 'completed'
+                                                                    ? "Processing final document..."
+                                                                    : "Waiting for all parties to sign."}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">

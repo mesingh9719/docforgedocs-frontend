@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { pdfjs, Document as PdfDocument, Page } from 'react-pdf';
-import { Loader, AlertCircle, CheckCircle, Save, PenTool, Type, Upload as UploadIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, ArrowRight, Menu, X } from 'lucide-react';
+import { Loader, AlertCircle, CheckCircle, Save, PenTool, Type, Upload as UploadIcon, Trash2, RotateCcw, ZoomIn, ZoomOut, ArrowRight, Menu, X, ShieldCheck, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SignedFieldDisplay from './SignedFieldDisplay';
 import { useAuth } from '../../context/AuthContext'; // Optional, might not be logged in
@@ -27,6 +27,7 @@ const SignDocument = () => {
     const [pageDimensions, setPageDimensions] = useState({}); // Track actual PDF page sizes
     const [scale, setScale] = useState(1.0); // Zoom scale
     const [currentPage, setCurrentPage] = useState(1); // Track current page in view
+    const [compliance, setCompliance] = useState(null); // Compliance status
 
     // Signing State
     const [signingField, setSigningField] = useState(null); // Field being signed
@@ -53,11 +54,12 @@ const SignDocument = () => {
             try {
                 // Using the specific public endpoint for signatures
                 const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/signatures/${token}`);
-                const { document, current_signer, pdf_url } = response.data;
+                const { document, current_signer, pdf_url, compliance } = response.data;
 
                 setDocumentData(document);
                 setCurrentUser(current_signer);
                 setPdfUrl(pdf_url);
+                setCompliance(compliance);
 
                 // Map API fields to UI format
                 const mappedFields = (document.fields || []).map(f => ({
@@ -327,6 +329,42 @@ const SignDocument = () => {
         }
     };
 
+    const [otp, setOtp] = useState('');
+    const [otpSent, setOtpSent] = useState(false);
+
+    const handleSendOtp = async () => {
+        try {
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/signatures/${token}/send-otp`);
+            setOtpSent(true);
+            toast.success("OTP sent to your email.");
+        } catch (error) {
+            console.error("Error sending OTP:", error);
+            toast.error("Failed to send OTP.");
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        try {
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/signatures/${token}/verify-otp`, { otp });
+            setCompliance(prev => ({ ...prev, is_verified: true }));
+            toast.success("Identity verified.");
+        } catch (error) {
+            console.error("Error verifying OTP:", error);
+            toast.error("Invalid OTP.");
+        }
+    };
+
+    const handleAgreeTerms = async () => {
+        try {
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/signatures/${token}/agree`);
+            setCompliance(prev => ({ ...prev, consent_required: false }));
+            toast.success("Terms accepted.");
+        } catch (error) {
+            console.error("Error agreeing to terms:", error);
+            toast.error("Failed to accept terms.");
+        }
+    };
+
     const handleFinishSigning = async () => {
         const myFields = fields.filter(f => f.metadata.isMine);
         const unsignedFields = myFields.filter(f => !f.metadata.value);
@@ -463,6 +501,99 @@ const SignDocument = () => {
                     </button>
                 </div>
             </header>
+
+
+
+
+            {/* OTP / Access Code Modal */}
+            {compliance?.access_code_required && !compliance?.is_verified && !loading && (
+                <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
+                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                            <Lock className="text-indigo-600" size={28} />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900 mb-2 text-center">Identity Verification Required</h2>
+                        <p className="text-slate-600 text-sm mb-6 text-center">
+                            This document requires additional identity verification. Please enter the code sent to your email.
+                        </p>
+
+                        {!otpSent ? (
+                            <button
+                                onClick={handleSendOtp}
+                                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors"
+                            >
+                                Send Verification Code
+                            </button>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Enter Code</label>
+                                    <input
+                                        type="text"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value)}
+                                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center text-2xl tracking-widest font-mono"
+                                        placeholder="123456"
+                                        maxLength={6}
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleVerifyOtp}
+                                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors"
+                                >
+                                    Verify Code
+                                </button>
+                                <button
+                                    onClick={handleSendOtp}
+                                    className="w-full py-2 text-indigo-600 text-sm font-medium hover:underline"
+                                >
+                                    Resend Code
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Compliance Modal */}
+            {
+                compliance?.consent_required && !loading && (
+                    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200">
+                            <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
+                                <ShieldCheck className="text-indigo-600" size={28} />
+                            </div>
+                            <h2 className="text-xl font-bold text-slate-900 mb-2">Electronic Records & Signature Disclosure</h2>
+                            <div className="text-slate-600 text-sm mb-6 space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                                <p>
+                                    By continuing, you agree to receive documents electronically and sign them using an electronic signature.
+                                </p>
+                                <p>
+                                    You acknowledge that your electronic signature is legally binding and equivalent to a handwritten signature.
+                                </p>
+                                <p className="text-xs text-slate-500 mt-4">
+                                    IP Address: {compliance.ip_address || "Logged"} • Timestamp: {new Date().toLocaleString()}
+                                </p>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    onClick={handleAgreeTerms}
+                                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <CheckCircle size={18} />
+                                    I Agree & Continue
+                                </button>
+                                <button
+                                    onClick={() => navigate('/')}
+                                    className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
+                                >
+                                    Decline
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
             <main className="flex-1 overflow-hidden flex justify-center p-4 md:p-8">
                 <div className="w-full max-w-7xl h-[calc(100vh-140px)] md:h-[calc(100vh-180px)] bg-white border border-slate-200 relative rounded-xl overflow-hidden shadow-2xl flex">
@@ -842,152 +973,154 @@ const SignDocument = () => {
             </div>
 
             {/* Signing Modal - Bottom Sheet on Mobile, Centered on Desktop */}
-            {signingField && (
-                <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm p-0 md:p-4">
-                    <div className="bg-white w-full md:w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom md:zoom-in duration-200 flex flex-col max-h-[85vh] md:max-h-[90vh]">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 className="font-bold text-slate-800">Sign Document</h3>
-                            <button onClick={() => setSigningField(null)} className="text-slate-400 hover:text-slate-600">×</button>
-                        </div>
+            {
+                signingField && (
+                    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm p-0 md:p-4">
+                        <div className="bg-white w-full md:w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom md:zoom-in duration-200 flex flex-col max-h-[85vh] md:max-h-[90vh]">
+                            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h3 className="font-bold text-slate-800">Sign Document</h3>
+                                <button onClick={() => setSigningField(null)} className="text-slate-400 hover:text-slate-600">×</button>
+                            </div>
 
-                        <div className="p-6 overflow-y-auto">
-                            {/* Tabs */}
-                            {/* Tabs - Hide if we are in direct text input mode */}
-                            {signatureMethod !== 'text_input' && (
-                                <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-6">
-                                    {showText && (
-                                        <button
-                                            onClick={() => setSignatureMethod('text')}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'text' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
-                                        >
-                                            <Type size={16} /> Type
-                                        </button>
-                                    )}
-                                    {showDraw && (
-                                        <button
-                                            onClick={() => setSignatureMethod('draw')}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'draw' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
-                                        >
-                                            <PenTool size={16} /> Draw
-                                        </button>
-                                    )}
-                                    {showUpload && (
-                                        <button
-                                            onClick={() => setSignatureMethod('upload')}
-                                            className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'upload' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
-                                        >
-                                            <UploadIcon size={16} /> Upload
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Inputs */}
-                            {signatureMethod === 'text' && (
-                                <div className="space-y-4">
-                                    <p className="text-sm text-slate-500">Type your name below. We'll convert it to a signature.</p>
-                                    <input
-                                        type="text"
-                                        autoFocus
-                                        value={textSignature}
-                                        onChange={(e) => setTextSignature(e.target.value)}
-                                        placeholder={`Signed by ${currentUser.name}`}
-                                        className="w-full text-xl font-handwriting px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
-                                        style={{ fontFamily: 'Dancing Script, cursive' }}
-                                    />
-                                </div>
-                            )}
-
-                            {signatureMethod === 'text_input' && (
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Type size={18} className="text-indigo-600" />
-                                        <h3 className="font-semibold text-slate-700">{signingField.metadata.label || "Enter Text"}</h3>
+                            <div className="p-6 overflow-y-auto">
+                                {/* Tabs */}
+                                {/* Tabs - Hide if we are in direct text input mode */}
+                                {signatureMethod !== 'text_input' && (
+                                    <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-6">
+                                        {showText && (
+                                            <button
+                                                onClick={() => setSignatureMethod('text')}
+                                                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'text' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                                            >
+                                                <Type size={16} /> Type
+                                            </button>
+                                        )}
+                                        {showDraw && (
+                                            <button
+                                                onClick={() => setSignatureMethod('draw')}
+                                                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'draw' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                                            >
+                                                <PenTool size={16} /> Draw
+                                            </button>
+                                        )}
+                                        {showUpload && (
+                                            <button
+                                                onClick={() => setSignatureMethod('upload')}
+                                                className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium text-xs transition-all ${signatureMethod === 'upload' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                                            >
+                                                <UploadIcon size={16} /> Upload
+                                            </button>
+                                        )}
                                     </div>
-                                    <input
-                                        type="text"
-                                        autoFocus
-                                        value={textSignature}
-                                        onChange={(e) => setTextSignature(e.target.value)}
-                                        placeholder={signingField.metadata.placeholder || "Type here..."}
-                                        className="w-full text-base px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
-                                    />
-                                </div>
-                            )}
+                                )}
 
-                            {signatureMethod === 'draw' && (
-                                <div className="space-y-4">
-                                    <div className="relative border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 touch-none">
-                                        <canvas
-                                            ref={canvasRef}
-                                            onMouseDown={startDrawing}
-                                            onMouseMove={draw}
-                                            onMouseUp={stopDrawing}
-                                            onMouseLeave={stopDrawing}
-                                            onTouchStart={startDrawing}
-                                            onTouchMove={draw}
-                                            onTouchEnd={stopDrawing}
-                                            className="w-full h-48 cursor-crosshair block rounded-xl"
-                                            style={{ width: '100%', height: '192px' }}
+                                {/* Inputs */}
+                                {signatureMethod === 'text' && (
+                                    <div className="space-y-4">
+                                        <p className="text-sm text-slate-500">Type your name below. We'll convert it to a signature.</p>
+                                        <input
+                                            type="text"
+                                            autoFocus
+                                            value={textSignature}
+                                            onChange={(e) => setTextSignature(e.target.value)}
+                                            placeholder={`Signed by ${currentUser.name}`}
+                                            className="w-full text-xl font-handwriting px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
+                                            style={{ fontFamily: 'Dancing Script, cursive' }}
                                         />
-                                        <button onClick={clearCanvas} className="absolute top-2 right-2 p-1.5 bg-white rounded-lg shadow border border-slate-200 hover:bg-red-50 hover:text-red-500" title="Clear">
-                                            <Trash2 size={16} />
+                                    </div>
+                                )}
+
+                                {signatureMethod === 'text_input' && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <Type size={18} className="text-indigo-600" />
+                                            <h3 className="font-semibold text-slate-700">{signingField.metadata.label || "Enter Text"}</h3>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            autoFocus
+                                            value={textSignature}
+                                            onChange={(e) => setTextSignature(e.target.value)}
+                                            placeholder={signingField.metadata.placeholder || "Type here..."}
+                                            className="w-full text-base px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-400"
+                                        />
+                                    </div>
+                                )}
+
+                                {signatureMethod === 'draw' && (
+                                    <div className="space-y-4">
+                                        <div className="relative border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 touch-none">
+                                            <canvas
+                                                ref={canvasRef}
+                                                onMouseDown={startDrawing}
+                                                onMouseMove={draw}
+                                                onMouseUp={stopDrawing}
+                                                onMouseLeave={stopDrawing}
+                                                onTouchStart={startDrawing}
+                                                onTouchMove={draw}
+                                                onTouchEnd={stopDrawing}
+                                                className="w-full h-48 cursor-crosshair block rounded-xl"
+                                                style={{ width: '100%', height: '192px' }}
+                                            />
+                                            <button onClick={clearCanvas} className="absolute top-2 right-2 p-1.5 bg-white rounded-lg shadow border border-slate-200 hover:bg-red-50 hover:text-red-500" title="Clear">
+                                                <Trash2 size={16} />
+                                            </button>
+                                            {!isDrawing && !drawnSignature && (
+                                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-50">
+                                                    <span className="text-slate-400 text-sm">Draw here</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <button onClick={clearCanvas} className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-700">
+                                            <RotateCcw size={14} /> Clear Signature
                                         </button>
-                                        {!isDrawing && !drawnSignature && (
-                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-50">
-                                                <span className="text-slate-400 text-sm">Draw here</span>
-                                            </div>
-                                        )}
                                     </div>
-                                    <button onClick={clearCanvas} className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-700">
-                                        <RotateCcw size={14} /> Clear Signature
-                                    </button>
-                                </div>
-                            )}
+                                )}
 
-                            {signatureMethod === 'upload' && (
-                                <div className="space-y-4">
-                                    <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-slate-50">
-                                        {uploadedSignature ? (
-                                            <div className="space-y-4">
-                                                <img src={uploadedSignature} alt="Uploaded" className="max-h-24 mx-auto" />
-                                                <button onClick={() => setUploadedSignature(null)} className="text-xs font-medium text-red-600 hover:text-red-700">Remove & Retry</button>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <UploadIcon size={32} className="text-slate-400 mx-auto mb-2" />
-                                                <p className="text-xs text-slate-500 mb-4">PNG, JPG (max 5MB)</p>
-                                                <label className="inline-block cursor-pointer">
-                                                    <span className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50">Choose Image</span>
-                                                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                                                </label>
-                                            </>
-                                        )}
+                                {signatureMethod === 'upload' && (
+                                    <div className="space-y-4">
+                                        <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-slate-50">
+                                            {uploadedSignature ? (
+                                                <div className="space-y-4">
+                                                    <img src={uploadedSignature} alt="Uploaded" className="max-h-24 mx-auto" />
+                                                    <button onClick={() => setUploadedSignature(null)} className="text-xs font-medium text-red-600 hover:text-red-700">Remove & Retry</button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <UploadIcon size={32} className="text-slate-400 mx-auto mb-2" />
+                                                    <p className="text-xs text-slate-500 mb-4">PNG, JPG (max 5MB)</p>
+                                                    <label className="inline-block cursor-pointer">
+                                                        <span className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50">Choose Image</span>
+                                                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                                                    </label>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
 
-                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 filter-none z-10 sticky bottom-0">
-                            <button onClick={() => setSigningField(null)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
-                            <button
-                                onClick={submitSignature}
-                                disabled={!getSignatureValue()}
-                                className="px-6 py-2 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Apply Signature
-                            </button>
+                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 filter-none z-10 sticky bottom-0">
+                                <button onClick={() => setSigningField(null)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
+                                <button
+                                    onClick={submitSignature}
+                                    disabled={!getSignatureValue()}
+                                    className="px-6 py-2 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Apply Signature
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Font loader for signature style */}
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap');
                 .font-handwriting { font-family: 'Dancing Script', cursive; }
             `}</style>
-        </div>
+        </div >
     );
 };
 

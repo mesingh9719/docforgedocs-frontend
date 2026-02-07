@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Plus, Search, Filter, LayoutGrid, List as ListIcon, Trash2, RotateCcw, ChevronLeft, ChevronRight, X, Eye, Download, FileText, User, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Search, Filter, LayoutGrid, List as ListIcon, Trash2, RotateCcw, ChevronLeft, ChevronRight, X, Eye, Download, FileText, User, CheckCircle, Clock, CheckSquare } from 'lucide-react';
 import { getDocumentShares } from '../../../api/documents';
 import TemplateModal from '../../../components/Dashboard/TemplateModal';
 import ShareHistoryModal from '../../../components/ShareHistoryModal';

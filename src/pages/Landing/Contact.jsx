@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 import api from '../../api/axios';
 import { toast } from 'react-hot-toast';
-import SEO from '../../components/SEO';
 
 const Contact = () => {
     const [submitted, setSubmitted] = useState(false);
@@ -36,12 +35,6 @@ const Contact = () => {
 
     return (
         <div className="bg-white pt-32 pb-24">
-            <SEO
-                title="Contact Us - Get in Touch with Our Team"
-                description="Have questions about DocForge? Contact our support team for help with document management, pricing, or technical support. We're here to help."
-                keywords="contact DocForge, customer support, help, technical support, sales inquiry"
-                url="/contact"
-            />
             <div className="max-w-3xl mx-auto px-6 text-center">
                 <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">Get in touch</h1>
                 <p className="text-slate-600 text-lg mb-12">

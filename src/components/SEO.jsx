@@ -8,14 +8,12 @@ const SEO = ({
     image,
     url,
     type = 'website',
-    jsonLd,
-    robots = 'index, follow',
-    twitterCard = 'summary_large_image'
+    jsonLd
 }) => {
     const siteTitle = 'DocForge';
-    const defaultDescription = 'Create professional NDAs, Proposals, and Invoices for modern businesses. Streamline your document workflow with DocForge.';
-    const siteUrl = 'https://docforgedocs.com';
-    const defaultImage = `${siteUrl}/images/logo.png`;
+    const defaultDescription = 'Secure usage of NDAs, Proposals, and Invoices for modern businesses. Streamline your document workflow with DocForge.';
+    const siteUrl = 'https://docforgedocs.com'; // Placeholder
+    const defaultImage = `${siteUrl}/images/logo.png`; // Uses the new logo
 
     const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
     const metaDescription = description || defaultDescription;
@@ -28,7 +26,6 @@ const SEO = ({
             <title>{fullTitle}</title>
             <meta name="description" content={metaDescription} />
             {keywords && <meta name="keywords" content={keywords} />}
-            <meta name="robots" content={robots} />
             <link rel="canonical" href={metaUrl} />
 
             {/* Open Graph / Facebook */}
@@ -40,14 +37,8 @@ const SEO = ({
             <meta property="og:site_name" content={siteTitle} />
             <meta property="og:locale" content="en_US" />
 
-            {/* Twitter Card */}
-            <meta name="twitter:card" content={twitterCard} />
-            <meta name="twitter:url" content={metaUrl} />
-            <meta name="twitter:title" content={fullTitle} />
-            <meta name="twitter:description" content={metaDescription} />
             <meta name="twitter:image" content={metaImage} />
             <meta name="twitter:creator" content="@DocForgeApp" />
-            <meta name="twitter:site" content="@DocForgeApp" />
 
             {/* Structured Data */}
             {jsonLd && (

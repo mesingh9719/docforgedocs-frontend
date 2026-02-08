@@ -59,3 +59,16 @@ export const getDocumentShares = async (id) => {
     const response = await axios.get(`/documents/${id}/shares`);
     return response.data;
 };
+
+export const duplicateDocument = async (id) => {
+    const response = await axios.post(`/documents/${id}/duplicate`);
+    return response.data;
+};
+
+export const exportDocuments = async (params = {}) => {
+    const response = await axios.get('/documents/export', {
+        params,
+        responseType: 'blob' // Important for file download
+    });
+    return response;
+};

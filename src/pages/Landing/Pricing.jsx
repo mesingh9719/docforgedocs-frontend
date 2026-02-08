@@ -51,38 +51,11 @@ const Pricing = () => {
         }
     ];
 
-    // FAQ Schema for structured data
-    const faqSchema = {
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        "mainEntity": [
-            {
-                "@type": "Question",
-                "name": "Can I cancel anytime?",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "Yes, you can cancel your subscription at any time. Your access will continue until the end of your billing period."
-                }
-            },
-            {
-                "@type": "Question",
-                "name": "Is there a free trial?",
-                "acceptedAnswer": {
-                    "@type": "Answer",
-                    "text": "We offer a 14-day free trial for the Professional plan. No credit card required to start."
-                }
-            }
-        ]
-    };
-
     return (
         <div className="bg-white">
             <SEO
-                title="Pricing - Affordable Plans for Freelancers & Agencies"
-                description="Simple, transparent pricing for DocForge. Start free with basic features or upgrade to Professional for unlimited documents, custom branding, and team collaboration. Enterprise plans available."
-                keywords="DocForge pricing, document management pricing, NDA generator cost, proposal software pricing, affordable business tools"
-                url="/pricing"
-                jsonLd={faqSchema}
+                title="Pricing"
+                description="Simple, transparent pricing for freelancers and agencies. Get started for free."
             />
 
             {/* Header */}

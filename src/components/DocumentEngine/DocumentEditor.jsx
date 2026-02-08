@@ -1,17 +1,20 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Eye, Settings, Plus } from 'lucide-react';
+import { ArrowLeft, Save, FileText, MousePointer, Image as ImageIcon, Type, Settings, Download, X, Eye, Send, History, Loader2, Plus } from 'lucide-react';
 import { DndContext, DragOverlay, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useDocumentEngine } from '../../hooks/useDocumentEngine';
 
+
 // Imports
 import { getBusiness } from '../../api/business';
-import { getDocument, updateDocument } from '../../api/documents'; // Added updateDocument for saving
+import { getDocument, updateDocument, generatePdf } from '../../api/documents'; // Added updateDocument for saving
 import Canvas from './Canvas';
 import Toolbox from './Sidebar/Toolbox';
 import ConfigurationPanel from './Sidebar/ConfigurationPanel';
 import VariableManager from './Sidebar/VariableManager';
+import VersionHistoryPanel from './Sidebar/VersionHistoryPanel';
+
 import toast from 'react-hot-toast';
 
 const DocumentEditor = () => {
@@ -20,7 +23,7 @@ const DocumentEditor = () => {
 
     // Core Engine State
     const { documentState, actions } = useDocumentEngine();
-    const [activeTab, setActiveTab] = React.useState('edit'); // 'edit', 'preview'
+    const [activeTab, setActiveTab] = React.useState('build'); // 'build', 'variables', 'history'
     const [isSaving, setIsSaving] = React.useState(false);
     const [businessData, setBusinessData] = React.useState(null);
 
@@ -165,11 +168,49 @@ const DocumentEditor = () => {
 
                 {/* Main Workspace */}
                 <div className="flex flex-1 overflow-hidden">
-                    {/* Left Sidebar: Toolbox & Variables */}
+                    {/* Left Sidebar: Toolbox & Variables & History */}
                     <div className="w-[300px] bg-white border-r border-slate-200 flex flex-col z-20">
-                        <Toolbox />
-                        <div className="h-px bg-slate-200 my-2" />
-                        <VariableManager variables={documentState.variables} onAdd={actions.addVariable} />
+                        {/* Tabs */}
+                        <div className="flex border-b border-slate-200">
+                            <button
+                                onClick={() => setActiveTab('build')}
+                                className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'build' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Build
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('variables')}
+                                className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'variables' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                            >
+                                Vars
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('history')}
+                                className={`flex-1 py-3 text-xs font-semibold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'history' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                            >
+                                History
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 overflow-y-auto">
+                            {activeTab === 'build' && (
+                                <div className="flex flex-col h-full">
+                                    <Toolbox />
+                                </div>
+                            )}
+                            {activeTab === 'variables' && (
+                                <VariableManager variables={documentState.variables} onAdd={actions.addVariable} />
+                            )}
+                            {activeTab === 'history' && (
+                                <VersionHistoryPanel
+                                    documentId={id}
+                                    onRestore={() => {
+                                        window.location.reload();
+                                    }}
+                                />
+                            )}
+                        </div>
                     </div>
 
                     {/* Center: Canvas */}

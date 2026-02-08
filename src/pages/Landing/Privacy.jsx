@@ -1,16 +1,8 @@
 import React from 'react';
-import SEO from '../../components/SEO';
 
 const Privacy = () => {
     return (
         <div className="max-w-4xl mx-auto px-6 py-32">
-            <SEO
-                title="Privacy Policy - How We Protect Your Data"
-                description="Read DocForge's privacy policy to understand how we collect, use, and protect your personal data. Learn about your privacy rights and data security."
-                keywords="privacy policy, data protection, GDPR, user privacy, data security"
-                url="/privacy"
-                robots="noindex, follow"
-            />
             <h1 className="text-4xl font-bold text-slate-900 mb-8">Privacy Policy</h1>
             <div className="prose prose-slate max-w-none">
                 <p className="text-slate-600 mb-6">Last updated: January 1, 2026</p>

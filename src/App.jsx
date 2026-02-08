@@ -25,8 +25,7 @@ import Team from './pages/Dashboard/team/Team'
 import SignatureModule from './pages/Dashboard/signature-module/SignatureModule'
 import SignatureDocumentList from './pages/Dashboard/signature-module/SignatureDocumentList'
 import SignedDocumentViewer from './pages/Dashboard/signature-module/SignedDocumentViewer';
-import DriveDashboard from './pages/Dashboard/Drive/DriveDashboard';
-import TrashView from './pages/Dashboard/Drive/TrashView';
+
 import DocumentEditor from './components/DocumentEngine/DocumentEditor'
 import AuthLayout from './components/auth/AuthLayout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -135,8 +134,7 @@ function App() {
 
                 {/* Documents - View Permission */}
                 <Route element={<ProtectedRoute permission="document.view" />}>
-                  <Route path='/drive' element={<DriveDashboard />} />
-                  <Route path='/drive/trash' element={<TrashView />} />
+
                   <Route path='/documents' element={<DocumentList />} />
                   <Route path='/documents/nda' element={<NdaEditor />} />
                   <Route path='/documents/nda/:id' element={<NdaEditor />} />
@@ -159,6 +157,7 @@ function App() {
                 {/* Signatures - Manage Permission */}
                 <Route element={<ProtectedRoute permission="settings.signature" />}>
                   <Route path='/signatures' element={<SignatureModule />} />
+                  <Route path='/signatures/:id/edit' element={<SignatureModule />} />
                   <Route path='/signatures/list' element={<SignatureDocumentList />} />
                   <Route path='/signatures/:documentId/view-signed' element={<SignedDocumentViewer />} />
                 </Route>

@@ -7,10 +7,8 @@ const About = () => {
     return (
         <div className="bg-white">
             <SEO
-                title="About Us - Our Mission to Empower Modern Businesses"
-                description="Learn about DocForge's mission to empower businesses with intuitive document management tools. Discover our story, values, and commitment to customer excellence."
-                keywords="about DocForge, company mission, document management company, business tools, customer first"
-                url="/about"
+                title="About Us"
+                description="Empowering businesses to forge ahead. Learn more about DocForge's mission and team."
             />
             {/* Hero */}
             <section className="pt-32 pb-20 px-6 max-w-4xl mx-auto text-center">

@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, PenTool, Mail, MoreVertical, CheckSquare, Square, Eye, Trash2, RotateCcw, Clock } from 'lucide-react';
+import { FileText, PenTool, Mail, MoreVertical, CheckSquare, Square, Eye, Trash2, RotateCcw, Clock, Copy, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const DocumentListItem = memo(({
@@ -15,6 +15,8 @@ const DocumentListItem = memo(({
     handleView,
     handleDelete,
     handleRestore,
+    handleDuplicate,
+    handleSign,
     viewMode
 }) => {
     return (
@@ -151,6 +153,39 @@ const DocumentListItem = memo(({
                                 >
                                     <Eye size={16} /> View/Edit
                                 </button>
+                                <button
+                                    onClick={() => {
+                                        handleDuplicate(doc);
+                                    }}
+                                    className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition-colors"
+                                >
+                                    <Copy size={16} /> Duplicate
+                                </button>
+                                {doc.status?.toLowerCase() === 'draft' &&
+                                    !['nda', 'proposal', 'invoice'].includes(doc.type?.slug) &&
+                                    (!doc.content?.blocks?.length) &&
+                                    (!doc.signers?.some(s => ['sent', 'viewed', 'signed'].includes(s.status))) && (
+                                        <button
+                                            onClick={() => {
+                                                handleSign(doc);
+                                                setActiveMenuId(null);
+                                            }}
+                                            className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition-colors"
+                                        >
+                                            <PenTool size={16} /> Sign Document
+                                        </button>
+                                    )}
+                                {doc.pdf_url && (
+                                    <a
+                                        href={doc.pdf_url}
+                                        download
+                                        onClick={() => setActiveMenuId(null)}
+                                        className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition-colors"
+                                    >
+                                        <Download size={16} /> Download PDF
+                                    </a>
+                                )}
+                                <div className="h-px bg-slate-100 my-1"></div>
                                 <button
                                     onClick={() => { handleDelete(doc.id); setActiveMenuId(null); }}
                                     className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"

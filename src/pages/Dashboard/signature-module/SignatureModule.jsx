@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, FileText, CheckCircle, Send, ArrowRight, Settings as SettingsIcon, Menu } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import PDFUploader from './components/PDFUploader';
 import PDFViewer from './components/PDFViewer';
@@ -18,6 +18,7 @@ import MobileSignerReview from './components/MobileSignerReview';
 import PageThumbnailsSidebar from './components/PageThumbnailsSidebar';
 
 const SignatureModule = () => {
+    const { id } = useParams();
     const navigate = useNavigate();
 
     // Configure sensors for touch support
@@ -60,30 +61,75 @@ const SignatureModule = () => {
         { id: 2, title: 'Review & Send', icon: Send }
     ];
 
-    // Effect for Auto-Redirect
+    // Initialize from ID if present (Edit Mode)
     useEffect(() => {
-        let interval;
-        if (sendSuccess) {
-            setRedirectProgress(0);
-            const duration = 5000;
-            const intervalTime = 50;
-            const steps = duration / intervalTime;
+        if (!id) return;
 
-            interval = setInterval(() => {
-                setRedirectProgress(prev => {
-                    const next = prev + (100 / steps);
-                    if (next >= 100) {
-                        clearInterval(interval);
-                        toast.success('Document sent successfully!');
-                        navigate('/signatures/list');
-                        return 100;
-                    }
-                    return next;
+        const fetchDocument = async () => {
+            try {
+                const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/documents/${id}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
-            }, intervalTime);
-        }
-        return () => clearInterval(interval);
-    }, [sendSuccess, navigate]);
+                if (!response.ok) throw new Error("Failed to load document");
+                const data = await response.json();
+                const doc = data.data;
+
+                // Redirect if not draft
+                if (doc.status !== 'draft') {
+                    toast.error("Cannot edit sent or completed documents");
+                    navigate('/signatures/list');
+                    return;
+                }
+
+                // Load PDF
+                if (doc.pdf_url) {
+                    // Use file proxy to avoid CORS issues with static storage
+                    const proxyUrl = `${import.meta.env.VITE_API_BASE_URL}/file-proxy?path=${encodeURIComponent(doc.pdf_url)}`;
+                    setPdfUrl(proxyUrl);
+                    // We don't have the File object, but PDFViewer uses URL.
+                    // We need to set pdfFile to something truthy to bypass the upload screen.
+                    setPdfFile({ name: doc.name, type: 'application/pdf' }); // Mock file object
+                }
+
+                // Load Signers
+                if (doc.signers) {
+                    setSigners(doc.signers.map(s => ({
+                        id: s.id,
+                        name: s.name,
+                        email: s.email,
+                        order: s.order,
+                        role: s.role || 'signer'
+                    })));
+                }
+
+                // Load Fields/Signatures
+                if (doc.content && Array.isArray(doc.content.fields)) {
+                    // Legacy or content-embedded fields
+                    // This block checks content.fields if it exists
+                }
+
+                // API loaded fields (Relation)
+                if (doc.fields) {
+                    setSignatures(doc.fields.map(field => ({
+                        id: field.id || `sig-${Math.random()}`,
+                        type: field.type,
+                        position: { x: field.x_position, y: field.y_position },
+                        pageNumber: field.page_number,
+                        metadata: field.metadata || {
+                            fieldType: field.type,
+                            signeeEmail: doc.signers.find(s => s.id === field.signer_id)?.email,
+                            required: true
+                        }
+                    })));
+                }
+            } catch (error) {
+                console.error("Error loading document:", error);
+                toast.error("Failed to load document for editing");
+            }
+        };
+
+        fetchDocument();
+    }, [id]);
 
     const handleFileUpload = (file) => {
         setPdfFile(file);
@@ -201,19 +247,29 @@ const SignatureModule = () => {
         setSendError(null);
 
         try {
-            // Upload
-            const formData = new FormData();
-            formData.append('file', pdfFile);
-            formData.append('name', pdfFile.name);
+            let documentId = id;
 
-            const uploadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/signatures/upload`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-                body: formData
-            });
+            // Upload only if new document (no ID)
+            if (!documentId) {
+                const formData = new FormData();
+                formData.append('file', pdfFile);
+                formData.append('name', pdfFile.name);
 
-            if (!uploadRes.ok) throw new Error('Failed to upload document');
-            const documentId = (await uploadRes.json()).data.id;
+                const uploadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/signatures/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                if (!uploadRes.ok) {
+                    const error = await uploadRes.json();
+                    throw new Error(error.message || 'Failed to upload document');
+                }
+                documentId = (await uploadRes.json()).data.id;
+            }
 
             // Send
             const fields = signatures.map(sig => ({
@@ -235,7 +291,8 @@ const SignatureModule = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify({ document_id: documentId, signers: payloadSigners, fields })
             });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, Search, Filter, LayoutGrid, List as ListIcon, Trash2, RotateCcw, ChevronLeft, ChevronRight, X, Eye, Download, FileText, User, CheckCircle, Clock, CheckSquare } from 'lucide-react';
-import { getDocumentShares } from '../../../api/documents';
+import { getDocumentShares, duplicateDocument, exportDocuments } from '../../../api/documents';
 import TemplateModal from '../../../components/Dashboard/TemplateModal';
 import ShareHistoryModal from '../../../components/ShareHistoryModal';
 import { useNavigate } from 'react-router-dom';
@@ -167,13 +167,30 @@ const DocumentList = () => {
         }
     }, []);
 
+    const handleSign = useCallback((doc) => {
+        navigate(`/signatures/${doc.id}/edit`);
+    }, [navigate]);
+
     const handleView = useCallback((doc) => {
-        if (doc.signers_count > 0 || (doc.type?.slug === 'general' && doc.signers_count > 0)) {
-            handleDrawerOpen(doc.id);
-        } else {
-            const typeSlug = doc.type?.slug || 'general';
+        const typeSlug = doc.type?.slug || 'general';
+        const hasBlocks = doc.content && doc.content.blocks && doc.content.blocks.length > 0;
+
+        // 1. Standard Documents (NDA, Proposal, Invoice, or any doc with content blocks) -> Editor
+        // We explicitly check types to ensure even empty drafts go to the editor
+        if (['nda', 'proposal', 'invoice'].includes(typeSlug) || hasBlocks) {
             navigate(`/documents/${typeSlug}/${doc.id}`);
+            return;
         }
+
+        // 2. Uploaded Signature Requests (General type + PDF + No content) -> Drawer
+        // If it has a PDF but no blocks, and isn't a known standard type, it's an uploaded doc.
+        if (doc.pdf_url) {
+            handleDrawerOpen(doc.id);
+            return;
+        }
+
+        // 3. Fallback (New/Empty General Docs) -> Editor
+        navigate(`/documents/${typeSlug}/${doc.id}`);
     }, [handleDrawerOpen, navigate]);
 
     const handleDelete = useCallback(async (id) => {
@@ -233,7 +250,42 @@ const DocumentList = () => {
             }
         );
     };
+    const handleDuplicate = async (doc) => {
+        try {
+            await duplicateDocument(doc.id);
+            toast.success(`Duplicated "${doc.name}"`);
+            fetchDocuments(pagination.current_page);
+            setActiveMenuId(null);
+        } catch (error) {
+            toast.error('Failed to duplicate document');
+        }
+    };
 
+    const handleExport = async () => {
+        try {
+            toast.loading('Exporting documents...', { id: 'export' });
+            const response = await exportDocuments({
+                search: filters.search,
+                status: filters.status,
+                type: filters.type,
+                category: filters.category
+            });
+
+            // Create download link
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `documents_export_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            toast.success('Export complete', { id: 'export' });
+        } catch (error) {
+            console.error(error);
+            toast.error('Failed to export', { id: 'export' });
+        }
+    };
 
 
     return (
@@ -243,6 +295,15 @@ const DocumentList = () => {
                 subtitle="Manage, organize, and track your legal documents."
             >
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleExport}
+                        className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all bg-white"
+                        title="Export filtered list to CSV"
+                    >
+                        <Download size={16} />
+                        <span className="hidden sm:inline">Export CSV</span>
+                    </button>
+
                     <button
                         onClick={() => {
                             setTrashMode(prev => !prev);
@@ -403,6 +464,8 @@ const DocumentList = () => {
                                             handleView={handleView}
                                             handleDelete={handleDelete}
                                             handleRestore={handleRestore}
+                                            handleDuplicate={handleDuplicate}
+                                            handleSign={handleSign}
                                             viewMode={trashMode ? 'trash' : 'active'}
                                         />
                                     ))}
@@ -548,6 +611,17 @@ const DocumentList = () => {
                                                     <FileText size={18} /> Original PDF
                                                 </a>
                                             )}
+                                            {drawerDoc.status?.toLowerCase() === 'draft' &&
+                                                drawerDoc.pdf_url &&
+                                                (!drawerDoc.content?.blocks?.length) &&
+                                                (!drawerDoc.signers?.some(s => ['sent', 'viewed', 'signed'].includes(s.status))) && (
+                                                    <button
+                                                        onClick={() => navigate(`/signatures/${drawerDoc.id}/edit`)}
+                                                        className="col-span-2 flex items-center justify-center gap-2 p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors shadow-lg shadow-indigo-600/10"
+                                                    >
+                                                        <FileText size={18} /> Prepare For Signing
+                                                    </button>
+                                                )}
                                             {drawerDoc.final_pdf_url && (
                                                 <a
                                                     href={drawerDoc.final_pdf_url}

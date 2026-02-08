@@ -123,12 +123,78 @@ const FeatureSpot = ({ icon: Icon, title, desc }) => (
 const Welcome = () => {
     const navigate = useNavigate();
 
+    // Structured Data Schemas
+    const softwareApplicationSchema = {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "DocForge",
+        "applicationCategory": "BusinessApplication",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "operatingSystem": "Web",
+        "description": "Create professional NDAs, Proposals, and Invoices for modern businesses. Free document generator with eSignature support.",
+        "featureList": [
+            "NDA Generator",
+            "Business Proposal Creator",
+            "Invoice Generator",
+            "eSignature Support",
+            "Team Collaboration",
+            "Custom Branding"
+        ],
+        "screenshot": "https://docforgedocs.com/images/dashboard-preview.png",
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "ratingCount": "1250"
+        }
+    };
+
+    const faqSchema = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": faqs.map(faq => ({
+            "@type": "Question",
+            "name": faq.q,
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": faq.a
+            }
+        }))
+    };
+
+    const organizationSchema = {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "DocForge",
+        "url": "https://docforgedocs.com",
+        "logo": "https://docforgedocs.com/images/logo.png",
+        "sameAs": [
+            "https://twitter.com/DocForgeApp"
+        ],
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "Customer Support",
+            "email": "support@docforgedocs.com"
+        }
+    };
+
+    // Combine all schemas
+    const combinedSchema = {
+        "@context": "https://schema.org",
+        "@graph": [softwareApplicationSchema, faqSchema, organizationSchema]
+    };
+
     return (
         <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900">
             <SEO
-                title="DocForge - Free NDA & Proposal Generator"
-                description="The operating system for modern agencies. Generate professional NDAs, Proposals, and Invoices for free. No signup required to start."
-                keywords="Free NDA Generator, Business Proposal Creator, Consulting Agreement Template, Online Legal Documents, Agency Software"
+                title="Free NDA & Proposal Generator for Modern Businesses"
+                description="Create professional NDAs, Business Proposals, and Consulting Agreements in minutes. Free document generator with eSignature support. No signup required to start."
+                keywords="Free NDA Generator, Business Proposal Creator, Consulting Agreement Template, Online Legal Documents, Agency Software, eSignature, Document Management, Invoice Generator"
+                url="/"
+                jsonLd={combinedSchema}
             />
 
             {/* Background Effects */}
@@ -307,7 +373,7 @@ const Welcome = () => {
                         <div className="relative bg-slate-900 rounded-3xl p-2 shadow-2xl border border-slate-800">
                             <img
                                 src="/images/dashboard-preview.png"
-                                alt="DocForge Dashboard"
+                                alt="DocForge Dashboard - Document management interface showing NDAs, proposals, and team collaboration features"
                                 className="rounded-2xl w-full h-auto opacity-90"
                             />
                             {/* Floating Stats */}

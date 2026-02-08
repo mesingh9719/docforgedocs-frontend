@@ -46,8 +46,10 @@ const Features = () => {
     return (
         <div className="bg-white">
             <SEO
-                title="Features"
-                description="Explore DocForge features: Secure NDAs, Winning Proposals, Instant Invoicing, and Team Collaboration."
+                title="Features - Document Management & Collaboration Tools"
+                description="Explore DocForge features: Secure NDA generation, winning business proposals, instant invoicing, team collaboration, custom branding, and client management tools for modern agencies."
+                keywords="Document management features, NDA generator, proposal creator, invoice software, team collaboration, custom branding, client management"
+                url="/features"
             />
 
             {/* Hero Section */}
@@ -118,7 +120,7 @@ const Features = () => {
                             >
                                 <img
                                     src="/images/dashboard-preview.png"
-                                    alt="Dashboard Preview"
+                                    alt="DocForge document editor interface with real-time preview, version history, and one-click PDF export"
                                     className="w-full h-auto rounded-xl border border-slate-200/50"
                                 />
                                 {/* Optional: Add a subtle reflection or overlay if desired, but clean is better for 'premium' */}

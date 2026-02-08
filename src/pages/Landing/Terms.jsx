@@ -1,8 +1,16 @@
 import React from 'react';
+import SEO from '../../components/SEO';
 
 const Terms = () => {
     return (
         <div className="max-w-4xl mx-auto px-6 py-32">
+            <SEO
+                title="Terms of Service - DocForge User Agreement"
+                description="Read DocForge's terms of service to understand the agreement, use license, and disclaimers for using our document management platform."
+                keywords="terms of service, user agreement, terms and conditions, legal terms"
+                url="/terms"
+                robots="noindex, follow"
+            />
             <h1 className="text-4xl font-bold text-slate-900 mb-8">Terms of Service</h1>
             <div className="prose prose-slate max-w-none">
                 <p className="text-slate-600 mb-6">Last updated: January 1, 2026</p>

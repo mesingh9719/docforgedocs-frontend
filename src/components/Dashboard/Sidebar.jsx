@@ -12,6 +12,7 @@ import {
     Shield,
     PenTool,
     ScrollText,
+    Folder,
     Sparkles
 } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -38,6 +39,7 @@ const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
 
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+        { icon: Folder, label: 'Drive', path: '/drive', permission: 'document.view' },
         { icon: FileText, label: 'Documents', path: '/documents', permission: 'document.view' },
         { icon: ScrollText, label: 'Signatures', path: '/signatures/list', permission: 'settings.signature' },
         { icon: Users, label: 'Team', path: '/team', permission: 'team.view' },

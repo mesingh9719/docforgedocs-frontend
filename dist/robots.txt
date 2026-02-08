@@ -1,3 +1,36 @@
 User-agent: *
 Allow: /
+
+# Disallow private/authenticated routes
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /password-reset
+Disallow: /settings
+Disallow: /settings/*
+Disallow: /onboarding
+Disallow: /auth/*
+Disallow: /documents/*
+Disallow: /drive
+Disallow: /drive/*
+Disallow: /team
+Disallow: /signatures
+Disallow: /signatures/*
+Disallow: /accept-invite
+Disallow: /verify-email
+
+# Allow public routes
+Allow: /features
+Allow: /pricing
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /blog
+Allow: /blog/*
+Allow: /changelog
+Allow: /careers
+
 Sitemap: https://docforgedocs.com/sitemap.xml

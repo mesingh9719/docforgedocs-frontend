@@ -7,11 +7,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AuthInput from './AuthInput';
 import GoogleLoginButton from './GoogleLoginButton';
 import toast from 'react-hot-toast';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 function LoginForm() {
     const location = useLocation();
     const navigate = useNavigate();
     const { setToken } = useAuth();
+    const { executeRecaptcha } = useGoogleReCaptcha();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -26,14 +28,11 @@ function LoginForm() {
             toast.error(location.state.message, {
                 id: 'auth-error', // Prevents duplicates
                 icon: '🔒',
-                // Removed custom dark styles to inherit from global "corporate" theme
             });
-            // Clear state so it doesn't show again on refresh
             window.history.replaceState({}, document.title);
         }
     }, [location]);
 
-    // Refs for focus management
     const emailRef = useRef(null);
     const passwordRef = useRef(null);
 
@@ -70,13 +69,21 @@ function LoginForm() {
             return;
         }
 
+        if (!executeRecaptcha) {
+            setGeneralError("ReCAPTCHA not ready. Please try again.");
+            return;
+        }
+
         setLoading(true);
 
         try {
-            const data = await login(formData);
+            const token = await executeRecaptcha('login');
+
+            const payload = { ...formData, recaptcha_token: token };
+            const data = await login(payload);
             setToken(data.token);
             if (data.data.business) {
-                toast.dismiss(); // Clear any pending toasts (e.g., "Please log in")
+                toast.dismiss();
                 navigate('/dashboard');
             } else {
                 toast.dismiss();
@@ -106,7 +113,6 @@ function LoginForm() {
                 )}
             </AnimatePresence>
 
-            {/* Google Login Section */}
             <div className="mb-2">
                 <GoogleLoginButton text="Sign in with Google" />
             </div>

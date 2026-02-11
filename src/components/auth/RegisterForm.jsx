@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthInput from './AuthInput';
 import GoogleLoginButton from './GoogleLoginButton';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 function RegisterForm() {
     const [formData, setFormData] = useState({
@@ -19,8 +20,8 @@ function RegisterForm() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const { setToken } = useAuth();
+    const { executeRecaptcha } = useGoogleReCaptcha();
 
-    // Refs for focus management
     const nameRef = useRef(null);
     const emailRef = useRef(null);
     const passwordRef = useRef(null);
@@ -28,7 +29,6 @@ function RegisterForm() {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-        // Clear specific error on change for premium feel
         if (errors[e.target.name]) {
             setErrors(prev => ({ ...prev, [e.target.name]: null }));
         }
@@ -47,7 +47,6 @@ function RegisterForm() {
             newErrors.email = "Please enter a valid email address";
         }
 
-        // Strict Password Validation: Min 12 chars, alphanumeric + special
         const password = formData.password;
         if (!password) {
             newErrors.password = "Password is required";
@@ -73,7 +72,6 @@ function RegisterForm() {
         setGeneralError(null);
 
         if (!validateForm()) {
-            // Focus logic
             if (!formData.name.trim()) nameRef.current?.focus();
             else if (errors.email) emailRef.current?.focus();
             else if (errors.password) passwordRef.current?.focus();
@@ -81,20 +79,25 @@ function RegisterForm() {
             return;
         }
 
+        if (!executeRecaptcha) {
+            setGeneralError("ReCAPTCHA not ready. Please try again.");
+            return;
+        }
+
         setLoading(true);
 
         try {
-            const data = await register(formData);
+            const token = await executeRecaptcha('register');
+            const payload = { ...formData, recaptcha_token: token };
+
+            const data = await register(payload);
             setToken(data.token);
-            // If there is a redirect path, try to go there (ProtectedRoute handles verification check)
-            // otherwise go to the default verification message page
             navigate(redirectPath || '/verify-email-message');
         } catch (err) {
             const apiMessage = err.response?.data?.message;
             const validationErrors = err.response?.data?.errors;
 
             if (validationErrors) {
-                // Map API errors to field errors if possible
                 const apiFieldErrors = {};
                 if (validationErrors.email) apiFieldErrors.email = validationErrors.email[0];
                 if (validationErrors.password) apiFieldErrors.password = validationErrors.password[0];
@@ -102,7 +105,6 @@ function RegisterForm() {
 
                 setErrors(apiFieldErrors);
 
-                // Fallback for generic display if strictly needed
                 if (Object.keys(apiFieldErrors).length === 0) {
                     setGeneralError(apiMessage || 'Registration failed. Please fix the errors.');
                 }
@@ -130,7 +132,6 @@ function RegisterForm() {
                 )}
             </AnimatePresence>
 
-            {/* Google Login Section */}
             <div className="mb-2">
                 <GoogleLoginButton text="Sign up with Google" />
             </div>
@@ -141,7 +142,6 @@ function RegisterForm() {
                 </div>
                 <span className="relative z-10 bg-white px-2 text-xs text-slate-400 font-medium uppercase tracking-wider">Or continue with email</span>
             </div>
-
 
             <div className="space-y-4">
                 <AuthInput

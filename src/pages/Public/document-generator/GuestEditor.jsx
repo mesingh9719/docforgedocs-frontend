@@ -260,7 +260,7 @@ const GuestEditor = () => {
                 {/* Header */}
                 <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between z-30 shrink-0">
                     <div className="flex items-center gap-4">
-                        <button onClick={() => navigate('/create-document')} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
+                        <button onClick={() => navigate('/')} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
                             <ArrowLeft size={20} />
                         </button>
                         <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2">

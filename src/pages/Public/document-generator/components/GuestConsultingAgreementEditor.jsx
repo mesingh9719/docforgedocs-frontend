@@ -60,7 +60,7 @@ const GuestConsultingAgreementEditor = ({ onSaveRequest }) => {
     const deferredDocContent = React.useDeferredValue(docContent);
 
     // Handlers
-    const handleBack = () => navigate('/create-document');
+    const handleBack = () => navigate('/');
     const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.5));
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5));
 

@@ -61,7 +61,7 @@ const GuestNdaEditor = ({ onSaveRequest }) => {
     const deferredDocContent = React.useDeferredValue(docContent);
 
     // Handlers
-    const handleBack = () => navigate('/create-document'); // Redirect to Landing
+    const handleBack = () => navigate('/'); // Redirect to Landing
     const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.5));
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5));
 

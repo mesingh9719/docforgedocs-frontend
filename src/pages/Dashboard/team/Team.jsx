@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { getTeamMembers, inviteMember, updateMember, removeMember } from '../../../api/team';
+import { getRoles } from '../../../api/roles';
 import { useAuth } from '../../../context/AuthContext';
 import { usePermissions } from '../../../hooks/usePermissions';
-import { Plus, Search, MoreVertical, Shield, Trash2, Mail, User, Briefcase, CheckCircle, Edit3, Lock } from 'lucide-react';
+import { Plus, Search, MoreVertical, Shield, Trash2, Edit3, Lock, Settings, UserPlus, CheckCircle, Users } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import InviteMemberModal from './InviteMemberModal';
 import EditMemberModal from './EditMemberModal';
+import ManageRoleModal from './ManageRoleModal';
 import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHeader';
 import DashboardPage from '../../../components/Dashboard/DashboardPage';
 
@@ -14,64 +16,84 @@ const Team = () => {
     const { user } = useAuth();
     const { matrix } = usePermissions();
     const [members, setMembers] = useState([]);
+    const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
     const [editingMember, setEditingMember] = useState(null); // Member being edited
     const [activeTab, setActiveTab] = useState('members');
     const [activeMenu, setActiveMenu] = useState(null);
 
+    const { can } = usePermissions();
+
     useEffect(() => {
-        fetchMembers();
+        fetchData();
     }, []);
 
-    const fetchMembers = async () => {
+    const fetchData = async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-            const response = await getTeamMembers();
-            setMembers(response.data);
+            await Promise.all([fetchMembers(), fetchRoles()]);
         } catch (error) {
-            console.error("Failed to fetch team", error);
+            console.error("Failed to fetch data", error);
         } finally {
             setLoading(false);
         }
     };
 
-
-
-    const handleUpdateMember = async (id, data) => {
+    const fetchMembers = async () => {
         try {
-            await updateMember(id, data);
-            fetchMembers();
-            toast.success("Member updated successfully");
+            const response = await getTeamMembers();
+            setMembers(response.data);
         } catch (error) {
-            console.error("Failed to update member", error);
-            toast.error("Failed to update member: " + (error.response?.data?.message || error.message));
+            console.error("Failed to fetch team members", error);
         }
     };
 
-    const handleRemove = async (id) => {
+    const fetchRoles = async () => {
+        try {
+            const response = await getRoles();
+            setRoles(response.data);
+        } catch (error) {
+            console.error("Failed to fetch roles", error);
+        }
+    };
+
+    const handleUpdateMember = async (id, data) => {
+        try {
+            const response = await updateMember(id, data);
+            setMembers(members.map(m => m.id === id ? response.data : m));
+            setEditingMember(null);
+            toast.success('Member updated successfully');
+        } catch (error) {
+            console.error("Failed to update member", error);
+            toast.error('Failed to update member');
+        }
+    };
+
+    const handleDeleteMember = async (id) => {
         if (!confirm('Are you sure you want to remove this member?')) return;
+
         try {
             await removeMember(id);
             setMembers(members.filter(m => m.id !== id));
-            toast.success("Member removed successfully");
+            toast.success('Member removed successfully');
         } catch (error) {
             console.error("Failed to remove member", error);
-            toast.error("Failed to remove member");
+            toast.error('Failed to remove member');
         }
-        setActiveMenu(null);
     };
 
     const handleInvite = async (data) => {
         try {
-            await inviteMember(data);
-            fetchMembers();
+            const response = await inviteMember(data);
+            setMembers([...members, response.data]);
             setIsInviteModalOpen(false);
-            toast.success("Invitation sent successfully");
+            toast.success('Invitation sent successfully');
         } catch (error) {
             console.error("Failed to invite member", error);
-            toast.error("Failed to invite member: " + (error.response?.data?.message || error.message));
+            toast.error(error.response?.data?.message || 'Failed to send invitation');
         }
     };
 
@@ -80,8 +102,8 @@ const Team = () => {
         m.child?.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const getRoleColor = (role) => {
-        switch (role) {
+    const getRoleColor = (roleName) => {
+        switch (roleName) {
             case 'admin': return 'bg-purple-100 text-purple-700 border-purple-200';
             case 'editor': return 'bg-blue-100 text-blue-700 border-blue-200';
             case 'member': return 'bg-slate-100 text-slate-700 border-slate-200';
@@ -120,8 +142,8 @@ const Team = () => {
                 <div className="flex gap-6">
                     <button
                         onClick={() => setActiveTab('members')}
-                        className={`pb-3 text-sm font-medium transition-colors relative ${activeTab === 'members' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'
-                            }`}
+                        className={`pb - 3 text - sm font - medium transition - colors relative ${activeTab === 'members' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'
+                            } `}
                     >
                         Members
                         {activeTab === 'members' && (
@@ -130,8 +152,8 @@ const Team = () => {
                     </button>
                     <button
                         onClick={() => setActiveTab('roles')}
-                        className={`pb-3 text-sm font-medium transition-colors relative ${activeTab === 'roles' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'
-                            }`}
+                        className={`pb - 3 text - sm font - medium transition - colors relative ${activeTab === 'roles' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'
+                            } `}
                     >
                         Roles & Permissions
                         {activeTab === 'roles' && (
@@ -187,15 +209,25 @@ const Team = () => {
                                             </tr>
                                         ) : filteredMembers.length === 0 ? (
                                             <tr>
-                                                <td colSpan="4" className="px-6 py-8 text-center text-slate-500">
-                                                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                                                            <Shield className="text-slate-300" size={32} />
+                                                <td colSpan="4" className="px-6 py-12 text-center">
+                                                    <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+                                                        <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mb-4 ring-8 ring-indigo-50/50">
+                                                            <Users className="text-indigo-500" size={32} />
                                                         </div>
-                                                        <h3 className="text-lg font-medium text-slate-900 mb-1">No team members yet</h3>
-                                                        <p className="text-slate-500 text-sm max-w-sm">
-                                                            Invite your colleagues to collaborate on documents and manage your business together.
+                                                        <h3 className="text-lg font-semibold text-slate-900 mb-1">Build Your Team</h3>
+                                                        <p className="text-slate-500 text-sm mb-6 text-center">
+                                                            Invite colleagues to collaborate on documents, manage templates, and streamline your workflow together.
                                                         </p>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                setIsInviteModalOpen(true);
+                                                            }}
+                                                            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:-translate-y-0.5"
+                                                        >
+                                                            <Plus size={18} strokeWidth={2.5} />
+                                                            Invite First Member
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -215,7 +247,7 @@ const Team = () => {
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col items-start gap-1">
-                                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleColor(member.role)} capitalize`}>
+                                                            <span className={`inline - flex items - center px - 2.5 py - 0.5 rounded - full text - xs font - medium border ${getRoleColor(member.role)} capitalize`}>
                                                                 {member.role || 'Member'}
                                                             </span>
                                                             {member.permissions && (
@@ -227,9 +259,9 @@ const Team = () => {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(member.status)}`}>
-                                                            <div className={`w-1.5 h-1.5 rounded-full ${member.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'
-                                                                }`} />
+                                                        <span className={`inline - flex items - center gap - 1.5 px - 2.5 py - 0.5 rounded - full text - xs font - medium border ${getStatusColor(member.status)} `}>
+                                                            <div className={`w - 1.5 h - 1.5 rounded - full ${member.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'
+                                                                } `} />
                                                             {member.status === 'active' ? 'Active' : 'Pending'}
                                                         </span>
                                                     </td>
@@ -300,11 +332,11 @@ const Team = () => {
                                                 </button>
                                             </div>
                                             <div className="flex items-center gap-3 pl-13">
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getRoleColor(member.role)} capitalize`}>
+                                                <span className={`inline - flex items - center px - 2 py - 0.5 rounded - full text - xs font - medium border ${getRoleColor(member.role)} capitalize`}>
                                                     {member.role || 'Member'}
                                                 </span>
-                                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(member.status)}`}>
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${member.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                                <span className={`inline - flex items - center gap - 1.5 px - 2 py - 0.5 rounded - full text - xs font - medium border ${getStatusColor(member.status)} `}>
+                                                    <div className={`w - 1.5 h - 1.5 rounded - full ${member.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'} `} />
                                                     {member.status === 'active' ? 'Active' : 'Pending'}
                                                 </span>
                                             </div>
@@ -315,7 +347,6 @@ const Team = () => {
                         </div>
                     </motion.div>
                 ) : (
-                    // ... (Roles tab content)
                     <motion.div
                         key="roles"
                         initial={{ opacity: 0, y: 10 }}
@@ -324,11 +355,22 @@ const Team = () => {
                         transition={{ duration: 0.2 }}
                     >
                         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                            <div className="p-6 border-b border-slate-200 bg-slate-50">
-                                <h3 className="text-lg font-semibold text-slate-900">Role Permissions</h3>
-                                <p className="text-slate-500 text-sm mt-1">
-                                    View access levels for each role. (Read-only reference)
-                                </p>
+                            <div className="p-6 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-slate-900">Role Permissions</h3>
+                                    <p className="text-slate-500 text-sm mt-1">
+                                        View and manage access levels for your team.
+                                    </p>
+                                </div>
+                                {can('team.roles.manage') && (
+                                    <button
+                                        onClick={() => setIsRoleModalOpen(true)}
+                                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors shadow-sm text-sm"
+                                    >
+                                        <Settings size={16} />
+                                        Manage Roles
+                                    </button>
+                                )}
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
@@ -409,6 +451,7 @@ const Team = () => {
                 isOpen={isInviteModalOpen}
                 onClose={() => setIsInviteModalOpen(false)}
                 onInvite={handleInvite}
+                roles={roles}
             />
 
             <EditMemberModal
@@ -416,6 +459,14 @@ const Team = () => {
                 onClose={() => setEditingMember(null)}
                 member={editingMember}
                 onUpdate={handleUpdateMember}
+                roles={roles}
+            />
+
+            <ManageRoleModal
+                isOpen={isRoleModalOpen}
+                onClose={() => setIsRoleModalOpen(false)}
+                roles={roles}
+                onRolesUpdated={fetchRoles}
             />
         </DashboardPage>
     );

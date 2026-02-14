@@ -3,9 +3,9 @@ import { X, Shield, Lock, Check, Save, User, FileText, Users, ChevronDown, Chevr
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePermissions } from '../../../hooks/usePermissions';
 
-const EditMemberModal = ({ isOpen, onClose, member, onUpdate }) => {
+const EditMemberModal = ({ isOpen, onClose, member, onUpdate, roles = [] }) => {
     const { matrix } = usePermissions();
-    const [role, setRole] = useState('member');
+    const [selectedRoleId, setSelectedRoleId] = useState(null);
     const [selectedPermissions, setSelectedPermissions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -22,25 +22,48 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate }) => {
     }, [matrix.permissions]);
 
     useEffect(() => {
-        if (member) {
-            setRole(member.role);
+        if (member && roles.length > 0) {
+            // Find role by ID if available, else by name
+            const role = roles.find(r => r.id === member.role_id) || roles.find(r => r.name === member.role);
+            if (role) setSelectedRoleId(role.id);
+
             if (member.permissions && Array.isArray(member.permissions)) {
-                setSelectedPermissions(member.permissions);
-                // If customized, auto-expand logic could be added here
+                // Check if permissions are stored as names (strings) or objects
+                if (member.permissions.length > 0 && typeof member.permissions[0] === 'string') {
+                    setSelectedPermissions(member.permissions);
+                } else if (member.permissions.length > 0 && typeof member.permissions[0] === 'object') {
+                    // Probably backend returning full permission objects?
+                    // Currently child_users stores JSON, likely array of strings?
+                    // Verify what the backend returns. The code in TeamController saves array.
+                    // But if it's returning Eloquent relation, it might be collection.
+                    // Team.jsx uses member.permissions
+                    setSelectedPermissions(member.permissions);
+                } else {
+                    setSelectedPermissions(member.permissions);
+                }
+            } else if (role && role.permissions) {
+                setSelectedPermissions(role.permissions.map(p => p.name));
             } else if (matrix.permissions) {
+                // Fallback using matrix logic if role has no permissions in object
+                const roleName = role ? role.name : member.role;
                 const rolePermissions = matrix.permissions
-                    .filter(p => p.roles.includes(member.role))
+                    .filter(p => p.roles.includes(roleName))
                     .map(p => p.key);
                 setSelectedPermissions(rolePermissions);
             }
         }
-    }, [member, isOpen, matrix]);
+    }, [member, isOpen, matrix, roles]);
 
-    const handleRoleChange = (newRole) => {
-        setRole(newRole);
-        if (matrix.permissions) {
+    const handleRoleChange = (newRoleId) => {
+        setSelectedRoleId(newRoleId);
+        const role = roles.find(r => r.id === newRoleId);
+        if (!role) return;
+
+        if (role.permissions && role.permissions.length > 0) {
+            setSelectedPermissions(role.permissions.map(p => p.name));
+        } else if (matrix.permissions) {
             const rolePermissions = matrix.permissions
-                .filter(p => p.roles.includes(newRole))
+                .filter(p => p.roles.includes(role.name))
                 .map(p => p.key);
             setSelectedPermissions(rolePermissions);
         }
@@ -60,7 +83,7 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            await onUpdate(member.id, { role, permissions: selectedPermissions });
+            await onUpdate(member.id, { role_id: selectedRoleId, permissions: selectedPermissions });
             onClose();
         } catch (error) {
             console.error(error);
@@ -69,8 +92,8 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate }) => {
         }
     };
 
-    const getRoleIcon = (r) => {
-        switch (r) {
+    const getRoleIcon = (roleName) => {
+        switch (roleName) {
             case 'admin': return <Shield className="text-purple-600" size={20} />;
             case 'editor': return <FileText className="text-blue-600" size={20} />;
             case 'member': return <Users className="text-slate-600" size={20} />;
@@ -127,12 +150,12 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate }) => {
                         <div className="space-y-3">
                             <label className="text-sm font-semibold text-slate-700">Role Allocation</label>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {['admin', 'editor', 'member', 'viewer'].map((r) => (
+                                {roles.map((r) => (
                                     <label
-                                        key={r}
+                                        key={r.id}
                                         className={`
                                             relative flex items-center gap-4 p-4 border rounded-xl cursor-pointer transition-all duration-200
-                                            ${role === r
+                                            ${selectedRoleId === r.id
                                                 ? 'border-indigo-600 bg-indigo-50/50 ring-1 ring-indigo-600 shadow-sm'
                                                 : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
                                             }
@@ -141,18 +164,18 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate }) => {
                                         <input
                                             type="radio"
                                             name="role"
-                                            value={r}
-                                            checked={role === r}
-                                            onChange={(e) => handleRoleChange(e.target.value)}
+                                            value={r.id}
+                                            checked={selectedRoleId === r.id}
+                                            onChange={(e) => handleRoleChange(r.id)}
                                             className="sr-only"
                                         />
-                                        <div className={`p-2 rounded-lg ${role === r ? 'bg-indigo-100' : 'bg-slate-100'}`}>
-                                            {getRoleIcon(r)}
+                                        <div className={`p-2 rounded-lg ${selectedRoleId === r.id ? 'bg-indigo-100' : 'bg-slate-100'}`}>
+                                            {getRoleIcon(r.name)}
                                         </div>
                                         <div>
-                                            <span className={`font-semibold capitalize ${role === r ? 'text-indigo-900' : 'text-slate-900'}`}>{r}</span>
+                                            <span className={`font-semibold capitalize ${selectedRoleId === r.id ? 'text-indigo-900' : 'text-slate-900'}`}>{r.label}</span>
                                         </div>
-                                        {role === r && <Check size={16} className="text-indigo-600 ml-auto" />}
+                                        {selectedRoleId === r.id && <Check size={16} className="text-indigo-600 ml-auto" />}
                                     </label>
                                 ))}
                             </div>
@@ -184,48 +207,78 @@ const EditMemberModal = ({ isOpen, onClose, member, onUpdate }) => {
                                         className="overflow-hidden"
                                     >
                                         <div className="pt-4 space-y-6">
-                                            {Object.entries(permissionGroups).map(([category, perms]) => (
-                                                <div key={category} className="space-y-3">
-                                                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                                                        {category === 'document' && <FileText size={12} />}
-                                                        {category === 'team' && <Users size={12} />}
-                                                        {category === 'settings' && <Settings size={12} />}
-                                                        {category} Permissions
-                                                    </h4>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                        {perms.map(perm => {
-                                                            const isChecked = selectedPermissions.includes(perm.key);
-                                                            return (
-                                                                <label key={perm.key} className={`
-                                                                    flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all
-                                                                    ${isChecked
-                                                                        ? 'bg-indigo-50 border-indigo-200'
-                                                                        : 'bg-white border-slate-200 hover:border-slate-300'
-                                                                    }
-                                                                `}>
-                                                                    <div className={`
-                                                                        w-5 h-5 rounded border flex items-center justify-center transition-colors
-                                                                        ${isChecked ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}
+                                            {Object.entries(permissionGroups).map(([category, perms]) => {
+                                                const selectedCount = perms.filter(p => selectedPermissions.includes(p.key)).length;
+                                                const isAllSelected = selectedCount === perms.length;
+
+                                                return (
+                                                    <div key={category} className="space-y-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                                                {category === 'document' && <FileText size={12} />}
+                                                                {category === 'team' && <Users size={12} />}
+                                                                {category === 'settings' && <Settings size={12} />}
+                                                                {category} Permissions
+                                                            </h4>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const groupKeys = perms.map(p => p.key);
+                                                                    setSelectedPermissions(prev => {
+                                                                        if (isAllSelected) {
+                                                                            return prev.filter(k => !groupKeys.includes(k));
+                                                                        } else {
+                                                                            const newPerms = [...prev];
+                                                                            groupKeys.forEach(k => {
+                                                                                if (!newPerms.includes(k)) newPerms.push(k);
+                                                                            });
+                                                                            return newPerms;
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className="text-xs text-indigo-600 hover:underline font-medium"
+                                                            >
+                                                                {isAllSelected ? 'Deselect All' : 'Select All'}
+                                                            </button>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {perms.map(perm => {
+                                                                const isChecked = selectedPermissions.includes(perm.key);
+                                                                return (
+                                                                    <label key={perm.key} className={`
+                                                                        flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all group
+                                                                        ${isChecked
+                                                                            ? 'bg-indigo-50 border-indigo-200'
+                                                                            : 'bg-white border-slate-200 hover:border-slate-300'
+                                                                        }
                                                                     `}>
-                                                                        {isChecked && <Check size={12} className="text-white" />}
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={isChecked}
-                                                                            onChange={() => handlePermissionToggle(perm.key)}
-                                                                            className="hidden"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="flex-1">
-                                                                        <div className={`text-sm font-medium ${isChecked ? 'text-indigo-900' : 'text-slate-700'}`}>
-                                                                            {perm.label}
+                                                                        <div className={`mt-0.5
+                                                                            w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0
+                                                                            ${isChecked ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300 group-hover:border-indigo-300'}
+                                                                        `}>
+                                                                            {isChecked && <Check size={12} className="text-white" />}
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={isChecked}
+                                                                                onChange={() => handlePermissionToggle(perm.key)}
+                                                                                className="hidden"
+                                                                            />
                                                                         </div>
-                                                                    </div>
-                                                                </label>
-                                                            );
-                                                        })}
+                                                                        <div className="flex-1">
+                                                                            <div className={`text-sm font-medium ${isChecked ? 'text-indigo-900' : 'text-slate-700'}`}>
+                                                                                {perm.label}
+                                                                            </div>
+                                                                            {perm.description && (
+                                                                                <div className="text-xs text-slate-500 mt-0.5 leading-tight">{perm.description}</div>
+                                                                            )}
+                                                                        </div>
+                                                                    </label>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </motion.div>
                                 )}

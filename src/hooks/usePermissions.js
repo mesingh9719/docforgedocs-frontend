@@ -43,6 +43,8 @@ export const usePermissions = () => {
                 setLoading(false);
             }
         };
+        // Only fetch matrix if we need to manage roles (e.g. for the modal)
+        // For simple checking, we rely on user object.
         fetchPermissions();
     }, []);
 
@@ -50,34 +52,24 @@ export const usePermissions = () => {
     const can = (permissionKey) => {
         if (!user) return false;
 
-        // 1. Check for Super Admin / Owner wildcard (assuming backend sends ['*'])
+        // 1. Check for Super Admin / Owner wildcard
         if (user.permissions && user.permissions.includes('*')) {
             return true;
         }
 
-        // 2. Check for explicit permission grant (Custom Override)
-        if (user.permissions && Array.isArray(user.permissions) && user.permissions.includes(permissionKey)) {
-            return true;
+        // 2. Check for explicit permission grant (standard RBAC)
+        if (user.permissions && Array.isArray(user.permissions)) {
+            return user.permissions.includes(permissionKey);
         }
 
-        // 3. Fallback to Role-based check from Matrix
-        const role = user.role || 'viewer';
-
-        // Check if the permission exists in the matrix
-        const perm = matrix.permissions?.find(p => p.key === permissionKey);
-
-        // If the permission is defined in matrix, check if the user's role allows it
-        if (perm && perm.roles) {
-            return perm.roles.includes(role);
-        }
-
-        // Default to false if permission not defined or role not allowed
         return false;
     };
 
     return {
         can,
         matrix,
+        // Helper to check if user can manage team
+        canManageTeam: () => can('team.roles.manage') || can('team.invite'),
         loading
     };
 };

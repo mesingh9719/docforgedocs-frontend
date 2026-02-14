@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { updateBusiness } from '../../../api/business';
 import { SettingsSection, SettingsInput, SaveButton, SuccessMessage, ErrorMessage } from './SettingsComponents';
 
-const GeneralSettings = ({ business, onUpdate }) => {
+const GeneralSettings = ({ business, onUpdate, canEdit = true }) => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -88,6 +88,7 @@ const GeneralSettings = ({ business, onUpdate }) => {
                             value={formData.name}
                             onChange={handleChange}
                             required
+                            disabled={!canEdit}
                         />
                     </div>
 
@@ -97,6 +98,7 @@ const GeneralSettings = ({ business, onUpdate }) => {
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
+                        disabled={!canEdit}
                     />
 
                     <SettingsInput
@@ -104,6 +106,7 @@ const GeneralSettings = ({ business, onUpdate }) => {
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
+                        disabled={!canEdit}
                     />
 
                     <div className="md:col-span-2">
@@ -114,6 +117,7 @@ const GeneralSettings = ({ business, onUpdate }) => {
                             value={formData.website}
                             onChange={handleChange}
                             placeholder="https://example.com"
+                            disabled={!canEdit}
                         />
                     </div>
                 </div>
@@ -127,13 +131,14 @@ const GeneralSettings = ({ business, onUpdate }) => {
                             name="address"
                             value={formData.address}
                             onChange={handleChange}
+                            disabled={!canEdit}
                         />
                     </div>
 
-                    <SettingsInput label="City" name="city" value={formData.city} onChange={handleChange} />
-                    <SettingsInput label="State" name="state" value={formData.state} onChange={handleChange} />
-                    <SettingsInput label="Zip / Postal Code" name="zip" value={formData.zip} onChange={handleChange} />
-                    <SettingsInput label="Country" name="country" value={formData.country} onChange={handleChange} />
+                    <SettingsInput label="City" name="city" value={formData.city} onChange={handleChange} disabled={!canEdit} />
+                    <SettingsInput label="State" name="state" value={formData.state} onChange={handleChange} disabled={!canEdit} />
+                    <SettingsInput label="Zip / Postal Code" name="zip" value={formData.zip} onChange={handleChange} disabled={!canEdit} />
+                    <SettingsInput label="Country" name="country" value={formData.country} onChange={handleChange} disabled={!canEdit} />
                 </div>
             </SettingsSection>
 
@@ -146,6 +151,7 @@ const GeneralSettings = ({ business, onUpdate }) => {
                         value={formData.social_links?.linkedin || ''}
                         onChange={handleChange}
                         placeholder="https://linkedin.com/in/..."
+                        disabled={!canEdit}
                     />
                     <SettingsInput
                         label="Twitter (X)"
@@ -154,6 +160,7 @@ const GeneralSettings = ({ business, onUpdate }) => {
                         value={formData.social_links?.twitter || ''}
                         onChange={handleChange}
                         placeholder="https://twitter.com/..."
+                        disabled={!canEdit}
                     />
                     <SettingsInput
                         label="Facebook"
@@ -162,6 +169,7 @@ const GeneralSettings = ({ business, onUpdate }) => {
                         value={formData.social_links?.facebook || ''}
                         onChange={handleChange}
                         placeholder="https://facebook.com/..."
+                        disabled={!canEdit}
                     />
                     <SettingsInput
                         label="Instagram"
@@ -170,12 +178,13 @@ const GeneralSettings = ({ business, onUpdate }) => {
                         value={formData.social_links?.instagram || ''}
                         onChange={handleChange}
                         placeholder="https://instagram.com/..."
+                        disabled={!canEdit}
                     />
                 </div>
             </SettingsSection>
 
             <div className="flex justify-end pt-2">
-                <SaveButton loading={loading} saved={saved} />
+                <SaveButton loading={loading} saved={saved} disabled={!canEdit} />
             </div>
         </form>
     );

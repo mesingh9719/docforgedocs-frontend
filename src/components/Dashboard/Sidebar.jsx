@@ -43,7 +43,7 @@ const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
         { icon: FileText, label: 'Documents', path: '/documents', permission: 'document.view' },
         { icon: ScrollText, label: 'Signatures', path: '/signatures/list', permission: 'settings.signature' },
         { icon: Users, label: 'Team', path: '/team', permission: 'team.view' },
-        { icon: Settings, label: 'Settings', path: '/settings', permission: 'settings.manage' },
+        { icon: Settings, label: 'Settings', path: '/settings', permission: 'settings.view' },
     ].filter(item => !item.permission || can(item.permission));
 
     const sidebarVariants = {
@@ -169,6 +169,7 @@ const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
             <div className="p-4 border-t border-slate-800/50 bg-slate-900/50">
                 <AnimatePresence>
                     {(!collapsed || (isMobile && mobileMenuOpen)) && (
+                        null /* 
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -184,8 +185,9 @@ const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
                             <div className="w-full bg-slate-700/50 rounded-full h-1.5 overflow-hidden mb-2">
                                 <div className="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-[75%] rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
                             </div>
-                            <p className="text-[10px] text-slate-400">75% of storage used</p>
+                            <p className="text-xs text-slate-400">75% of storage used</p>
                         </motion.div>
+                        */
                     )}
                 </AnimatePresence>
 

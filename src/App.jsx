@@ -160,17 +160,23 @@ function App() {
 
                   {/* Documents - View Permission */}
                   <Route element={<ProtectedRoute permission="document.view" />}>
-
                     <Route path='/documents' element={<DocumentList />} />
-                    <Route path='/documents/nda' element={<NdaEditor />} />
+
+                    {/* Create/Edit Pages - Guarded */}
+                    <Route element={<ProtectedRoute permission="document.create" />}>
+                      <Route path='/documents/nda' element={<NdaEditor />} />
+                      <Route path='/documents/proposal' element={<ProposalEditor />} />
+                      <Route path='/documents/invoice' element={<InvoiceEditor />} />
+                      <Route path='/documents/offer-letter' element={<OfferLetterEditor />} />
+                      <Route path='/documents/consulting-agreement' element={<ConsultingAgreementEditor />} />
+                    </Route>
+
+                    {/* Edit Pages - Guarded (Technically edit permission, using generalized check or component level) */}
+                    {/* For simplicity we allow view access to editor but save buttons will be disabled if no edit permission */}
                     <Route path='/documents/nda/:id' element={<NdaEditor />} />
-                    <Route path='/documents/proposal' element={<ProposalEditor />} />
                     <Route path='/documents/proposal/:id' element={<ProposalEditor />} />
-                    <Route path='/documents/invoice' element={<InvoiceEditor />} />
                     <Route path='/documents/invoice/:id' element={<InvoiceEditor />} />
-                    <Route path='/documents/offer-letter' element={<OfferLetterEditor />} />
                     <Route path='/documents/offer-letter/:id' element={<OfferLetterEditor />} />
-                    <Route path='/documents/consulting-agreement' element={<ConsultingAgreementEditor />} />
                     <Route path='/documents/consulting-agreement/:id' element={<ConsultingAgreementEditor />} />
                     <Route path='/documents/general/:id' element={<DocumentEditor />} />
                   </Route>
@@ -192,7 +198,7 @@ function App() {
                   <Route path='/document-engine/test' element={<DocumentEditor />} />
 
                   {/* Settings - Manage Permission */}
-                  <Route element={<ProtectedRoute permission="settings.manage" />}>
+                  <Route element={<ProtectedRoute permission="settings.view" />}>
                     <Route path='/settings' element={<Settings />} />
                   </Route>
                 </Route>

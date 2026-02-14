@@ -277,9 +277,9 @@ const TopBar = ({ business, onMenuClick }) => {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold uppercase tracking-wide">
+                                        {/* <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-bold uppercase tracking-wide">
                                             Pro Plan
-                                        </span>
+                                        </span> */}
                                     </div>
                                 </div>
                                 <div className="p-2 space-y-1">

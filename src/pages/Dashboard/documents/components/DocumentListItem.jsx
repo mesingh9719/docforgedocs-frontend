@@ -17,7 +17,8 @@ const DocumentListItem = memo(({
     handleRestore,
     handleDuplicate,
     handleSign,
-    viewMode
+    viewMode,
+    permissions = {}
 }) => {
     return (
         <motion.div
@@ -153,18 +154,21 @@ const DocumentListItem = memo(({
                                 >
                                     <Eye size={16} /> View/Edit
                                 </button>
-                                <button
-                                    onClick={() => {
-                                        handleDuplicate(doc);
-                                    }}
-                                    className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition-colors"
-                                >
-                                    <Copy size={16} /> Duplicate
-                                </button>
+                                {permissions.canCreate && (
+                                    <button
+                                        onClick={() => {
+                                            handleDuplicate(doc);
+                                        }}
+                                        className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-indigo-600 rounded-lg transition-colors"
+                                    >
+                                        <Copy size={16} /> Duplicate
+                                    </button>
+                                )}
                                 {doc.status?.toLowerCase() === 'draft' &&
                                     !['nda', 'proposal', 'invoice'].includes(doc.type?.slug) &&
                                     (!doc.content?.blocks?.length) &&
-                                    (!doc.signers?.some(s => ['sent', 'viewed', 'signed'].includes(s.status))) && (
+                                    (!doc.signers?.some(s => ['sent', 'viewed', 'signed'].includes(s.status))) &&
+                                    permissions.canSign && (
                                         <button
                                             onClick={() => {
                                                 handleSign(doc);
@@ -185,21 +189,27 @@ const DocumentListItem = memo(({
                                         <Download size={16} /> Download PDF
                                     </a>
                                 )}
-                                <div className="h-px bg-slate-100 my-1"></div>
-                                <button
-                                    onClick={() => { handleDelete(doc.id); setActiveMenuId(null); }}
-                                    className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                >
-                                    <Trash2 size={16} /> Delete
-                                </button>
+                                {permissions.canDelete && (
+                                    <>
+                                        <div className="h-px bg-slate-100 my-1"></div>
+                                        <button
+                                            onClick={() => { handleDelete(doc.id); setActiveMenuId(null); }}
+                                            className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        >
+                                            <Trash2 size={16} /> Delete
+                                        </button>
+                                    </>
+                                )}
                             </>
                         ) : (
-                            <button
-                                onClick={() => { handleRestore(doc.id); setActiveMenuId(null); }}
-                                className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                            >
-                                <RotateCcw size={16} /> Restore
-                            </button>
+                            permissions.canDelete && (
+                                <button
+                                    onClick={() => { handleRestore(doc.id); setActiveMenuId(null); }}
+                                    className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm font-medium text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                >
+                                    <RotateCcw size={16} /> Restore
+                                </button>
+                            )
                         )}
                     </motion.div>
                 )}

@@ -58,7 +58,7 @@ function Navbar() {
                         </div>
                     </div>
                     <NavLink to="/features">Features</NavLink>
-                    <NavLink to="/pricing">Pricing</NavLink>
+                    {/* <NavLink to="/pricing">Pricing</NavLink> */}
                     <NavLink to="/about">About</NavLink>
                 </div>
 
@@ -106,7 +106,7 @@ function Navbar() {
                             </div>
                             <hr className="border-slate-100 my-2" />
                             <MobileNavLink to="/features" onClick={() => setMobileMenuOpen(false)}>Features</MobileNavLink>
-                            <MobileNavLink to="/pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</MobileNavLink>
+                            {/* <MobileNavLink to="/pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</MobileNavLink> */}
                             <MobileNavLink to="/about" onClick={() => setMobileMenuOpen(false)}>About</MobileNavLink>
                             <hr className="border-slate-100 my-2" />
                             <MobileNavLink to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</MobileNavLink>

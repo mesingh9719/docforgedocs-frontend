@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import AuthLayout from '../../components/auth/AuthLayout';
 import { resetPassword } from '../../api/auth';
 import { Loader2, Lock, ArrowLeft, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import AuthInput from '../../components/auth/AuthInput';
 
 const ResetPassword = () => {
     const { token } = useParams();
@@ -53,84 +55,101 @@ const ResetPassword = () => {
     if (success) {
         return (
             <AuthLayout title="Password Reset" subtitle="Your password has been successfully reset.">
-                <div className="text-center">
-                    <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                        <CheckCircle className="text-green-600" size={24} />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center"
+                >
+                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-100">
+                        <CheckCircle className="text-green-600" size={32} />
                     </div>
-                    <p className="text-slate-600 mb-6">
+                    <p className="text-slate-600 mb-8 text-lg">
                         You will be redirected to the login page momentarily.
                     </p>
                     <Link
                         to="/login"
-                        className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                        className="inline-flex items-center text-sm font-bold text-indigo-600 hover:text-indigo-700 hover:underline decoration-2 underline-offset-4"
                     >
                         <ArrowLeft className="mr-2" size={16} />
                         Go to Sign In
                     </Link>
-                </div>
+                </motion.div>
             </AuthLayout>
         );
     }
 
     return (
         <AuthLayout title="Set new password" subtitle="Your new password must be different to previously used passwords.">
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {error && (
-                    <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm border border-red-100">
-                        {error}
-                    </div>
-                )}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <AnimatePresence>
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm border border-red-100 flex items-center gap-2 overflow-hidden shadow-sm"
+                        >
+                            {error}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <input type="hidden" name="email" value={email || ''} />
                 <input type="hidden" name="token" value={token || ''} />
 
-                <div className="space-y-2">
-                    <label htmlFor="password" className="block text-sm font-medium text-slate-700">New Password</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Lock className="h-5 w-5 text-slate-400" />
-                        </div>
-                        <input
-                            id="password"
+                <div className="flex flex-col gap-5">
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                    >
+                        <AuthInput
+                            icon={Lock}
+                            label="New Password"
                             name="password"
                             type="password"
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                             placeholder="••••••••"
+                            showPasswordToggle
+                            autoFocus
                         />
-                    </div>
-                </div>
+                    </motion.div>
 
-                <div className="space-y-2">
-                    <label htmlFor="password_confirmation" className="block text-sm font-medium text-slate-700">Confirm Password</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Lock className="h-5 w-5 text-slate-400" />
-                        </div>
-                        <input
-                            id="password_confirmation"
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        <AuthInput
+                            icon={Lock}
+                            label="Confirm Password"
                             name="password_confirmation"
                             type="password"
                             required
                             value={passwordConfirmation}
                             onChange={(e) => setPasswordConfirmation(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                             placeholder="••••••••"
+                            showPasswordToggle
                         />
-                    </div>
+                    </motion.div>
                 </div>
 
-                <div className="space-y-4">
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="space-y-6"
+                >
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20"
                     >
                         {loading ? (
                             <>
-                                <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                                <Loader2 className="animate-spin" size={20} />
                                 Resetting password...
                             </>
                         ) : (
@@ -141,13 +160,13 @@ const ResetPassword = () => {
                     <div className="text-center">
                         <Link
                             to="/login"
-                            className="inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-900"
+                            className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
                         >
                             <ArrowLeft className="mr-2" size={16} />
                             Back to sign in
                         </Link>
                     </div>
-                </div>
+                </motion.div>
             </form>
         </AuthLayout>
     );

@@ -3,7 +3,7 @@ import { updateBusiness } from '../../../api/business';
 import axios from '../../../api/axios';
 import { SettingsSection, SettingsInput, SaveButton, SuccessMessage, ErrorMessage } from './SettingsComponents';
 
-const CurrencySettings = ({ business, onUpdate }) => {
+const CurrencySettings = ({ business, onUpdate, canEdit = true }) => {
     const [formData, setFormData] = useState({
         currency_symbol: '',
         currency_code: '',
@@ -88,8 +88,8 @@ const CurrencySettings = ({ business, onUpdate }) => {
                             name="currency_code"
                             value={formData.currency_code}
                             onChange={handleCurrencySelect}
-                            className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                            disabled={loadingCurrencies}
+                            className={`w-full rounded-md border border-slate-300 bg-white py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm ${!canEdit ? 'opacity-70 bg-slate-100 cursor-not-allowed' : ''}`}
+                            disabled={loadingCurrencies || !canEdit}
                         >
                             <option value="">Select Currency</option>
                             {currencies.map((currency) => (
@@ -121,7 +121,7 @@ const CurrencySettings = ({ business, onUpdate }) => {
             </SettingsSection>
 
             <div className="flex justify-end pt-2">
-                <SaveButton loading={loading} saved={saved} />
+                <SaveButton loading={loading} saved={saved} disabled={!canEdit} />
             </div>
         </form>
     );

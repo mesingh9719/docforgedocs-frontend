@@ -175,8 +175,7 @@ const DashboardHome = () => {
                 {/* Side Widgets */}
                 <motion.div variants={itemVariants} className="flex flex-col gap-6">
                     {/* Pro Plan Widget */}
-                    <div className="bg-slate-900 rounded-2xl shadow-2xl p-8 text-white border border-slate-800 relative overflow-hidden group">
-                        {/* Background Gradients (Removed for cleaner UI) */}
+                    {/* <div className="bg-slate-900 rounded-2xl shadow-2xl p-8 text-white border border-slate-800 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-slate-800/50 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
                         <div className="absolute bottom-0 left-0 w-48 h-48 bg-slate-800/30 rounded-full blur-[60px] translate-y-1/2 -translate-x-1/2" />
 
@@ -204,7 +203,7 @@ const DashboardHome = () => {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Quick Tips or Secondary Widget could go here */}
                 </motion.div>

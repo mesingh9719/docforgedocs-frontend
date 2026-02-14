@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import AuthLayout from '../../components/auth/AuthLayout';
 import { forgotPassword } from '../../api/auth';
 import { Loader2, Mail, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import AuthInput from '../../components/auth/AuthInput';
 
 const ForgotPassword = () => {
     const [email, setEmail] = useState('');
@@ -28,63 +30,77 @@ const ForgotPassword = () => {
     if (success) {
         return (
             <AuthLayout title="Check your inbox" subtitle="We've sent you a password reset link.">
-                <div className="text-center">
-                    <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                        <Mail className="text-green-600" size={24} />
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center"
+                >
+                    <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-green-100">
+                        <Mail className="text-green-600" size={32} />
                     </div>
-                    <p className="text-slate-600 mb-6">
-                        We sent a password reset link to <strong>{email}</strong>. Please check your email and follow the instructions to reset your password.
+                    <p className="text-slate-600 mb-8 text-lg">
+                        We sent a password reset link to <strong className="text-slate-900">{email}</strong>. Please check your email and follow the instructions to reset your password.
                     </p>
                     <Link
                         to="/login"
-                        className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                        className="inline-flex items-center text-sm font-bold text-indigo-600 hover:text-indigo-700 hover:underline decoration-2 underline-offset-4"
                     >
                         <ArrowLeft className="mr-2" size={16} />
                         Back to sign in
                     </Link>
-                </div>
+                </motion.div>
             </AuthLayout>
         );
     }
 
     return (
         <AuthLayout title="Reset password" subtitle="Enter your email and we'll send you a reset link.">
-            <form onSubmit={handleSubmit} className="space-y-6">
-                {error && (
-                    <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm border border-red-100">
-                        {error}
-                    </div>
-                )}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                <AnimatePresence>
+                    {error && (
+                        <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm border border-red-100 flex items-center gap-2 overflow-hidden shadow-sm"
+                        >
+                            {error}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
-                <div className="space-y-2">
-                    <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email address</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Mail className="h-5 w-5 text-slate-400" />
-                        </div>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            autoComplete="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                            placeholder="you@example.com"
-                        />
-                    </div>
-                </div>
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                >
+                    <AuthInput
+                        icon={Mail}
+                        label="Email Address"
+                        name="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        required
+                        autoFocus
+                    />
+                </motion.div>
 
-                <div className="space-y-4">
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-6"
+                >
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20"
                     >
                         {loading ? (
                             <>
-                                <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                                <Loader2 className="animate-spin" size={20} />
                                 Sending link...
                             </>
                         ) : (
@@ -95,13 +111,13 @@ const ForgotPassword = () => {
                     <div className="text-center">
                         <Link
                             to="/login"
-                            className="inline-flex items-center text-sm font-medium text-slate-600 hover:text-slate-900"
+                            className="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
                         >
                             <ArrowLeft className="mr-2" size={16} />
                             Back to sign in
                         </Link>
                     </div>
-                </div>
+                </motion.div>
             </form>
         </AuthLayout>
     );

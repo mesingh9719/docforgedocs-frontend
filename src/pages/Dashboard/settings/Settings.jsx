@@ -12,7 +12,13 @@ import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHead
 import DashboardPage from '../../../components/Dashboard/DashboardPage';
 
 
+import { usePermissions } from '../../../hooks/usePermissions';
+// ... existing imports
+
 const Settings = () => {
+    const { can } = usePermissions();
+    const canEdit = can('business.update');
+
     const [activeTab, setActiveTab] = useState('profile');
     const [business, setBusiness] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -94,11 +100,11 @@ const Settings = () => {
                             transition={{ duration: 0.2 }}
                         >
                             {activeTab === 'profile' && <ProfileSettings />}
-                            {activeTab === 'general' && <GeneralSettings business={business} onUpdate={handleUpdate} />}
-                            {activeTab === 'branding' && <BrandingSettings business={business} onUpdate={handleUpdate} />}
-                            {activeTab === 'invoice' && <InvoiceSettings business={business} onUpdate={handleUpdate} />}
-                            {activeTab === 'tax' && <TaxSettings business={business} onUpdate={handleUpdate} />}
-                            {activeTab === 'currency' && <CurrencySettings business={business} onUpdate={handleUpdate} />}
+                            {activeTab === 'general' && <GeneralSettings business={business} onUpdate={handleUpdate} canEdit={canEdit} />}
+                            {activeTab === 'branding' && <BrandingSettings business={business} onUpdate={handleUpdate} canEdit={canEdit} />}
+                            {activeTab === 'invoice' && <InvoiceSettings business={business} onUpdate={handleUpdate} canEdit={canEdit} />}
+                            {activeTab === 'tax' && <TaxSettings business={business} onUpdate={handleUpdate} canEdit={canEdit} />}
+                            {activeTab === 'currency' && <CurrencySettings business={business} onUpdate={handleUpdate} canEdit={canEdit} />}
                         </motion.div>
                     </AnimatePresence>
                 </div>

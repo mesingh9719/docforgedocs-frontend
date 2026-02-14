@@ -116,15 +116,30 @@ function RegisterForm() {
         }
     };
 
+    const container = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const item = {
+        hidden: { opacity: 0, y: 10 },
+        show: { opacity: 1, y: 0 }
+    };
+
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             <AnimatePresence>
                 {generalError && (
                     <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm border border-red-100 flex items-center gap-2 overflow-hidden"
+                        className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-sm border border-red-100 flex items-center gap-2 overflow-hidden shadow-sm"
                     >
                         <AlertCircle size={16} className="shrink-0" />
                         {generalError}
@@ -132,83 +147,93 @@ function RegisterForm() {
                 )}
             </AnimatePresence>
 
-            <div className="mb-2">
-                <GoogleLoginButton text="Sign up with Google" />
-            </div>
+            <motion.div variants={container} initial="hidden" animate="show" className="flex flex-col gap-5">
+                <motion.div variants={item}>
+                    <GoogleLoginButton text="Sign up with Google" />
+                </motion.div>
 
-            <div className="relative flex items-center justify-center mb-2">
-                <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-slate-200"></div>
-                </div>
-                <span className="relative z-10 bg-white px-2 text-xs text-slate-400 font-medium uppercase tracking-wider">Or continue with email</span>
-            </div>
+                <motion.div variants={item} className="relative flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-slate-200"></div>
+                    </div>
+                    <span className="relative z-10 bg-white px-3 text-xs text-slate-400 font-bold uppercase tracking-wider">Or continue with email</span>
+                </motion.div>
 
-            <div className="space-y-4">
-                <AuthInput
-                    icon={User}
-                    name="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Full Name"
-                    ref={nameRef}
-                    error={errors.name}
-                />
-                <AuthInput
-                    icon={Mail}
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="Email Address"
-                    ref={emailRef}
-                    error={errors.email}
-                />
-                <AuthInput
-                    icon={Lock}
-                    name="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="Password (12+ chars, special char & number)"
-                    ref={passwordRef}
-                    error={errors.password}
-                />
-                <AuthInput
-                    icon={Lock}
-                    name="password_confirmation"
-                    type="password"
-                    value={formData.password_confirmation}
-                    onChange={handleChange}
-                    placeholder="Confirm Password"
-                    ref={confirmPasswordRef}
-                    error={errors.password_confirmation}
-                />
-            </div>
+                <motion.div variants={item} className="space-y-4">
+                    <AuthInput
+                        icon={User}
+                        name="name"
+                        type="text"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Full Name"
+                        ref={nameRef}
+                        error={errors.name}
+                    />
+                    <AuthInput
+                        icon={Mail}
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="Email Address"
+                        ref={emailRef}
+                        error={errors.email}
+                    />
+                    <AuthInput
+                        icon={Lock}
+                        name="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Password (12+ chars, special char & number)"
+                        ref={passwordRef}
+                        error={errors.password}
+                    />
+                    <AuthInput
+                        icon={Lock}
+                        name="password_confirmation"
+                        type="password"
+                        value={formData.password_confirmation}
+                        onChange={handleChange}
+                        placeholder="Confirm Password"
+                        ref={confirmPasswordRef}
+                        error={errors.password_confirmation}
+                    />
+                </motion.div>
 
-            <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-slate-900 text-white font-bold py-3.5 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 relative overflow-hidden active:scale-[0.98]"
+                <motion.button
+                    variants={item}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-slate-900 text-white font-bold py-4 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 relative overflow-hidden active:scale-[0.98] shadow-lg shadow-slate-900/20"
+                >
+                    {loading ? (
+                        <>
+                            <Loader2 className="animate-spin" size={20} />
+                            Creating Account...
+                        </>
+                    ) : (
+                        'Register'
+                    )}
+                </motion.button>
+            </motion.div>
+
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="text-center mt-2"
             >
-                {loading ? (
-                    <>
-                        <Loader2 className="animate-spin" size={20} />
-                        Creating Account...
-                    </>
-                ) : (
-                    'Register'
-                )}
-            </button>
-
-            <div className="text-center mt-6">
                 <p className="text-slate-500 text-sm">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-indigo-600 font-bold hover:underline">
+                    <Link to="/login" className="text-indigo-600 font-bold hover:text-indigo-700 transition-colors">
                         Sign In
                     </Link>
                 </p>
-            </div>
+            </motion.div>
         </form>
     );
 }

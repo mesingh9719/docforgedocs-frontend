@@ -3,7 +3,7 @@ import { updateBusiness } from '../../../api/business';
 import { Upload, AlertCircle } from 'lucide-react';
 import { SettingsSection, SaveButton, SuccessMessage, ErrorMessage } from './SettingsComponents';
 
-const BrandingSettings = ({ business, onUpdate }) => {
+const BrandingSettings = ({ business, onUpdate, canEdit = true }) => {
     const [logo, setLogo] = useState(null);
     const [logoPreview, setLogoPreview] = useState(null);
     const [favicon, setFavicon] = useState(null);
@@ -93,10 +93,11 @@ const BrandingSettings = ({ business, onUpdate }) => {
                                     id="logo-upload"
                                     className="hidden"
                                     onChange={(e) => handleFileChange(e, setLogo, setLogoPreview)}
+                                    disabled={!canEdit}
                                 />
                                 <label
                                     htmlFor="logo-upload"
-                                    className="inline-flex items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 cursor-pointer transition-colors"
+                                    className={`inline-flex items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition-colors ${!canEdit ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                                 >
                                     <Upload className="mr-2 h-4 w-4" />
                                     Upload Logo
@@ -128,10 +129,11 @@ const BrandingSettings = ({ business, onUpdate }) => {
                                     id="favicon-upload"
                                     className="hidden"
                                     onChange={(e) => handleFileChange(e, setFavicon, setFaviconPreview)}
+                                    disabled={!canEdit}
                                 />
                                 <label
                                     htmlFor="favicon-upload"
-                                    className="inline-flex items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 cursor-pointer transition-colors"
+                                    className={`inline-flex items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 transition-colors ${!canEdit ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                                 >
                                     <Upload className="mr-2 h-4 w-4" />
                                     Upload Favicon
@@ -146,7 +148,7 @@ const BrandingSettings = ({ business, onUpdate }) => {
             </SettingsSection>
 
             <div className="flex justify-end pt-2">
-                <SaveButton loading={loading} saved={saved} disabled={!logo && !favicon} label="Save Branding" />
+                <SaveButton loading={loading} saved={saved} disabled={(!logo && !favicon) || !canEdit} label="Save Branding" />
             </div>
         </form>
     );

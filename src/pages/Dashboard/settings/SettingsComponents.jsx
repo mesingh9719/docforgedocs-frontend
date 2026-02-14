@@ -56,18 +56,20 @@ export const SettingsTextarea = ({ label, error, className = '', ...props }) => 
     </div>
 );
 
-export const SaveButton = ({ loading, saved, onClick, label = "Save Changes" }) => (
+export const SaveButton = ({ loading, saved, onClick, disabled, label = "Save Changes" }) => (
     <div className="flex justify-end pt-6 border-t border-slate-200 mt-8">
         <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
+            whileHover={{ scale: disabled ? 1 : 1.01 }}
+            whileTap={{ scale: disabled ? 1 : 0.99 }}
             type="submit"
-            disabled={loading}
+            disabled={loading || disabled}
             onClick={onClick}
             className={`inline-flex justify-center items-center py-2.5 px-6 border border-transparent shadow-sm text-sm font-semibold rounded-lg text-white transition-all duration-200 
                 ${saved
                     ? 'bg-emerald-600 hover:bg-emerald-700'
-                    : 'bg-indigo-600 hover:bg-indigo-700'} 
+                    : disabled
+                        ? 'bg-slate-300 cursor-not-allowed'
+                        : 'bg-indigo-600 hover:bg-indigo-700'} 
                 disabled:opacity-70 disabled:cursor-not-allowed`}
         >
             {loading ? (

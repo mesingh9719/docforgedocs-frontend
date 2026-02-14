@@ -72,7 +72,8 @@ const DocumentList = () => {
     const permissions = React.useMemo(() => ({
         canEdit: can('document.edit'),
         canDelete: can('document.delete'),
-        canCreate: can('document.create')
+        canCreate: can('document.create'),
+        canSign: can('document.sign')
     }), [can]);
 
     const changeViewMode = useCallback((mode) => {
@@ -408,12 +409,14 @@ const DocumentList = () => {
                         {selectedIds.length} selected
                     </span>
                     <div className="h-6 w-px bg-slate-300"></div>
-                    <button
-                        onClick={handleBulkDelete}
-                        className="flex items-center gap-2 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
-                    >
-                        <Trash2 size={16} /> Delete Selected
-                    </button>
+                    {permissions.canDelete && (
+                        <button
+                            onClick={handleBulkDelete}
+                            className="flex items-center gap-2 text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                        >
+                            <Trash2 size={16} /> Delete Selected
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -467,6 +470,7 @@ const DocumentList = () => {
                                             handleDuplicate={handleDuplicate}
                                             handleSign={handleSign}
                                             viewMode={trashMode ? 'trash' : 'active'}
+                                            permissions={permissions}
                                         />
                                     ))}
                                 </div>

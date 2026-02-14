@@ -22,7 +22,7 @@ function Footer() {
                         <h3 className="font-bold text-slate-900 mb-4">Product</h3>
                         <ul className="space-y-2 text-sm text-slate-500">
                             <li><Link to="/features" className="hover:text-slate-900 transition-colors">Features</Link></li>
-                            <li><Link to="/pricing" className="hover:text-slate-900 transition-colors">Pricing</Link></li>
+                            {/* <li><Link to="/pricing" className="hover:text-slate-900 transition-colors">Pricing</Link></li> */}
                             <li><Link to="/changelog" className="hover:text-slate-900 transition-colors">Changelog</Link></li>
                             <li><Link to="/blog" className="hover:text-slate-900 transition-colors">Blogs</Link></li>
                         </ul>

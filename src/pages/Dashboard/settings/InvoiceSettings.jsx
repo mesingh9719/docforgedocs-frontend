@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { updateBusiness } from '../../../api/business';
 import { SettingsSection, SettingsInput, SettingsTextarea, SaveButton, SuccessMessage, ErrorMessage } from './SettingsComponents';
 
-const InvoiceSettings = ({ business, onUpdate }) => {
+const InvoiceSettings = ({ business, onUpdate, canEdit = true }) => {
     const [formData, setFormData] = useState({
         invoice_prefix: '',
         invoice_terms: '',
@@ -80,6 +80,7 @@ const InvoiceSettings = ({ business, onUpdate }) => {
                         value={formData.invoice_prefix}
                         onChange={handleChange}
                         placeholder="INV-"
+                        disabled={!canEdit}
                     />
                     <p className="mt-2 text-xs text-slate-500">Prefix for invoice numbers (e.g., INV-0001)</p>
                 </div>
@@ -93,6 +94,7 @@ const InvoiceSettings = ({ business, onUpdate }) => {
                             name="bank_account_name"
                             value={formData.bank_details?.account_name || ''}
                             onChange={handleChange}
+                            disabled={!canEdit}
                         />
                     </div>
                     <div className="md:col-span-2">
@@ -101,6 +103,7 @@ const InvoiceSettings = ({ business, onUpdate }) => {
                             name="bank_bank_name"
                             value={formData.bank_details?.bank_name || ''}
                             onChange={handleChange}
+                            disabled={!canEdit}
                         />
                     </div>
                     <SettingsInput
@@ -108,12 +111,14 @@ const InvoiceSettings = ({ business, onUpdate }) => {
                         name="bank_account_number"
                         value={formData.bank_details?.account_number || ''}
                         onChange={handleChange}
+                        disabled={!canEdit}
                     />
                     <SettingsInput
                         label="IFSC / SWIFT Code"
                         name="bank_ifsc_code"
                         value={formData.bank_details?.ifsc_code || ''}
                         onChange={handleChange}
+                        disabled={!canEdit}
                     />
                 </div>
             </SettingsSection>
@@ -127,6 +132,7 @@ const InvoiceSettings = ({ business, onUpdate }) => {
                         value={formData.invoice_terms}
                         onChange={handleChange}
                         placeholder="e.g. Payment due within 30 days..."
+                        disabled={!canEdit}
                     />
                     <SettingsTextarea
                         label="Default Invoice Notes"
@@ -135,12 +141,13 @@ const InvoiceSettings = ({ business, onUpdate }) => {
                         value={formData.default_invoice_notes}
                         onChange={handleChange}
                         placeholder="e.g. Thank you for your business!"
+                        disabled={!canEdit}
                     />
                 </div>
             </SettingsSection>
 
             <div className="flex justify-end pt-2">
-                <SaveButton loading={loading} saved={saved} />
+                <SaveButton loading={loading} saved={saved} disabled={!canEdit} />
             </div>
         </form>
     );

@@ -3,7 +3,7 @@ import { updateBusiness } from '../../../api/business';
 import axios from '../../../api/axios';
 import { SettingsSection, SettingsInput, SaveButton, SuccessMessage, ErrorMessage } from './SettingsComponents';
 
-const TaxSettings = ({ business, onUpdate }) => {
+const TaxSettings = ({ business, onUpdate, canEdit = true }) => {
     const [formData, setFormData] = useState({
         tax_label: '',
         tax_percentage: '',
@@ -87,8 +87,8 @@ const TaxSettings = ({ business, onUpdate }) => {
                             name="tax_label"
                             value={formData.tax_label}
                             onChange={handleTaxSelect}
-                            className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm"
-                            disabled={loadingTaxes}
+                            className={`w-full rounded-md border border-slate-300 bg-white py-2 px-3 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:text-sm ${!canEdit ? 'opacity-70 bg-slate-100 cursor-not-allowed' : ''}`}
+                            disabled={loadingTaxes || !canEdit}
                         >
                             <option value="">Select Tax</option>
                             {taxRates.map((tax) => (
@@ -113,7 +113,7 @@ const TaxSettings = ({ business, onUpdate }) => {
             </SettingsSection>
 
             <div className="flex justify-end pt-2">
-                <SaveButton loading={loading} saved={saved} />
+                <SaveButton loading={loading} saved={saved} disabled={!canEdit} />
             </div>
         </form>
     );

@@ -45,6 +45,14 @@ import SignDocument from './pages/Public/SignDocument'
 // import Landing from './pages/Public/document-generator/Landing'
 import GuestEditor from './pages/Public/document-generator/GuestEditor'
 
+// SEO Landing Pages
+import NdaLanding from './pages/Landing/Tools/NdaLanding'
+import ProposalLanding from './pages/Landing/Tools/ProposalLanding'
+import ConsultingAgreementLanding from './pages/Landing/Tools/ConsultingAgreementLanding'
+import InvoiceLanding from './pages/Landing/Tools/InvoiceLanding'
+import SignatureLanding from './pages/Landing/Tools/SignatureLanding'
+import OfferLetterLanding from './pages/Landing/Tools/OfferLetterLanding'
+
 import GuestRoute from './components/GuestRoute'
 import ScrollToTop from './components/ScrollToTop'
 
@@ -113,6 +121,14 @@ function App() {
                 <Route path="/accept-invite" element={<AcceptInvite />} />
                 <Route path="/verify-email" element={<VerifyEmailHandler />} />
                 <Route path="/verify-email-message" element={<VerifyEmailMessage />} />
+
+                {/* SEO Landing Pages (Tools) */}
+                <Route path="/tools/nda" element={<NdaLanding />} />
+                <Route path="/tools/business-proposal" element={<ProposalLanding />} />
+                <Route path="/tools/consulting-agreement" element={<ConsultingAgreementLanding />} />
+                <Route path="/tools/invoice-generator" element={<InvoiceLanding />} />
+                <Route path="/tools/electronic-signature" element={<SignatureLanding />} />
+                <Route path="/tools/offer-letter" element={<OfferLetterLanding />} />
               </Route>
 
               {/* Protected Onboarding */}

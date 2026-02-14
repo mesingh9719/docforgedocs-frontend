@@ -29,6 +29,16 @@ function Footer() {
                     </div>
 
                     <div>
+                        <h3 className="font-bold text-slate-900 mb-4">Free Tools</h3>
+                        <ul className="space-y-2 text-sm text-slate-500">
+                            <li><Link to="/tools/nda" className="hover:text-slate-900 transition-colors">NDA Generator</Link></li>
+                            <li><Link to="/tools/invoice-generator" className="hover:text-slate-900 transition-colors">Invoice Generator</Link></li>
+                            <li><Link to="/tools/electronic-signature" className="hover:text-slate-900 transition-colors">eSignature</Link></li>
+                            <li><Link to="/tools/business-proposal" className="hover:text-slate-900 transition-colors">Proposal Template</Link></li>
+                        </ul>
+                    </div>
+
+                    <div>
                         <h3 className="font-bold text-slate-900 mb-4">Company</h3>
                         <ul className="space-y-2 text-sm text-slate-500">
                             <li><Link to="/about" className="hover:text-slate-900 transition-colors">About Us</Link></li>

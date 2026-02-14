@@ -42,7 +42,21 @@ function Navbar() {
 
                 {/* Desktop Nav */}
                 <div className="hidden md:flex items-center gap-8">
-                    <a href="/#templates" className="text-slate-600 font-medium hover:text-slate-900 transition-colors">Create Document</a>
+                    <div className="relative group">
+                        <button className="text-slate-600 font-medium hover:text-slate-900 transition-colors flex items-center gap-1">
+                            Tools
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        <div className="absolute top-full left-0 w-48 py-2 mt-2 bg-white rounded-lg shadow-xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform translate-y-2 group-hover:translate-y-0">
+                            <Link to="/tools/nda" className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600">NDA Generator</Link>
+                            <Link to="/tools/business-proposal" className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600">Proposal Builder</Link>
+                            <Link to="/tools/consulting-agreement" className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600">Consulting Agreement</Link>
+                            <div className="h-px bg-slate-100 my-1"></div>
+                            <Link to="/tools/invoice-generator" className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600">Invoice Generator</Link>
+                            <Link to="/tools/electronic-signature" className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600">eSignatures</Link>
+                            <Link to="/tools/offer-letter" className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-indigo-600">Offer Letter</Link>
+                        </div>
+                    </div>
                     <NavLink to="/features">Features</NavLink>
                     <NavLink to="/pricing">Pricing</NavLink>
                     <NavLink to="/about">About</NavLink>
@@ -84,7 +98,13 @@ function Navbar() {
                         className="md:hidden bg-white border-b border-slate-200 overflow-hidden"
                     >
                         <div className="flex flex-col p-6 gap-4">
-                            <a href="/#templates" onClick={() => setMobileMenuOpen(false)} className="text-slate-600 font-medium text-lg py-2 block">Create Document</a>
+                            <div className="py-2">
+                                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2 block">Tools</span>
+                                <MobileNavLink to="/tools/nda" onClick={() => setMobileMenuOpen(false)}>NDA Generator</MobileNavLink>
+                                <MobileNavLink to="/tools/business-proposal" onClick={() => setMobileMenuOpen(false)}>Proposal Builder</MobileNavLink>
+                                <MobileNavLink to="/tools/invoice-generator" onClick={() => setMobileMenuOpen(false)}>Invoice Generator</MobileNavLink>
+                            </div>
+                            <hr className="border-slate-100 my-2" />
                             <MobileNavLink to="/features" onClick={() => setMobileMenuOpen(false)}>Features</MobileNavLink>
                             <MobileNavLink to="/pricing" onClick={() => setMobileMenuOpen(false)}>Pricing</MobileNavLink>
                             <MobileNavLink to="/about" onClick={() => setMobileMenuOpen(false)}>About</MobileNavLink>

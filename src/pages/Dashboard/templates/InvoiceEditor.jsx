@@ -14,6 +14,7 @@ import { generateDocumentPdf, wrapHtmlForPdf } from '../../../utils/pdfGenerator
 import { renderToStaticMarkup } from 'react-dom/server';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useDocumentStyles } from '../../../hooks/useDocumentStyles';
+import { getAssetUrl, convertUrlToBase64 } from '../../../utils/assetUtils';
 
 const InvoiceEditor = () => {
     const navigate = useNavigate();
@@ -138,7 +139,7 @@ const InvoiceEditor = () => {
                             sellerPhone: business.phone || '',
                             taxType: business.tax_label || 'Tax',
                             taxRate: business.tax_percentage || 0,
-                            businessLogo: business.logo || null,
+                            businessLogo: business.logo_url || getAssetUrl(business.logo) || null,
                             currencySymbol: business.currency_symbol || '$' // If you have currency in formData
                         }));
                     }
@@ -262,38 +263,6 @@ const InvoiceEditor = () => {
     const [isPrinting, setIsPrinting] = useState(false);
     const lastGeneratedData = React.useRef(null);
     const [cachedPdfUrl, setCachedPdfUrl] = useState(null);
-
-
-
-    const convertUrlToBase64 = async (url) => {
-        try {
-            // Check if URL is from our backend storage
-            if (url && url.includes('/storage/')) {
-                // Use the proxy endpoint to bypass CORS
-                const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/file-proxy?path=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl);
-                const blob = await response.blob();
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            }
-
-            const response = await fetch(url);
-            const blob = await response.blob();
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        } catch (error) {
-            console.error("Failed to convert image to base64", error);
-            return null;
-        }
-    };
 
     const handlePrint = async () => {
         if (!id) {

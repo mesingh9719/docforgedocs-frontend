@@ -10,6 +10,7 @@ import VersionHistorySidebar from './VersionHistorySidebar';
 import { createDocument, getDocument, updateDocument } from '../../../api/documents';
 import { getBusiness } from '../../../api/business';
 import { generateDocumentPdf, wrapHtmlForPdf } from '../../../utils/pdfGenerator';
+import { getAssetUrl, convertUrlToBase64 } from '../../../utils/assetUtils';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useDocumentStyles } from '../../../hooks/useDocumentStyles';
@@ -99,6 +100,11 @@ const ProposalEditor = () => {
     const [documentName, setDocumentName] = useState('Untitled Proposal');
     const [showHistory, setShowHistory] = useState(false);
     const [previewVersion, setPreviewVersion] = useState(null);
+    const [isPrinting, setIsPrinting] = useState(false);
+    const [isSending, setIsSending] = useState(false);
+    const [sentAt, setSentAt] = useState(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const [isNewEngine, setIsNewEngine] = useState(false);
     const originalState = React.useRef(null);
 
     // State for the Document Variables (Inputs)
@@ -141,17 +147,6 @@ const ProposalEditor = () => {
     const deferredFormData = React.useDeferredValue(formData);
     const deferredDocContent = React.useDeferredValue(docContent);
 
-    // ... (existing effects: loadDocument, fetchBusinessDetails) 
-
-    // Load Document
-    useEffect(() => {
-        if (id) {
-            loadDocument(id);
-        }
-    }, [id]);
-
-    const [isNewEngine, setIsNewEngine] = useState(false);
-
     const loadDocument = async (docId) => {
         try {
             const doc = await getDocument(docId);
@@ -179,9 +174,12 @@ const ProposalEditor = () => {
         }
     };
 
-    if (isNewEngine) {
-        return <DocumentEditorOverride />;
-    }
+    // Load Document
+    useEffect(() => {
+        if (id) {
+            loadDocument(id);
+        }
+    }, [id]);
 
     // Load Business Details for Defaults
     useEffect(() => {
@@ -195,7 +193,7 @@ const ProposalEditor = () => {
                             providerName: business.name || '',
                             providerCompany: business.name || '',
                             providerAddress: [business.address, business.city, business.state, business.country].filter(Boolean).join(', '),
-                            businessLogo: business.logo || null
+                            businessLogo: business.logo_url || getAssetUrl(business.logo) || null
                         }));
                     }
                 } catch (error) {
@@ -319,39 +317,6 @@ const ProposalEditor = () => {
         }
     };
 
-    const convertUrlToBase64 = async (url) => {
-        try {
-            // Check if URL is from our backend storage
-            if (url && url.includes('/storage/')) {
-                const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/file-proxy?path=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl);
-                const blob = await response.blob();
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            }
-
-            const response = await fetch(url);
-            const blob = await response.blob();
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        } catch (error) {
-            console.error("Failed to convert image to base64", error);
-            return null;
-        }
-    };
-
-    const [isPrinting, setIsPrinting] = useState(false);
-    const lastGeneratedData = React.useRef(null);
-    const [cachedPdfUrl, setCachedPdfUrl] = useState(null);
-
     const handlePrint = async () => {
         if (!id) {
             toast.error("Please save the document before printing.");
@@ -399,9 +364,6 @@ const ProposalEditor = () => {
         }
     };
 
-    const [isSending, setIsSending] = useState(false);
-    const [sentAt, setSentAt] = useState(null);
-
     const handleSendEmail = () => {
         if (!id) {
             toast.error("Please save the document before sending.");
@@ -415,8 +377,6 @@ const ProposalEditor = () => {
             setSentAt(updatedDoc.sent_at);
         }
     };
-
-    const [isExporting, setIsExporting] = useState(false);
 
     const handleExport = async () => {
         if (!id) {
@@ -460,7 +420,7 @@ const ProposalEditor = () => {
 
         let content = version.content;
         if (typeof content === 'string') {
-            try { content = JSON.parse(content); } catch (e) { }
+            try { content = JSON.parse(content); } catch (e) { console.error(e); }
         }
         if (content.formData) setFormData(content.formData);
         if (content.docContent) setDocContent(content.docContent);
@@ -485,7 +445,7 @@ const ProposalEditor = () => {
         try {
             let content = version.content;
             if (typeof content === 'string') {
-                try { content = JSON.parse(content); } catch (e) { }
+                try { content = JSON.parse(content); } catch (e) { console.error(e); }
             }
 
             // Render HTML for this version
@@ -513,6 +473,10 @@ const ProposalEditor = () => {
             toast.error("Failed to download version PDF", { id: toastId });
         }
     };
+
+    if (isNewEngine) {
+        return <DocumentEditorOverride />;
+    }
 
     return (
         <div className="flex flex-col h-screen bg-slate-100 overflow-hidden">
@@ -713,7 +677,7 @@ const ProposalEditor = () => {
                     if (docData && docData.content) {
                         let content = docData.content;
                         if (typeof content === 'string') {
-                            try { content = JSON.parse(content); } catch (e) { }
+                            try { content = JSON.parse(content); } catch (e) { console.error(e); }
                         }
                         if (content.formData) setFormData(content.formData);
                         if (content.docContent) setDocContent(content.docContent);

@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SignatureLayer from '../../../components/Nda/Signatures/SignatureLayer';
+import { getAssetUrl } from '../../../utils/assetUtils';
 
 function NdaDocumentPreview({
     data,
@@ -184,7 +185,7 @@ function NdaDocumentPreview({
                         style={printing ? { textAlign: data.logoAlignment || 'center' } : {}}
                     >
                         <img
-                            src={businessLogo}
+                            src={getAssetUrl(businessLogo || data.businessLogo)}
                             alt="Company Logo"
                             style={{ height: `${data.logoSize || 70}px`, objectFit: 'contain' }}
                         />

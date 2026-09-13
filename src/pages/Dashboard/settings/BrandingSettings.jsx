@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { updateBusiness } from '../../../api/business';
 import { Upload, AlertCircle } from 'lucide-react';
 import { SettingsSection, SaveButton, SuccessMessage, ErrorMessage } from './SettingsComponents';
+import { getAssetUrl } from '../../../utils/assetUtils';
 
 const BrandingSettings = ({ business, onUpdate, canEdit = true }) => {
     const [logo, setLogo] = useState(null);
@@ -14,8 +15,8 @@ const BrandingSettings = ({ business, onUpdate, canEdit = true }) => {
 
     useEffect(() => {
         if (business) {
-            if (business.logo) setLogoPreview(business.logo);
-            if (business.favicon) setFaviconPreview(business.favicon);
+            if (business.logo_url || business.logo) setLogoPreview(business.logo_url || business.logo);
+            if (business.favicon_url || business.favicon) setFaviconPreview(business.favicon_url || business.favicon);
         }
     }, [business]);
 
@@ -43,29 +44,30 @@ const BrandingSettings = ({ business, onUpdate, canEdit = true }) => {
 
         if (!logo && !favicon) {
             setLoading(false);
-            // Just show success if no changes, or maybe info
             return;
         }
 
         try {
             const updated = await updateBusiness(formData);
-            onUpdate(updated.data);
+            if (onUpdate) onUpdate(updated.data);
             setSaved(true);
+            if (updated.data) {
+                if (updated.data.logo_url || updated.data.logo) {
+                    setLogoPreview(updated.data.logo_url || updated.data.logo);
+                }
+                if (updated.data.favicon_url || updated.data.favicon) {
+                    setFaviconPreview(updated.data.favicon_url || updated.data.favicon);
+                }
+            }
             setTimeout(() => setSaved(false), 3000);
             setLogo(null);
             setFavicon(null);
-        } catch (error) {
-            console.error(error);
-            setError('Failed to update branding settings');
+        } catch (err) {
+            console.error(err);
+            setError(err.response?.data?.message || err.response?.data?.detail || 'Failed to update branding settings');
         } finally {
             setLoading(false);
         }
-    };
-
-    const getImageUrl = (url) => {
-        if (!url) return null;
-        if (url.startsWith('http') || url.startsWith('data:')) return url;
-        return `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}${url}`;
     };
 
     return (
@@ -81,7 +83,7 @@ const BrandingSettings = ({ business, onUpdate, canEdit = true }) => {
                         <div className="flex items-start gap-6">
                             <div className="w-32 h-32 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center overflow-hidden bg-slate-50 relative group transition-all hover:border-indigo-400">
                                 {logoPreview ? (
-                                    <img src={getImageUrl(logoPreview)} alt="Logo Preview" className="w-full h-full object-contain p-2" />
+                                    <img src={getAssetUrl(logoPreview)} alt="Logo Preview" className="w-full h-full object-contain p-2" />
                                 ) : (
                                     <span className="text-slate-400 text-xs font-medium">No Logo</span>
                                 )}
@@ -117,7 +119,7 @@ const BrandingSettings = ({ business, onUpdate, canEdit = true }) => {
                         <div className="flex items-start gap-6">
                             <div className="w-16 h-16 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center overflow-hidden bg-slate-50 transition-all hover:border-indigo-400">
                                 {faviconPreview ? (
-                                    <img src={getImageUrl(faviconPreview)} alt="Favicon Preview" className="w-8 h-8 object-contain" />
+                                    <img src={getAssetUrl(faviconPreview)} alt="Favicon Preview" className="w-8 h-8 object-contain" />
                                 ) : (
                                     <span className="text-slate-400 text-xs font-medium">No Icon</span>
                                 )}

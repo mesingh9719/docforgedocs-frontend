@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { getAssetUrl } from '../../../utils/assetUtils';
 
 function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, readOnly = false, styles }) {
 
@@ -21,7 +22,7 @@ function InvoiceDocumentPreview({ data, totals, zoom = 1, printing = false, read
     const Logo = ({ className = "", style = {} }) => (
         data.businessLogo && data.brandingEnabled !== false && data.brandingEnabled !== 'false' ? (
             <img
-                src={data.businessLogo}
+                src={getAssetUrl(data.businessLogo)}
                 alt="Business Logo"
                 className={`${className}`}
                 style={{ height: `${logoSize}px`, objectFit: 'contain', ...style }}

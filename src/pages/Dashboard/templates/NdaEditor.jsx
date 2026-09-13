@@ -16,6 +16,7 @@ import { generateDocumentPdf } from '../../../utils/pdfGenerator';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { generateNdaHtml, generateId } from '../../../utils/ndaUtils';
 import { getBusiness } from '../../../api/business';
+import { getAssetUrl, convertUrlToBase64 } from '../../../utils/assetUtils';
 import DocumentEditor from '../../../components/DocumentEngine/DocumentEditor';
 
 // Wrapper for the Universal Editor when accessed via Legacy Routes
@@ -131,43 +132,13 @@ const NdaEditor = () => {
         }
     };
 
-    const convertUrlToBase64 = async (url) => {
-        try {
-            // Check if URL is from our backend storage
-            if (url && url.includes('/storage/')) {
-                // Use the proxy endpoint to bypass CORS
-                const proxyUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'}/file-proxy?path=${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl);
-                const blob = await response.blob();
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(blob);
-                });
-            }
-
-            const response = await fetch(url);
-            const blob = await response.blob();
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        } catch (error) {
-            console.error("Failed to convert image to base64", error);
-            return null;
-        }
-    };
-
     // Fetch Business Logo
     React.useEffect(() => {
         const fetchLogo = async () => {
             try {
                 const business = await getBusiness();
-                if (business && business.logo) {
-                    setBusinessLogo(business.logo);
+                if (business && (business.logo_url || business.logo)) {
+                    setBusinessLogo(business.logo_url || getAssetUrl(business.logo));
                 }
             } catch (error) {
                 console.error("Failed to fetch business logo", error);

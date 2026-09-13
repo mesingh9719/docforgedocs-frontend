@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getAssetUrl } from '../../../utils/assetUtils';
 
 function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, readOnly = false, styles }) {
 
@@ -136,7 +137,7 @@ function ProposalDocumentPreview({ data, content, zoom = 1, printing = false, re
                     {data.businessLogo && data.brandingEnabled !== false && data.brandingEnabled !== 'false' && (
                         <div className="mb-8 w-full">
                             <img
-                                src={data.businessLogo}
+                                src={getAssetUrl(data.businessLogo)}
                                 alt="Company Logo"
                                 style={{ height: `${data.logoSize || 80}px`, objectFit: 'contain', marginLeft: data.logoAlignment === 'right' ? 'auto' : data.logoAlignment === 'center' ? 'auto' : '0', marginRight: data.logoAlignment === 'left' ? 'auto' : data.logoAlignment === 'center' ? 'auto' : '0', display: 'block' }}
                                 className={`object-contain ${data.logoAlignment === 'left' ? '' : data.logoAlignment === 'right' ? 'ml-auto' : 'mx-auto'}`}

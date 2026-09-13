@@ -1,11 +1,11 @@
+import StatusBadge from '../../../../components/ui/StatusBadge';
 import React, { memo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { FileText, PenTool, Mail, MoreVertical, CheckSquare, Square, Eye, Trash2, RotateCcw, Clock, Copy, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const DocumentListItem = memo(({
     doc,
-    getStatusStyle,
     variants,
     isSelected,
     toggleSelect,
@@ -20,32 +20,36 @@ const DocumentListItem = memo(({
     viewMode,
     permissions = {}
 }) => {
+    const documentType = doc.document_type || doc.type;
+    const typeName = typeof documentType === 'string' ? documentType : documentType?.name || 'General';
+
     return (
-        <motion.div
+        <Motion.div
             variants={variants}
-            className={`relative group bg-white hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0 ${isSelected ? 'bg-indigo-50/50' : ''}`}
+            className={`document-row relative group hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0 ${isSelected ? 'bg-indigo-50/50' : 'bg-white'}`}
             onClick={() => handleView(doc)}
         >
             {/* Mobile View */}
-            <div className="md:hidden p-4 flex flex-col gap-3">
+            <div className="xl:hidden p-4 flex flex-col gap-3">
                 <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                        <div onClick={(e) => { e.stopPropagation(); toggleSelect(doc.id); }}>
-                            {isSelected ? <CheckSquare size={20} className="text-indigo-600" /> : <Square size={20} className="text-slate-300" />}
-                        </div>
-                        <div className={`p-2 rounded-lg ${doc.signers_count > 0 ? 'bg-purple-100 text-purple-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <button aria-label={`Select ${doc.title || doc.name}`} aria-pressed={isSelected} className="shrink-0 p-1" onClick={(e) => { e.stopPropagation(); toggleSelect(doc.id); }}>
+                            {isSelected ? <CheckSquare size={20} className="text-indigo-600" /> : <Square size={20} className="text-slate-400" />}
+                        </button>
+                        <div className={`p-2 rounded-lg ${doc.signers_count > 0 ? 'bg-slate-100 text-slate-600' : 'bg-indigo-100 text-indigo-600'}`}>
                             {doc.signers_count > 0 ? <PenTool size={16} /> : <FileText size={16} />}
                         </div>
-                        <div>
-                            <span className="font-semibold text-sm text-slate-900 line-clamp-1">{doc.title || doc.name}</span>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-slate-500 capitalize">{doc.type?.name || doc.type}</span>
+                        <div className="min-w-0 flex-1">
+                            <button onClick={(e) => { e.stopPropagation(); handleView(doc); }} className="text-left font-semibold text-sm text-slate-900 line-clamp-2 break-words">{doc.title || doc.name}</button>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <span className="text-xs text-slate-500 capitalize">{typeName}</span>
                                 <span className="text-[10px] text-slate-400">•</span>
                                 <span className="text-xs text-slate-500">{formatDistanceToNow(new Date(doc.updated_at))} ago</span>
                             </div>
                         </div>
                     </div>
                     <button
+                        aria-label={`Actions for ${doc.title || doc.name}`} aria-expanded={activeMenuId === doc.id}
                         onClick={(e) => {
                             e.stopPropagation();
                             setActiveMenuId(activeMenuId === doc.id ? null : doc.id);
@@ -57,37 +61,35 @@ const DocumentListItem = memo(({
                 </div>
             </div>
 
+            <div className="xl:hidden px-4 pb-4 flex items-center justify-between gap-3 text-xs text-slate-500"><StatusBadge status={doc.status} /><span className="truncate">{doc.creator?.name || 'Unknown owner'}</span></div>
+
             {/* Desktop View */}
-            <div className="hidden md:grid px-6 py-4 grid-cols-[auto_3fr_1fr_1fr_1fr_1fr_auto] gap-6 items-center">
-                <div onClick={(e) => { e.stopPropagation(); toggleSelect(doc.id); }} className="cursor-pointer">
+            <div className="hidden xl:grid px-6 py-5 grid-cols-[24px_minmax(0,2.5fr)_minmax(0,1fr)_90px_100px_minmax(0,1fr)_72px] gap-4 items-center">
+                <button aria-label={`Select ${doc.title || doc.name}`} aria-pressed={isSelected} onClick={(e) => { e.stopPropagation(); toggleSelect(doc.id); }} className="cursor-pointer">
                     {isSelected
                         ? <CheckSquare size={18} className="text-indigo-600" />
                         : <Square size={18} className="text-slate-300 group-hover:text-slate-400" />
                     }
-                </div>
+                </button>
 
-                <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-lg transition-colors ${doc.signers_count > 0 ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className={`p-2 rounded-lg transition-colors ${doc.signers_count > 0 ? 'bg-slate-100 text-slate-600' : 'bg-slate-100 text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-600'}`}>
                         {doc.signers_count > 0 ? <PenTool size={18} /> : <FileText size={18} />}
                     </div>
-                    <div>
-                        <span className="font-semibold text-sm text-slate-700 block group-hover:text-indigo-600 transition-colors">
+                    <div className="min-w-0">
+                        <button onClick={(e) => { e.stopPropagation(); handleView(doc); }} className="text-left font-medium text-sm text-slate-800 block group-hover:text-indigo-600 transition-colors break-words">
                             {doc.title || doc.name}
-                        </span>
+                        </button>
                         {doc.signers_count > 0 && (
-                            <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-medium mt-1 inline-block">
-                                Signature Required
-                            </span>
+                            <StatusBadge status="signature_required" className="mt-1" />
                         )}
                     </div>
                 </div>
 
-                <div className="text-sm text-slate-500 font-medium capitalize">{doc.type?.name || doc.type}</div>
+                <div className="text-sm text-slate-500 font-medium capitalize">{typeName}</div>
 
                 <div>
-                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${getStatusStyle(doc.status)}`}>
-                        {doc.status}
-                    </span>
+                    <StatusBadge status={doc.status} />
                 </div>
 
                 <div className="text-xs text-slate-500 flex items-center gap-1.5">
@@ -121,6 +123,7 @@ const DocumentListItem = memo(({
                         <Mail size={16} />
                     </button>
                     <button
+                        aria-label={`Actions for ${doc.title || doc.name}`} aria-expanded={activeMenuId === doc.id}
                         onClick={(e) => {
                             e.stopPropagation();
                             setActiveMenuId(activeMenuId === doc.id ? null : doc.id);
@@ -135,7 +138,7 @@ const DocumentListItem = memo(({
             {/* Context Menu */}
             <AnimatePresence>
                 {activeMenuId === doc.id && (
-                    <motion.div
+                    <Motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
@@ -165,7 +168,7 @@ const DocumentListItem = memo(({
                                     </button>
                                 )}
                                 {doc.status?.toLowerCase() === 'draft' &&
-                                    !['nda', 'proposal', 'invoice'].includes(doc.type?.slug) &&
+                                    !['nda', 'proposal', 'invoice'].includes(documentType?.slug) &&
                                     (!doc.content?.blocks?.length) &&
                                     (!doc.signers?.some(s => ['sent', 'viewed', 'signed'].includes(s.status))) &&
                                     permissions.canSign && (
@@ -211,12 +214,13 @@ const DocumentListItem = memo(({
                                 </button>
                             )
                         )}
-                    </motion.div>
+                    </Motion.div>
                 )}
             </AnimatePresence>
 
-        </motion.div>
+        </Motion.div>
     );
 });
 
+DocumentListItem.displayName = 'DocumentListItem';
 export default DocumentListItem;

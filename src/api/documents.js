@@ -72,3 +72,31 @@ export const exportDocuments = async (params = {}) => {
     });
     return response;
 };
+
+// ─── Templates ──────────────────────────────────────────────────
+
+export const getTemplates = async (params = {}) => {
+    const response = await axios.get('/documents/templates', { params });
+    return response.data;
+};
+
+export const saveAsTemplate = async (id, templateDescription = '') => {
+    const response = await axios.post(`/documents/${id}/save-as-template`, {
+        template_description: templateDescription,
+    });
+    return response.data;
+};
+
+export const createFromTemplate = async (templateId, name = '') => {
+    const response = await axios.post(`/documents/${templateId}/create-from-template`, {
+        name: name || undefined,
+    });
+    return response.data;
+};
+
+// ─── Void / Decline ─────────────────────────────────────────────
+
+export const voidDocument = async (id, reason = '') => {
+    const response = await axios.post(`/documents/${id}/void`, { reason });
+    return response.data;
+};

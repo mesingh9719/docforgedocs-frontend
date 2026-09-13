@@ -14,6 +14,8 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
+import { convertTextToImage, getLineWidthFromSize } from '../../utils/signatureUtils';
+
 const SignDocument = () => {
     const { token } = useParams();
     const navigate = useNavigate();
@@ -22,6 +24,7 @@ const SignDocument = () => {
     const [documentData, setDocumentData] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
     const [pdfUrl, setPdfUrl] = useState(null);
+    const [pdfLoadError, setPdfLoadError] = useState(null);
     const [numPages, setNumPages] = useState(null);
     const [fields, setFields] = useState([]);
     const [pageDimensions, setPageDimensions] = useState({}); // Track actual PDF page sizes
@@ -59,6 +62,7 @@ const SignDocument = () => {
                 setDocumentData(document);
                 setCurrentUser(current_signer);
                 setPdfUrl(pdf_url);
+                setPdfLoadError(null);
                 setCompliance(compliance);
 
                 // Map API fields to UI format
@@ -80,7 +84,17 @@ const SignDocument = () => {
                 setLoading(false);
             } catch (err) {
                 console.error("Error fetching signature session:", err);
-                setError(err.response?.data?.message || "Failed to load document.");
+                const status = err.response?.status;
+                const message = err.response?.data?.message || "Failed to load document.";
+                const waitingForPrior = err.response?.data?.waiting_for_prior_signers;
+
+                if (status === 410) {
+                    setError(message); // Expired or voided
+                } else if (status === 403 && waitingForPrior) {
+                    setError("This document requires signatures in order. You'll be notified when it's your turn to sign.");
+                } else {
+                    setError(message);
+                }
                 setLoading(false);
             }
         };
@@ -125,8 +139,8 @@ const SignDocument = () => {
             const context = canvas.getContext('2d');
             context.scale(ratio, ratio);
             context.lineCap = 'round';
-            context.strokeStyle = '#1e293b'; // Slate-800
-            context.lineWidth = 2.5;
+            context.strokeStyle = signingField?.metadata?.color || '#1e293b';
+            context.lineWidth = getLineWidthFromSize(signingField?.metadata?.fontSize);
             contextRef.current = context;
         }
     }, [signingField, signatureMethod]);
@@ -262,11 +276,11 @@ const SignDocument = () => {
                 // If initials, maybe default to draw or text, but use standard signature modal for now
             }
 
-            // Standard Signature Logic
+            // Standard Signature Logic — default to "type" (fastest for mobile users)
             const allowedType = field.metadata.type || 'all';
             let defaultMethod = 'text';
             if (allowedType === 'draw') defaultMethod = 'draw';
-            if (allowedType === 'upload') defaultMethod = 'upload';
+            else if (allowedType === 'upload') defaultMethod = 'upload';
             setSignatureMethod(defaultMethod);
 
             // Reset states
@@ -299,10 +313,23 @@ const SignDocument = () => {
     };
 
     const submitSignature = async () => {
-        const value = getSignatureValue();
+        let value = getSignatureValue();
+
         if (!signingField || !value) {
             toast.error("Please provide a signature.");
             return;
+        }
+
+        // Convert Text to Image for consistency
+        if ((signatureMethod === 'text' || signatureMethod === 'text_input')) {
+            const font = signingField.metadata.fontFamily || 'Dancing Script';
+            const color = signingField.metadata.color || '#1e293b';
+            const size = signingField.metadata.fontSize || 'medium';
+
+            const imageValue = convertTextToImage(value, font, color, size);
+            if (imageValue) {
+                value = imageValue; // Use the image data instead of text
+            }
         }
 
         try {
@@ -350,7 +377,8 @@ const SignDocument = () => {
             toast.success("Identity verified.");
         } catch (error) {
             console.error("Error verifying OTP:", error);
-            toast.error("Invalid OTP.");
+            const msg = error.response?.data?.message || "Invalid OTP.";
+            toast.error(msg);
         }
     };
 
@@ -362,6 +390,27 @@ const SignDocument = () => {
         } catch (error) {
             console.error("Error agreeing to terms:", error);
             toast.error("Failed to accept terms.");
+        }
+    };
+
+    const [showDeclineModal, setShowDeclineModal] = useState(false);
+    const [declineReason, setDeclineReason] = useState('');
+    const [isDeclining, setIsDeclining] = useState(false);
+
+    const handleDecline = async () => {
+        setIsDeclining(true);
+        try {
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/signatures/${token}/decline`, {
+                reason: declineReason || null,
+            });
+            toast.success("You have declined to sign this document.");
+            setShowDeclineModal(false);
+            setError("You have declined to sign this document.");
+        } catch (error) {
+            console.error("Error declining:", error);
+            toast.error(error.response?.data?.message || "Failed to decline.");
+        } finally {
+            setIsDeclining(false);
         }
     };
 
@@ -382,20 +431,6 @@ const SignDocument = () => {
                     value: f.metadata.value
                 }))
             };
-
-            console.log('=== SIGNATURE SUBMISSION DEBUG ===');
-            console.log('Token:', token);
-            console.log('Payload:', JSON.stringify(payload, null, 2));
-            console.log('Number of fields:', payload.fields.length);
-            payload.fields.forEach((f, idx) => {
-                console.log(`Field ${idx}:`, {
-                    id: f.id,
-                    valueType: typeof f.value,
-                    valueLength: f.value ? f.value.length : 0,
-                    valuePreview: f.value ? f.value.substring(0, 100) : 'null'
-                });
-            });
-            console.log('===================================');
 
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/signatures/${token}/sign`, payload);
 
@@ -492,6 +527,12 @@ const SignDocument = () => {
                 </div>
                 <div className="flex items-center gap-4">
                     <p className="text-sm text-slate-600">Signing as: <span className="font-semibold text-slate-900">{currentUser?.name}</span></p>
+                    <button
+                        onClick={() => setShowDeclineModal(true)}
+                        className="px-4 py-2.5 rounded-lg font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-all text-sm"
+                    >
+                        Decline
+                    </button>
                     <button
                         onClick={handleFinishSigning}
                         disabled={isSubmitting}
@@ -645,6 +686,16 @@ const SignDocument = () => {
                                                 </button>
                                             )
                                         })}
+                                    </div>
+
+                                    {/* Decline option in mobile sidebar */}
+                                    <div className="mt-6 pt-4 border-t border-slate-200">
+                                        <button
+                                            onClick={() => { setIsSidebarOpen(false); setShowDeclineModal(true); }}
+                                            className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                                        >
+                                            Decline to Sign
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -836,6 +887,10 @@ const SignDocument = () => {
                                 <PdfDocument
                                     file={pdfUrl}
                                     onLoadSuccess={onDocumentLoadSuccess}
+                                    onLoadError={(loadError) => {
+                                        console.error('Error loading signer PDF preview:', loadError);
+                                        setPdfLoadError(loadError?.message || 'The PDF preview could not be loaded.');
+                                    }}
                                     loading={
                                         <div className="flex flex-col items-center justify-center py-20">
                                             <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
@@ -848,7 +903,7 @@ const SignDocument = () => {
                                             <div className="bg-red-50 border border-red-200 rounded-xl p-6 inline-block">
                                                 <AlertCircle className="w-14 h-14 text-red-400 mx-auto mb-4" />
                                                 <p className="text-red-600 font-bold text-lg mb-2">Failed to load PDF document</p>
-                                                <p className="text-sm text-slate-500">Please ensure it is a valid PDF file.</p>
+                                                <p className="max-w-md text-sm text-slate-500">{pdfLoadError || 'The document preview service could not return the PDF. Please try again or contact the sender.'}</p>
                                             </div>
                                         </div>
                                     }
@@ -1025,7 +1080,10 @@ const SignDocument = () => {
                                             onChange={(e) => setTextSignature(e.target.value)}
                                             placeholder={`Signed by ${currentUser.name}`}
                                             className="w-full text-xl font-handwriting px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300"
-                                            style={{ fontFamily: 'Dancing Script, cursive' }}
+                                            style={{
+                                                fontFamily: signingField.metadata.fontFamily || 'Dancing Script',
+                                                color: signingField.metadata.color || '#1e293b'
+                                            }}
                                         />
                                     </div>
                                 )}
@@ -1114,6 +1172,44 @@ const SignDocument = () => {
                     </div>
                 )
             }
+
+            {/* Decline Modal */}
+            {showDeclineModal && (
+                <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/50 backdrop-blur-sm p-0 md:p-4">
+                    <div className="bg-white w-full md:w-full md:max-w-md rounded-t-2xl md:rounded-2xl shadow-2xl overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100">
+                            <h3 className="font-bold text-slate-800 text-lg">Decline to Sign</h3>
+                            <p className="text-sm text-slate-500 mt-1">The document owner will be notified of your decision.</p>
+                        </div>
+                        <div className="p-6">
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Reason (optional)</label>
+                            <textarea
+                                value={declineReason}
+                                onChange={(e) => setDeclineReason(e.target.value)}
+                                placeholder="Let the sender know why you're declining..."
+                                rows={3}
+                                className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none text-sm"
+                                maxLength={500}
+                            />
+                        </div>
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                            <button
+                                onClick={() => { setShowDeclineModal(false); setDeclineReason(''); }}
+                                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDecline}
+                                disabled={isDeclining}
+                                className="px-6 py-2.5 text-sm font-medium bg-red-600 text-white hover:bg-red-700 rounded-lg shadow-sm transition-all disabled:opacity-50"
+                            >
+                                {isDeclining ? 'Declining...' : 'Decline to Sign'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Font loader for signature style */}
             <style>{`

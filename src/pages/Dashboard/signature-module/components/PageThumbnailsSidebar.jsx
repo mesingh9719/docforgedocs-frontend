@@ -1,7 +1,6 @@
 import React, { memo } from 'react';
 import { Document, Page } from 'react-pdf';
-import { motion } from 'framer-motion';
-import { Layers, List } from 'lucide-react';
+import { Layers } from 'lucide-react';
 
 const PageThumbnailsSidebar = memo(({ pdfUrl, numPages, onPageClick, currentPage, signatures }) => {
 
@@ -13,7 +12,7 @@ const PageThumbnailsSidebar = memo(({ pdfUrl, numPages, onPageClick, currentPage
     if (!pdfUrl || !numPages) return null;
 
     return (
-        <div className="w-full flex flex-col h-full bg-slate-50 border-r border-slate-200">
+        <div className="w-full min-h-0 flex-1 overflow-hidden flex flex-col bg-slate-50 border-r border-slate-200">
             <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10 shadow-sm">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2">
                     <Layers size={14} className="text-indigo-600" />
@@ -35,12 +34,14 @@ const PageThumbnailsSidebar = memo(({ pdfUrl, numPages, onPageClick, currentPage
                                 </div>
                                 <button
                                     onClick={() => onPageClick(pageNum)}
-                                    className={`w-full relative transition-all duration-200 group-hover:scale-[1.02] ${isCurrent ? 'ring-2 ring-indigo-500 rounded-sm shadow-md' : 'hover:ring-2 hover:ring-indigo-200 rounded-sm'}`}
+                                    className={`w-full flex justify-center rounded-sm transition-all duration-200 group-hover:scale-[1.02] ${isCurrent ? 'ring-2 ring-indigo-500 shadow-md' : 'hover:ring-2 hover:ring-indigo-200'}`}
+                                    aria-label={`Go to page ${pageNum}`}
                                 >
-                                    <div className="aspect-[3/4] bg-white border border-slate-200 rounded-sm overflow-hidden relative shadow-sm">
+                                    {/* Keep the overlay bound to the rendered PDF, rather than a fixed-ratio card. */}
+                                    <div className="relative inline-block overflow-hidden border border-slate-200 rounded-sm bg-white shadow-sm">
                                         <Page
                                             pageNumber={pageNum}
-                                            width={180}
+                                            width={256}
                                             renderTextLayer={false}
                                             renderAnnotationLayer={false}
                                             className="pointer-events-none opacity-90"
@@ -68,7 +69,7 @@ const PageThumbnailsSidebar = memo(({ pdfUrl, numPages, onPageClick, currentPage
 
                                     {/* Page Count Badge if has signatures */}
                                     {pageSigs.length > 0 && (
-                                        <div className="absolute top-1 rights-1 flex flex-col gap-1 items-end p-1">
+                                        <div className="absolute top-1 right-1 flex flex-col gap-1 items-end p-1">
                                             <div className="bg-emerald-500 text-white text-[9px] px-1.5 py-0.5 rounded-full shadow-sm font-bold border border-white">
                                                 {pageSigs.length} Fields
                                             </div>

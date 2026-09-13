@@ -1,0 +1,23 @@
+.documents-module { padding: 0 !important; }
+.documents-module h1 { font-weight: 600; }
+.documents-module .documents-toolbar { display: flex; flex-direction: column; gap: 16px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
+.documents-search { width: 100%; }
+.documents-module .documents-search input { background: #f8fafc; border: 1px solid #e2e8f0; min-height: 44px; }
+.documents-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 16px; border-top: 1px solid #f1f5f9; }
+.documents-module .documents-filters select { min-height: 40px; border: 1px solid #e2e8f0; background: white; font-size: 12px; max-width: 100%; }
+.documents-module .documents-filters button { min-width: 36px; min-height: 36px; }
+.documents-results { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; padding: 20px 2px 14px; }
+.documents-module .bg-slate-900 { background-color: #315f96; }
+.documents-module .bg-slate-900:hover { background-color: #284e7c; }
+.documents-module .document-row { cursor: pointer; }
+.documents-module .document-row button:focus-visible { position: relative; z-index: 1; }
+.documents-module :is(button, a, input, select):focus-visible { outline: 2px solid #315f96; outline-offset: 3px; }
+.documents-module .documents-table-header { border-radius: 12px 12px 0 0; font-size: 10px; letter-spacing: .06em; }
+.documents-module .document-row:last-child { border-radius: 0 0 12px 12px; }
+@media (max-width: 639px) {
+    .documents-module .documents-toolbar { padding: 16px; }
+    .documents-filters > div:first-child, .documents-filters > select { width: 100%; }
+    .documents-filters > div.w-px { display: none; }
+    .documents-module .document-row button { min-height: 36px; }
+}
+@media (prefers-reduced-motion: reduce) { .documents-module * { transition: none !important; } }

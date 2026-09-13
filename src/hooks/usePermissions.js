@@ -52,14 +52,19 @@ export const usePermissions = () => {
     const can = (permissionKey) => {
         if (!user) return false;
 
+        // The FastAPI API exposes permissions as `frontend_permissions`, while
+        // the legacy Laravel API uses `permissions`. Support both during the
+        // backend migration so navigation reflects the logged-in user's access.
+        const permissions = user.frontend_permissions ?? user.permissions;
+
         // 1. Check for Super Admin / Owner wildcard
-        if (user.permissions && user.permissions.includes('*')) {
+        if (Array.isArray(permissions) && permissions.includes('*')) {
             return true;
         }
 
         // 2. Check for explicit permission grant (standard RBAC)
-        if (user.permissions && Array.isArray(user.permissions)) {
-            return user.permissions.includes(permissionKey);
+        if (Array.isArray(permissions)) {
+            return permissions.includes(permissionKey);
         }
 
         return false;

@@ -6,7 +6,8 @@ import InvoiceFormSidebar from './InvoiceFormSidebar';
 import InvoiceDocumentPreview from './InvoiceDocumentPreview';
 import PrintPortal from '../../../components/PrintPortal';
 import SendDocumentModal from '../../../components/SendDocumentModal';
-import VersionHistorySidebar from './VersionHistorySidebar';
+import UnifiedVersionHistory from '../../../components/DocumentEngine/Sidebar/UnifiedVersionHistory';
+import EditorHeader from '../../../components/DocumentEngine/EditorHeader';
 import { createDocument, getDocument, updateDocument, getNextInvoiceNumber } from '../../../api/documents';
 import { getBusiness } from '../../../api/business';
 import { generateDocumentPdf, wrapHtmlForPdf } from '../../../utils/pdfGenerator';
@@ -541,77 +542,41 @@ const InvoiceEditor = () => {
             />
 
             {/* Header */}
-            <header className="no-print h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 shadow-sm transition-all duration-300">
-                <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
-                    <button
-                        onClick={handleBack}
-                        className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors flex-shrink-0"
-                        title="Back to Documents"
-                    >
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                            <h1 className="font-bold text-slate-800 text-sm md:text-lg truncate">Service Invoice</h1>
-                            {sentAt && (
-                                <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-100">
-                                    <Check size={10} /> Sent
-                                </span>
-                            )}
+            <EditorHeader
+                title={documentName}
+                onTitleChange={setDocumentName}
+                status={sentAt ? 'sent' : (id ? 'saved' : 'draft')} // infer status
+                saveStatus={isSaving ? 'saving' : 'saved'}
+                isSaving={isSaving}
+                onSave={handleSave}
+                onBack={handleBack}
+                onSend={handleSendEmail}
+                onExport={handleExport}
+                onPrint={handlePrint}
+                showExport={true}
+                showPrint={true}
+                // Custom Actions
+                customActions={
+                    <>
+                        {/* Zoom Controls */}
+                        <div className="hidden lg:flex items-center bg-slate-100 rounded-lg p-1 mr-2">
+                            <button onClick={handleZoomOut} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomOut size={16} /></button>
+                            <span className="text-xs font-semibold text-slate-600 w-10 text-center">{Math.round(zoom * 100)}%</span>
+                            <button onClick={handleZoomIn} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomIn size={16} /></button>
                         </div>
-                        <p className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap hidden sm:block">#{formData.invoiceNumber}</p>
-                    </div>
-                </div>
 
-                <div className="flex items-center gap-2 md:gap-3">
-                    <div className="hidden lg:flex items-center bg-slate-100 rounded-lg p-1 mr-4">
-                        <button onClick={handleZoomOut} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomOut size={16} /></button>
-                        <span className="text-xs font-semibold text-slate-600 w-12 text-center">{Math.round(zoom * 100)}%</span>
-                        <button onClick={handleZoomIn} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomIn size={16} /></button>
-                    </div>
-
-                    <button
-                        onClick={() => setShowHistory(true)}
-                        className="flex items-center gap-2 p-2 md:px-4 md:py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"
-                    >
-                        <Clock size={18} />
-                        <span className="hidden lg:inline">History</span>
-                    </button>
-
-                    <button
-                        onClick={handlePrint}
-                        className="hidden md:flex items-center gap-2 p-2 md:px-4 md:py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"
-                    >
-                        <Printer size={18} />
-                        <span className="hidden lg:inline">Print</span>
-                    </button>
-
-                    <button
-                        onClick={handleSendEmail}
-                        className={`flex items-center gap-2 px-2 md:px-4 py-2 text-sm font-medium rounded-lg border border-transparent transition-all ${sentAt ? 'text-amber-600 hover:bg-amber-50 hover:border-amber-200' : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200'}`}
-                    >
-                        {sentAt ? <Bell size={18} /> : <Mail size={18} />}
-                        <span className="hidden lg:inline">{sentAt ? 'Remind' : 'Send'}</span>
-                    </button>
-
-                    <button
-                        onClick={handleExport}
-                        disabled={isExporting}
-                        className="flex items-center gap-2 px-2 md:px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
-                    >
-                        {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                        <span className="hidden lg:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
-                    </button>
-
-                    <button
-                        onClick={handleSave}
-                        className={`flex items-center gap-2 px-3 md:px-5 py-2 rounded-lg text-white font-medium shadow-md transition-all ${isSaving ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
-                    >
-                        {isSaving ? <Check size={18} /> : <Save size={18} />}
-                        <span className="hidden md:inline">{isSaving ? 'Saved!' : 'Save'}</span>
-                    </button>
-                </div>
-            </header>
+                        {/* History Button */}
+                        <button
+                            onClick={() => setShowHistory(true)}
+                            className="hidden lg:flex items-center gap-2 px-3 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"
+                            title="Version History"
+                        >
+                            <Clock size={18} />
+                            <span className="hidden xl:inline">History</span>
+                        </button>
+                    </>
+                }
+            />
 
             {/* Mobile Tabs */}
             {!isDesktop && (
@@ -673,8 +638,9 @@ const InvoiceEditor = () => {
                     />
                 </div>
             </div>
-            <VersionHistorySidebar
+            <UnifiedVersionHistory
                 documentId={id}
+                type="sidebar"
                 isOpen={showHistory}
                 onClose={() => setShowHistory(false)}
                 onPreview={handlePreviewVersion}

@@ -11,7 +11,11 @@ const SignatureConfigModal = ({ isOpen, onClose, onSave, initialData, parties })
         required: true,
         order: 1,
         placeholder: '',
-        label: ''
+        label: '',
+        // Style Constraints
+        fontFamily: 'Dancing Script',
+        fontSize: 'medium',
+        color: '#1e293b'
     });
 
     useEffect(() => {
@@ -25,7 +29,10 @@ const SignatureConfigModal = ({ isOpen, onClose, onSave, initialData, parties })
                 order: initialData.order || 1,
                 placeholder: initialData.placeholder || '',
                 label: initialData.label || '',
-                fieldType: initialData.fieldType || 'signature'
+                fieldType: initialData.fieldType || 'signature',
+                fontFamily: initialData.fontFamily || 'Dancing Script',
+                fontSize: initialData.fontSize || 'medium',
+                color: initialData.color || '#1e293b'
             });
         }
     }, [isOpen, initialData]);
@@ -182,7 +189,7 @@ const SignatureConfigModal = ({ isOpen, onClose, onSave, initialData, parties })
 
                                 {/* Allowed Types - Only for Signature Fields */}
                                 {(!config.fieldType || config.fieldType === 'signature') && (
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 pt-4 border-t border-slate-100">
                                         <label className="block text-sm font-medium text-slate-700 flex items-center gap-2">
                                             <Shield size={14} className="text-slate-400" />
                                             Allowed Signature Types
@@ -197,6 +204,67 @@ const SignatureConfigModal = ({ isOpen, onClose, onSave, initialData, parties })
                                             <option value="text">Type Only</option>
                                             <option value="upload">Upload Only</option>
                                         </select>
+                                    </div>
+                                )}
+
+                                {/* Style Configuration - Only for Signature Fields */}
+                                {(!config.fieldType || config.fieldType === 'signature') && (
+                                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                                        <label className="block text-sm font-medium text-slate-900">Signature Style Defaults</label>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {/* Font Family */}
+                                            <div className="space-y-2">
+                                                <label className="block text-xs font-medium text-slate-600">Font Family</label>
+                                                <select
+                                                    value={config.fontFamily}
+                                                    onChange={e => setConfig({ ...config, fontFamily: e.target.value })}
+                                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white"
+                                                    style={{ fontFamily: config.fontFamily }}
+                                                >
+                                                    <option value="Dancing Script" style={{ fontFamily: 'Dancing Script' }}>Dancing Script</option>
+                                                    <option value="Pacifico" style={{ fontFamily: 'Pacifico' }}>Pacifico</option>
+                                                    <option value="Great Vibes" style={{ fontFamily: 'Great Vibes' }}>Great Vibes</option>
+                                                    <option value="Allura" style={{ fontFamily: 'Allura' }}>Allura</option>
+                                                    <option value="Sacramento" style={{ fontFamily: 'Sacramento' }}>Sacramento</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Font Size */}
+                                            <div className="space-y-2">
+                                                <label className="block text-xs font-medium text-slate-600">Font Size</label>
+                                                <select
+                                                    value={config.fontSize}
+                                                    onChange={e => setConfig({ ...config, fontSize: e.target.value })}
+                                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white"
+                                                >
+                                                    <option value="small">Small</option>
+                                                    <option value="medium">Medium</option>
+                                                    <option value="large">Large</option>
+                                                    <option value="xlarge">Extra Large</option>
+                                                </select>
+                                            </div>
+
+                                            {/* Color */}
+                                            <div className="space-y-2 col-span-2">
+                                                <label className="block text-xs font-medium text-slate-600">Ink Color</label>
+                                                <div className="flex gap-3">
+                                                    {['#1e293b', '#1e40af', '#047857', '#b91c1c', '#7c3aed'].map((color) => (
+                                                        <button
+                                                            key={color}
+                                                            onClick={() => setConfig({ ...config, color })}
+                                                            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${config.color === color
+                                                                ? 'border-indigo-500 ring-2 ring-indigo-500/20 scale-110'
+                                                                : 'border-transparent hover:scale-105'
+                                                                }`}
+                                                            style={{ backgroundColor: color }}
+                                                        >
+                                                            {config.color === color && <Check size={14} className="text-white" />}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>

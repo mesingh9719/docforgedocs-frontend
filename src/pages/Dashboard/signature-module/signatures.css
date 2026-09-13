@@ -1,0 +1,28 @@
+.signatures-module { padding: 0 !important; }
+.signatures-module h1, .signatures-module h3 { font-weight: 600; }
+.signatures-module .signature-metrics > div { padding: 22px; box-shadow: none; }
+.signature-toolbar { border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.signature-toolbar input { font-size: 13px; min-height: 44px; }
+.signature-filter-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding-top: 16px; border-top: 1px solid #f1f5f9; }
+.signature-status-tabs { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+.signature-status-tabs button { font-size: 12px; font-weight: 500; min-height: 36px; padding: 8px 12px; }
+.signature-status-tabs button[aria-pressed=true] { background: #eff5fb; color: #284e7c; box-shadow: none; }
+.signature-filter-row select { min-height: 40px; font-size: 12px; }
+.signature-results { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 18px 2px 12px; font-size: 12px; color: #64748b; }
+.signature-results button { color: #315f96; min-height: 32px; }
+.signature-selection { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; background: #eff5fb; color: #284e7c; padding: 12px 20px; font-size: 13px; border-bottom: 1px solid #dfeaf6; }
+.signature-selection button { min-height: 36px; }
+.signature-error { padding: 16px; margin-bottom: 16px; border: 1px solid #fecdd3; background: #fff1f2; border-radius: 8px; color: #9f1239; font-size: 13px; }
+.signatures-module th { font-size: 10px; font-weight: 600; letter-spacing: .06em; }
+.signatures-module td, .signatures-module th { padding-left: 16px; padding-right: 16px; }
+.signatures-module td button { min-height: 32px; }
+.signatures-module td:first-child { width: 40px; }
+.signatures-module td:nth-child(2) { width: 32%; }
+.signatures-module :is(button, a, input, select):focus-visible { outline: 2px solid #315f96; outline-offset: 3px; }
+.signatures-module button:disabled { opacity: .5; cursor: not-allowed; }
+.signatures-module [role=dialog] { max-width: min(512px, 100vw); }
+@media (max-width: 639px) {
+    .signature-toolbar { padding: 16px; }
+    .signature-filter-row select { width: 100%; }
+    .signature-status-tabs { flex-basis: 100%; }
+}

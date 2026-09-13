@@ -1,19 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, FileText, MousePointer, Image as ImageIcon, Type, Settings, Download, X, Eye, Send, History, Loader2, Plus } from 'lucide-react';
-import { DndContext, DragOverlay, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
-import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { ArrowLeft, Save, Eye, Loader2, Check, AlertCircle, Cloud, Send, Copy, Ban } from 'lucide-react';
+import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import { useDocumentEngine } from '../../hooks/useDocumentEngine';
-
+import { useAutosave } from '../../hooks/useAutosave';
 
 // Imports
 import { getBusiness } from '../../api/business';
-import { getDocument, updateDocument, generatePdf } from '../../api/documents'; // Added updateDocument for saving
+import { getDocument, updateDocument, generatePdf, duplicateDocument, voidDocument } from '../../api/documents';
 import Canvas from './Canvas';
 import Toolbox from './Sidebar/Toolbox';
 import ConfigurationPanel from './Sidebar/ConfigurationPanel';
 import VariableManager from './Sidebar/VariableManager';
-import VersionHistoryPanel from './Sidebar/VersionHistoryPanel';
+import EditorHeader from './EditorHeader';
+import UnifiedVersionHistory from './Sidebar/UnifiedVersionHistory';
 
 import toast from 'react-hot-toast';
 
@@ -26,6 +27,7 @@ const DocumentEditor = () => {
     const [activeTab, setActiveTab] = React.useState('build'); // 'build', 'variables', 'history'
     const [isSaving, setIsSaving] = React.useState(false);
     const [businessData, setBusinessData] = React.useState(null);
+    const [isLoaded, setIsLoaded] = React.useState(false);
 
     // Fetch Business Data and Document on Mount
     useEffect(() => {
@@ -49,14 +51,20 @@ const DocumentEditor = () => {
                         actions.loadDocument({
                             blocks: content.blocks,
                             variables: content.variables || {},
-                            metadata: content.metadata || { title: doc.data.name },
+                            metadata: content.metadata || { title: doc.data.name, status: doc.data.status },
                             history: { past: [], future: [] }
                         });
                         // Also ensure metadata title matches doc name
-                        actions.setMetadata({ title: doc.data.name });
+                        actions.setMetadata({
+                            title: doc.data.name,
+                            status: doc.data.status // Load status
+                        });
                     } else {
                         // Fallback or Handle Legacy
-                        actions.setMetadata({ title: doc.data.name });
+                        actions.setMetadata({
+                            title: doc.data.name,
+                            status: doc.data.status
+                        });
                     }
                 } else {
                     // New Doc defaults
@@ -65,6 +73,7 @@ const DocumentEditor = () => {
                         actions.addVariable('date', { value: new Date().toLocaleDateString(), type: 'date', label: 'Date' });
                     }
                 }
+                setIsLoaded(true);
             } catch (err) {
                 console.error("Failed to load context", err);
                 toast.error("Failed to load document");
@@ -72,6 +81,30 @@ const DocumentEditor = () => {
         };
         init();
     }, [id]);
+
+    // Autosave: watch blocks, variables, and metadata for changes
+    const autosaveData = useMemo(
+        () => JSON.stringify({ blocks: documentState.blocks, variables: documentState.variables, metadata: documentState.metadata }),
+        [documentState.blocks, documentState.variables, documentState.metadata]
+    );
+
+    const autosaveFn = useCallback(async () => {
+        if (!id) return;
+        const finalContent = {
+            blocks: documentState.blocks,
+            variables: documentState.variables,
+            metadata: documentState.metadata,
+        };
+        await updateDocument(id, {
+            name: documentState.metadata.title,
+            content: JSON.stringify(finalContent),
+        });
+    }, [id, documentState.blocks, documentState.variables, documentState.metadata]);
+
+    const { saveStatus, lastSavedAt, triggerSave } = useAutosave(autosaveFn, autosaveData, {
+        debounceMs: 4000,
+        enabled: isLoaded && !!id,
+    });
 
     // DnD Sensors
     const sensors = useSensors(
@@ -106,21 +139,8 @@ const DocumentEditor = () => {
         if (!id) return;
         setIsSaving(true);
         try {
-            const finalContent = {
-                blocks: documentState.blocks,
-                variables: documentState.variables,
-                metadata: documentState.metadata
-            };
-
-            const payload = {
-                name: documentState.metadata.title,
-                content: JSON.stringify(finalContent),
-                // We preserve other fields if needed, but update helper might handle partials
-                // DocumentController update method expects: name, content, description, status
-            };
-
-            await updateDocument(id, payload);
-            toast.success("Document saved successfully");
+            await triggerSave();
+            toast.success("Document saved");
         } catch (error) {
             console.error("Save failed", error);
             toast.error("Failed to save changes");
@@ -128,6 +148,85 @@ const DocumentEditor = () => {
             setIsSaving(false);
         }
     };
+
+    const handleSendForSignature = async () => {
+        if (!id) return;
+
+        const toastId = toast.loading("Preparing document for signature...");
+        setIsSaving(true);
+
+        try {
+            // 1. Save current state first
+            await triggerSave();
+
+            // 2. Generate HTML from blocks (Simplified for now)
+            // TODO: Move this to a proper utility or use server-side rendering
+            const htmlContent = `
+                <div style="font-family: sans-serif; color: #333;">
+                    <h1 style="text-align: center; margin-bottom: 30px;">${documentState.metadata.title}</h1>
+                    ${documentState.blocks.map(block => {
+                if (block.type === 'text') return `<div style="margin-bottom: 15px;">${block.content || ''}</div>`;
+                if (block.type === 'heading') return `<h2 style="margin-top: 20px; margin-bottom: 1px;">${block.content || ''}</h2>`;
+                if (block.type === 'image') return `<img src="${block.content}" style="max-width: 100%; margin: 20px 0;" />`;
+                return '';
+            }).join('')}
+                </div>
+            `;
+
+            // 3. Generate PDF via API
+            await generatePdf(id, htmlContent);
+
+            toast.success("Redirecting to Signature Module...", { id: toastId });
+
+            // 4. Redirect
+            setTimeout(() => {
+                navigate(`/signatures/edit/${id}`);
+            }, 1000);
+
+        } catch (error) {
+            console.error("Failed to prepare signature", error);
+            toast.error("Failed to proceed to signature", { id: toastId });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDuplicate = async () => {
+        if (!id) return;
+        const toastId = toast.loading("Duplicating document...");
+        try {
+            const newDoc = await duplicateDocument(id);
+            toast.success("Document duplicated", { id: toastId });
+            // Navigate to new document
+            navigate(`/documents/edit/${newDoc.data.id}`);
+            window.location.reload(); // Force reload to init new state properly
+        } catch (error) {
+            console.error("Duplicate failed", error);
+            toast.error("Failed to duplicate document", { id: toastId });
+        }
+    };
+
+    const handleVoid = async () => {
+        if (!id) return;
+        if (!window.confirm("Are you sure you want to void this document? This action cannot be undone.")) return;
+
+        const toastId = toast.loading("Voiding document...");
+        try {
+            await voidDocument(id, "Voided by user from editor");
+            toast.success("Document voided", { id: toastId });
+            // Refresh state
+            const doc = await getDocument(id);
+            actions.setMetadata({
+                title: doc.data.name,
+                status: doc.data.status
+            });
+        } catch (error) {
+            console.error("Void failed", error);
+            toast.error("Failed to void document", { id: toastId });
+        }
+    };
+
+
 
     return (
         <DndContext
@@ -137,34 +236,22 @@ const DocumentEditor = () => {
         >
             <div className="flex flex-col h-screen bg-slate-50 overflow-hidden">
                 {/* Header */}
-                <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between z-30 flex-shrink-0">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => navigate('/documents')} className="p-2 hover:bg-slate-100 rounded-full text-slate-500">
-                            <ArrowLeft size={20} />
-                        </button>
-                        <input
-                            type="text"
-                            value={documentState.metadata.title}
-                            onChange={(e) => actions.setMetadata({ title: e.target.value })}
-                            className="text-lg font-bold text-slate-800 border-none focus:ring-0 bg-transparent p-0 placeholder-slate-400 focus:outline-none"
-                            placeholder="Untitled Document"
-                        />
-                    </div>
+                <EditorHeader
+                    title={documentState.metadata.title}
+                    onTitleChange={(val) => actions.setMetadata({ title: val })}
+                    status={documentState.metadata.status}
+                    saveStatus={saveStatus}
+                    lastSavedAt={lastSavedAt}
+                    isSaving={isSaving}
+                    onSave={handleSave}
+                    onSend={handleSendForSignature}
+                    onDuplicate={handleDuplicate}
+                    onVoid={handleVoid}
+                    showDuplicate={true}
+                    showVoid={documentState.metadata.status === 'sent'}
+                    onPreview={() => { /* TODO: Implement proper preview modal if needed, or keeping current simple button logic */ }}
 
-                    <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg">
-                            <Eye size={18} /> Preview
-                        </button>
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 shadow-sm disabled:opacity-50"
-                        >
-                            {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                            {isSaving ? 'Saving...' : 'Save'}
-                        </button>
-                    </div>
-                </header>
+                />
 
                 {/* Main Workspace */}
                 <div className="flex flex-1 overflow-hidden">
@@ -203,9 +290,10 @@ const DocumentEditor = () => {
                                 <VariableManager variables={documentState.variables} onAdd={actions.addVariable} />
                             )}
                             {activeTab === 'history' && (
-                                <VersionHistoryPanel
+                                <UnifiedVersionHistory
                                     documentId={id}
-                                    onRestore={() => {
+                                    type="panel"
+                                    onRestore={(version) => {
                                         window.location.reload();
                                     }}
                                 />
@@ -218,7 +306,7 @@ const DocumentEditor = () => {
                         <Canvas
                             blocks={documentState.blocks}
                             actions={actions}
-                            readOnly={false}
+                            readOnly={['sent', 'signed', 'completed'].includes(documentState.metadata.status)}
                             businessData={businessData}
                             selectedBlockId={documentState.selectedBlockId}
                             onSelectBlock={actions.selectBlock}
@@ -234,6 +322,7 @@ const DocumentEditor = () => {
                         />
                     </div>
                 </div>
+
             </div>
         </DndContext>
     );

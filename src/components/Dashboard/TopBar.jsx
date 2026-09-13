@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Bell, User, Menu, Settings, LogOut, CheckCircle, AlertCircle, FileText, ChevronDown, Command } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { getNotifications, markAllNotificationsRead, markNotificationRead } from '../../api/notifications';
+import { useNotifications } from '../../context/NotificationContext';
 
-const TopBar = ({ business, onMenuClick }) => {
+const TopBar = ({ mobileMenuOpen, onMenuClick }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -18,55 +18,26 @@ const TopBar = ({ business, onMenuClick }) => {
     const notificationRef = useRef(null);
     const profileRef = useRef(null);
 
-    // Notifications State
-    const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    // Notifications State via Context
+    const { notifications: rawNotifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
-    const fetchNotifications = async () => {
-        try {
-            const response = await getNotifications();
-            // Backend returns { data: [], unread_count: 0 }
-            const raw = response.data.data;
-            const formatted = raw.map(n => ({
-                id: n.id,
-                type: n.data.type || 'info',
-                title: n.data.title || 'Notification',
-                message: n.data.message || '',
-                time: n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Just now',
-                read: !!n.read_at,
-                raw_created_at: n.created_at
-            }));
-            setNotifications(formatted);
-            setUnreadCount(response.data.unread_count);
-        } catch (error) {
-            console.error("Failed to fetch notifications", error);
-        }
-    };
-
-    useEffect(() => {
-        if (user) {
-            fetchNotifications();
-            const interval = setInterval(fetchNotifications, 30000);
-            return () => clearInterval(interval);
-        }
-    }, [user]);
+    // Format notifications for display (TopBar expects specific format)
+    const notifications = rawNotifications.map(n => ({
+        id: n.id,
+        type: n.data.type || 'info', // 'document_viewed', 'document_signed'
+        title: n.data.document_name ? (n.data.type === 'document_signed' ? 'Document Signed' : 'Document Viewed') : (n.data.title || 'Notification'),
+        message: n.data.message || '',
+        time: n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Just now',
+        read: !!n.read_at,
+        raw_created_at: n.created_at
+    }));
 
     const handleMarkAllRead = async () => {
-        try {
-            await markAllNotificationsRead();
-            fetchNotifications();
-        } catch (error) {
-            console.error("Failed to mark all read", error);
-        }
+        await markAllAsRead();
     };
 
     const handleMarkRead = async (id) => {
-        try {
-            await markNotificationRead(id);
-            fetchNotifications();
-        } catch (error) {
-            console.error("Failed to mark read", error);
-        }
+        await markAsRead(id);
     };
 
     useEffect(() => {
@@ -92,11 +63,14 @@ const TopBar = ({ business, onMenuClick }) => {
     };
 
     return (
-        <header className="no-print px-6 py-4 flex items-center justify-between sticky top-0 z-40 glass border-b border-indigo-50/50 shadow-sm transition-all duration-300">
+        <header className="no-print px-4 sm:px-6 py-4 min-h-20 flex items-center justify-between sticky top-0 z-30 bg-white border-b border-slate-200">
             {/* Breadcrumbs / Page Title */}
             <div className="flex items-center gap-4">
                 <button
                     onClick={onMenuClick}
+                    aria-label="Open navigation"
+                    aria-controls="workspace-sidebar"
+                    aria-expanded={mobileMenuOpen}
                     className="p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-xl lg:hidden transition-colors"
                 >
                     <Menu size={20} />
@@ -116,6 +90,7 @@ const TopBar = ({ business, onMenuClick }) => {
                 {/* Search */}
                 <div className="relative group" ref={searchRef}>
                     <button
+                        aria-label="Toggle search"
                         onClick={() => setIsSearchOpen(!isSearchOpen)}
                         className="md:hidden p-2 text-slate-500 hover:bg-slate-50 rounded-xl"
                     >
@@ -129,6 +104,7 @@ const TopBar = ({ business, onMenuClick }) => {
                         <input
                             type="text"
                             autoFocus={isSearchOpen}
+                            aria-label="Search"
                             placeholder="Type to search..."
                             className="pl-10 pr-12 py-2.5 bg-slate-100/50 border border-transparent rounded-xl text-sm w-full md:w-72 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white focus:border-indigo-500 transition-all duration-200 placeholder-slate-400 text-slate-700 hover:bg-slate-100 outline-none"
                         />
@@ -142,8 +118,9 @@ const TopBar = ({ business, onMenuClick }) => {
 
                 {/* Notifications */}
                 <div className="relative" ref={notificationRef}>
-                    <motion.button
-                        autoFocus={false}
+                    <Motion.button
+                        aria-label="Notifications"
+                        aria-expanded={isNotificationsOpen}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
@@ -152,15 +129,15 @@ const TopBar = ({ business, onMenuClick }) => {
                         <Bell size={20} strokeWidth={2} />
                         {unreadCount > 0 && (
                             <span className="absolute top-2.5 right-2.5 flex h-2.5 w-2.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 ring-2 ring-white"></span>
+
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600 ring-2 ring-white"></span>
                             </span>
                         )}
-                    </motion.button>
+                    </Motion.button>
 
                     <AnimatePresence>
                         {isNotificationsOpen && (
-                            <motion.div
+                            <Motion.div
                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -172,7 +149,7 @@ const TopBar = ({ business, onMenuClick }) => {
                                         <h3 className="font-bold text-slate-800">Notifications</h3>
                                         <p className="text-xs text-slate-500 mt-0.5">You have {unreadCount} unread messages</p>
                                     </div>
-                                    {unreadCount > 0 && (
+                                    {unreadCount > 0 && ( /* Only show if unread > 0? Or always? TopBar logic was > 0 */
                                         <button
                                             onClick={handleMarkAllRead}
                                             className="text-xs text-indigo-600 hover:text-indigo-700 font-bold px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
@@ -222,20 +199,26 @@ const TopBar = ({ business, onMenuClick }) => {
                                     )}
                                 </div>
                                 <div className="p-3 bg-slate-50/50 text-center border-t border-slate-100">
-                                    <button className="text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors flex items-center justify-center gap-1 w-full py-1">
+                                    <Link
+                                        to="/notifications"
+                                        onClick={() => setIsNotificationsOpen(false)}
+                                        className="text-xs font-bold text-slate-600 hover:text-indigo-600 transition-colors flex items-center justify-center gap-1 w-full py-1"
+                                    >
                                         View All Activity <ChevronDown size={12} />
-                                    </button>
+                                    </Link>
                                 </div>
-                            </motion.div>
+                            </Motion.div>
                         )}
                     </AnimatePresence>
                 </div>
 
                 {/* Profile */}
                 <div className="relative pl-2" ref={profileRef}>
-                    <motion.button
+                    <Motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
+                        aria-label="Account menu"
+                        aria-expanded={isProfileOpen}
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                         className={`flex items-center gap-3 p-1 rounded-xl transition-all border ${isProfileOpen ? 'bg-white border-indigo-200 shadow-md ring-2 ring-indigo-50/50' : 'border-transparent hover:bg-slate-50'
                             }`}
@@ -244,29 +227,29 @@ const TopBar = ({ business, onMenuClick }) => {
                             <p className="text-sm font-bold text-slate-800 leading-none">{user?.name || 'User'}</p>
                             <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mt-1">{user?.role || 'Member'}</p>
                         </div>
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-0.5 shadow-lg shadow-indigo-500/20">
+                        <div className="h-10 w-10 rounded-xl bg-slate-200 p-0.5">
                             <div className="h-full w-full bg-white rounded-[10px] flex items-center justify-center overflow-hidden">
                                 {user?.avatar_url ? (
                                     <img src={user.avatar_url} alt={user.name} className="h-full w-full object-cover" />
                                 ) : (
-                                    <span className="font-bold text-sm bg-gradient-to-br from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                                    <span className="font-bold text-sm text-slate-700">
                                         {user?.name?.charAt(0).toUpperCase() || 'U'}
                                     </span>
                                 )}
                             </div>
                         </div>
-                    </motion.button>
+                    </Motion.button>
 
                     <AnimatePresence>
                         {isProfileOpen && (
-                            <motion.div
+                            <Motion.div
                                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                 transition={{ type: "spring", duration: 0.3 }}
                                 className="absolute right-0 mt-3 w-64 bg-white rounded-2xl shadow-premium border border-slate-100 overflow-hidden z-50 origin-top-right"
                             >
-                                <div className="p-5 border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white">
+                                <div className="p-5 border-b border-slate-100 bg-slate-50">
                                     <div className="flex items-center gap-3 mb-3">
                                         <div className="h-12 w-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xl">
                                             {user?.name?.charAt(0).toUpperCase()}
@@ -301,7 +284,7 @@ const TopBar = ({ business, onMenuClick }) => {
                                         Sign Out
                                     </button>
                                 </div>
-                            </motion.div>
+                            </Motion.div>
                         )}
                     </AnimatePresence>
                 </div>

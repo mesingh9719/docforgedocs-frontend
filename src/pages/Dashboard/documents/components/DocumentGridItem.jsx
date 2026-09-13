@@ -1,19 +1,22 @@
+import StatusBadge from '../../../../components/ui/StatusBadge';
 import React, { memo } from 'react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { FileText, PenTool, Clock, Mail } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-const DocumentGridItem = memo(({ doc, getStatusStyle, variants, onViewHistory, handleView }) => {
+const DocumentGridItem = memo(({ doc, variants, onViewHistory, handleView }) => {
+    const documentType = doc.document_type || doc.type;
+
     return (
-        <motion.div
+        <Motion.div
             variants={variants}
-            className="group relative bg-white rounded-xl border border-slate-200 p-5 cursor-pointer hover:shadow-lg hover:border-indigo-200 transition-all duration-200 flex flex-col justify-between h-full"
+            className="group relative bg-white rounded-xl border border-slate-200 p-5 cursor-pointer hover:shadow-sm hover:border-slate-300 transition-all duration-200 flex flex-col justify-between h-full"
             onClick={() => handleView(doc)}
         >
             <div>
                 <div className="flex justify-between items-start mb-4">
                     <div className={`p-2.5 rounded-lg transition-colors ${doc.signers_count > 0
-                            ? 'bg-purple-50 text-purple-600 group-hover:bg-purple-100'
+                            ? 'bg-slate-100 text-slate-600 group-hover:bg-slate-200'
                             : 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100'
                         }`}>
                         {doc.signers_count > 0 ? <PenTool size={20} /> : <FileText size={20} />}
@@ -26,21 +29,19 @@ const DocumentGridItem = memo(({ doc, getStatusStyle, variants, onViewHistory, h
                         >
                             <Mail size={14} />
                         </button>
-                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getStatusStyle(doc.status)}`}>
-                            {doc.status}
-                        </span>
+                        <StatusBadge status={doc.status} />
                     </div>
                 </div>
 
-                <h3 className="font-semibold text-slate-800 mb-1.5 group-hover:text-indigo-600 transition-colors line-clamp-1 text-base">
+                <h3><button onClick={(e) => { e.stopPropagation(); handleView(doc); }} className="text-left font-semibold text-slate-800 mb-1.5 group-hover:text-indigo-600 transition-colors line-clamp-2 break-words text-sm">
                     {doc.title || doc.name}
-                </h3>
-                <p className="text-xs font-medium text-slate-500 mb-4 uppercase tracking-wider">
-                    {doc.type?.name || doc.type}
+                </button></h3>
+                <p className="text-xs font-medium text-slate-500 mb-4">
+                    {typeof documentType === 'string' ? documentType : documentType?.name || 'General'}
                 </p>
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
+            <div className="flex flex-wrap gap-3 items-center justify-between pt-4 border-t border-slate-100 mt-auto">
                 <div className="flex items-center gap-2">
                     {doc.creator?.avatar_url ? (
                         <img
@@ -57,12 +58,13 @@ const DocumentGridItem = memo(({ doc, getStatusStyle, variants, onViewHistory, h
                         {doc.creator?.name || 'Unknown'}
                     </span>
                 </div>
-                <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+                <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
                     <Clock size={12} /> {formatDistanceToNow(new Date(doc.updated_at), { addSuffix: true })}
                 </span>
             </div>
-        </motion.div>
+        </Motion.div>
     );
 });
 
+DocumentGridItem.displayName = 'DocumentGridItem';
 export default DocumentGridItem;

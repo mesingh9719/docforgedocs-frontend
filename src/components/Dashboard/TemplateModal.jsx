@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, FileText, FileBadge, ArrowRight, FileCheck, Briefcase, Handshake, LayoutGrid, List } from 'lucide-react';
@@ -55,6 +55,18 @@ const templates = [
 const TemplateModal = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
     const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+    const closeButtonRef = useRef(null);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+
+        closeButtonRef.current?.focus();
+        const handleKeyDown = (event) => {
+            if (event.key === 'Escape') onClose();
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
 
     const handleSelect = (template) => {
         if (!template.available) return;
@@ -82,13 +94,13 @@ const TemplateModal = ({ isOpen, onClose }) => {
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed inset-0 m-auto max-w-4xl h-fit max-h-[90vh] z-[9999] p-4 pointer-events-none flex items-center justify-center"
+                        className="fixed inset-0 z-[9999] p-3 sm:p-6 pointer-events-none flex items-center justify-center"
                     >
-                        <div className="bg-white/95 backdrop-blur-md w-full rounded-2xl shadow-2xl overflow-hidden border border-white/20 relative pointer-events-auto flex flex-col max-h-full">
+                        <div role="dialog" aria-modal="true" aria-labelledby="new-document-title" className="bg-white/95 backdrop-blur-md w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden border border-white/20 relative pointer-events-auto flex flex-col max-h-full">
                             {/* Header */}
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-start bg-gradient-to-br from-slate-50 to-white/50">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Create New Document</h2>
+                            <div className="p-4 sm:p-6 border-b border-slate-100 flex justify-between gap-3 items-start bg-gradient-to-br from-slate-50 to-white/50">
+                                <div className="min-w-0">
+                                    <h2 id="new-document-title" className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Create New Document</h2>
                                     <p className="text-sm text-slate-500 mt-1">Select a premium template to get started with your document.</p>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -97,6 +109,7 @@ const TemplateModal = ({ isOpen, onClose }) => {
                                             onClick={() => setViewMode('grid')}
                                             className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
                                             title="Grid View"
+                                            aria-label="Grid view"
                                         >
                                             <LayoutGrid size={18} />
                                         </button>
@@ -104,12 +117,15 @@ const TemplateModal = ({ isOpen, onClose }) => {
                                             onClick={() => setViewMode('list')}
                                             className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
                                             title="List View"
+                                            aria-label="List view"
                                         >
                                             <List size={18} />
                                         </button>
                                     </div>
                                     <button
                                         onClick={onClose}
+                                        ref={closeButtonRef}
+                                        aria-label="Close new document dialog"
                                         className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
                                     >
                                         <X size={24} />
@@ -118,7 +134,7 @@ const TemplateModal = ({ isOpen, onClose }) => {
                             </div>
 
                             {/* Content */}
-                            <div className={`p-6 overflow-y-auto ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'flex flex-col gap-3'}`}>
+                            <div className={`p-4 sm:p-6 overflow-y-auto ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'flex flex-col gap-3'}`}>
                                 {templates.map((template) => (
                                     <button
                                         key={template.id}
@@ -166,7 +182,7 @@ const TemplateModal = ({ isOpen, onClose }) => {
 
                             {/* Footer hint */}
                             <div className="p-4 bg-slate-50 border-t border-slate-100 text-center text-xs text-slate-400 font-medium">
-                                Can't find what you're looking for? <button className="text-indigo-600 hover:underline">Request a template</button>
+                                Choose a template to open its editor. You can rename and save it as a draft there.
                             </div>
                         </div>
                     </motion.div>

@@ -1,25 +1,26 @@
+import StatusBadge from '../../../../components/ui/StatusBadge';
 import React, { memo } from 'react';
-import { motion } from 'framer-motion';
+import { motion as Motion } from 'framer-motion';
 import { CheckSquare, Square, FileText, CheckCircle, Clock, Mail, Eye, History, Trash2, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 
 const SignatureTableRow = memo(({
     doc,
+    canDelete,
+    actionBusy,
     isSelected,
     toggleSelect,
-    getStatusInfo,
     getProgress,
     handleResendReminder,
     handleDelete,
     setSelectedDoc,
     setActiveDrawer
 }) => {
-    const status = getStatusInfo(doc);
     const progress = getProgress(doc.signers);
 
     return (
-        <motion.tr
+        <Motion.tr
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             whileHover={{ backgroundColor: 'rgba(248, 250, 252, 0.8)' }}
@@ -27,6 +28,7 @@ const SignatureTableRow = memo(({
         >
             <td className="px-6 py-4 w-12">
                 <button
+                    aria-label={`Select ${doc.name || "request"}`} aria-pressed={isSelected}
                     onClick={() => toggleSelect(doc.id)}
                     className={`transition-colors ${isSelected ? 'text-indigo-600' : 'text-slate-300 hover:text-slate-500'}`}
                 >
@@ -41,12 +43,12 @@ const SignatureTableRow = memo(({
                         {doc.status === 'completed' ? <CheckCircle size={20} /> : <FileText size={20} strokeWidth={1.5} />}
                     </div>
                     <div>
-                        <p
-                            className="font-semibold text-slate-700 text-sm hover:text-indigo-600 cursor-pointer transition-colors line-clamp-1"
+                        <button
+                            className="font-semibold text-slate-700 text-sm hover:text-indigo-600 cursor-pointer transition-colors text-left line-clamp-2 break-words"
                             onClick={() => { setSelectedDoc(doc); setActiveDrawer('preview'); }}
                         >
                             {doc.name || "Untitled Document"}
-                        </p>
+                        </button>
                         <span className="text-[11px] text-slate-400 font-mono">ID: #{doc.id.toString().slice(-6)}</span>
                     </div>
                 </div>
@@ -54,18 +56,15 @@ const SignatureTableRow = memo(({
 
             <td className="px-6 py-4">
                 <div className="space-y-1.5">
-                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold border ${status.color}`}>
-                        <status.icon size={10} />
-                        {status.label}
-                    </div>
+                    <StatusBadge status={doc.status} />
 
                     {doc.signers?.length > 0 && (
                         <div className="w-32">
                             <div className="flex justify-between text-[10px] text-slate-400 mb-1 font-medium">
-                                <span>Progress</span>
+                                <span>{doc.signers.filter(s => s.status === 'signed').length}/{doc.signers.length} signed</span>
                                 <span>{progress}%</span>
                             </div>
-                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div role="progressbar" aria-label="Signature completion" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                 <div
                                     className={`h-full rounded-full transition-all duration-1000 ${progress === 100 ? 'bg-emerald-500' : 'bg-indigo-500'}`}
                                     style={{ width: `${progress}%` }}
@@ -81,11 +80,11 @@ const SignatureTableRow = memo(({
                     {doc.signers?.slice(0, 4).map((s, i) => (
                         <div
                             key={i}
-                            className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm ring-1 ring-slate-100 relative group/avatar ${s.status === 'signed' ? 'bg-emerald-500' : s.status === 'viewed' ? 'bg-amber-400' : 'bg-indigo-300'
+                            className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-sm ring-1 ring-slate-100 relative group/avatar ${s.status === 'signed' ? 'bg-emerald-700' : s.status === 'viewed' ? 'bg-cyan-700' : 'bg-slate-500'
                                 }`}
                             title={`${s.name} (${s.email}) - ${s.status}`}
                         >
-                            {s.name.charAt(0).toUpperCase()}
+                            {s.name?.charAt(0).toUpperCase() || '?'}
                             <div className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full p-[1px]">
                                 {s.status === 'signed' && <CheckCircle size={8} className="text-emerald-500 fill-emerald-100" />}
                             </div>
@@ -113,9 +112,10 @@ const SignatureTableRow = memo(({
             </td>
 
             <td className="px-6 py-4 text-right">
-                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {doc.status !== 'completed' && doc.signers?.some(s => s.status !== 'signed') && (
+                <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity">
+                    {['sent', 'viewed'].includes(doc.status) && doc.signers?.some(s => s.status !== 'signed') && (
                         <button
+                            disabled={actionBusy}
                             onClick={() => handleResendReminder(doc.id)}
                             className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors"
                             title="Resend Signature Request"
@@ -144,17 +144,18 @@ const SignatureTableRow = memo(({
 
                     <div className="h-4 w-px bg-slate-200 mx-1" />
 
-                    <button
+                    {canDelete && <button
                         onClick={() => handleDelete(doc.id)}
                         className="p-1.5 hover:bg-red-50 rounded-lg text-slate-300 hover:text-red-500 transition-colors"
                         title="Delete"
                     >
                         <Trash2 size={16} />
-                    </button>
+                    </button>}
                 </div>
             </td>
-        </motion.tr>
+        </Motion.tr>
     );
 });
 
+SignatureTableRow.displayName = 'SignatureTableRow';
 export default SignatureTableRow;

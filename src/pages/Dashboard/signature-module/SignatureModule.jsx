@@ -43,6 +43,7 @@ const SignatureModule = () => {
     const [activeDragData, setActiveDragData] = useState(null);
     const [numPages, setNumPages] = useState(0);
     const [sidebarTab, setSidebarTab] = useState('tools'); // 'tools' or 'pages'
+    const [sidebarCurrentPage, setSidebarCurrentPage] = useState(1);
 
     // Mobile States
     const [showMobileTools, setShowMobileTools] = useState(false);
@@ -52,8 +53,6 @@ const SignatureModule = () => {
     const [isSending, setIsSending] = useState(false);
     const [sendSuccess, setSendSuccess] = useState(false);
     const [sendError, setSendError] = useState(null);
-    const [redirectProgress, setRedirectProgress] = useState(0);
-
     const pdfViewerRef = useRef(null);
 
     const steps = [
@@ -83,9 +82,11 @@ const SignatureModule = () => {
 
                 // Load PDF
                 if (doc.pdf_url) {
-                    // Use file proxy to avoid CORS issues with static storage
-                    const proxyUrl = `${import.meta.env.VITE_API_BASE_URL}/file-proxy?path=${encodeURIComponent(doc.pdf_url)}`;
-                    setPdfUrl(proxyUrl);
+                    const pdfResponse = await fetch(doc.pdf_url, {
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                    });
+                    if (!pdfResponse.ok) throw new Error("Failed to load document PDF");
+                    setPdfUrl(URL.createObjectURL(await pdfResponse.blob()));
                     // We don't have the File object, but PDFViewer uses URL.
                     // We need to set pdfFile to something truthy to bypass the upload screen.
                     setPdfFile({ name: doc.name, type: 'application/pdf' }); // Mock file object
@@ -307,6 +308,18 @@ const SignatureModule = () => {
         }
     };
 
+    // Give the confirmation state time to explain what happens next, then take
+    // the user to the place where they can monitor the signing request.
+    useEffect(() => {
+        if (!sendSuccess) return undefined;
+
+        const redirectTimer = window.setTimeout(() => {
+            navigate('/signatures/list');
+        }, 5000);
+
+        return () => window.clearTimeout(redirectTimer);
+    }, [sendSuccess, navigate]);
+
     return (
         <div className="max-w-7xl mx-auto h-[calc(100vh-80px)] flex flex-col font-sans">
             <DashboardPageHeader
@@ -346,7 +359,7 @@ const SignatureModule = () => {
                             {pdfFile && (
                                 <div className="w-80 bg-white border-r border-slate-200 hidden lg:flex flex-col z-20 h-full">
                                     {/* Sidebar Tabs */}
-                                    <div className="flex items-center border-b border-slate-200">
+                                    <div className="flex flex-shrink-0 items-center border-b border-slate-200">
                                         <button
                                             onClick={() => setSidebarTab('tools')}
                                             className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${sidebarTab === 'tools' ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
@@ -401,8 +414,9 @@ const SignatureModule = () => {
                                         <PageThumbnailsSidebar
                                             pdfUrl={pdfUrl}
                                             numPages={numPages}
-                                            currentPage={1} // You might want to track current page from PDFViewer
+                                            currentPage={sidebarCurrentPage}
                                             onPageClick={(page) => {
+                                                setSidebarCurrentPage(page);
                                                 const el = document.getElementById(`pdf-page-${page}`); // PDFViewer needs to set IDs
                                                 if (el) el.scrollIntoView({ behavior: 'smooth' });
                                             }}
@@ -543,25 +557,64 @@ const SignatureModule = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
                     >
-                        <motion.div className="bg-white rounded-2xl shadow-2xl p-0 w-full max-w-lg overflow-hidden border border-white/20">
-                            <div className="p-8 pb-10 flex flex-col items-center text-center relative z-10">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                            transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+                            className="w-full max-w-lg overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl"
+                        >
+                            <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-400" />
+                            <div className="p-8 sm:p-10 flex flex-col items-center text-center relative z-10">
                                 {isSending && (
                                     <>
-                                        <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-6" />
-                                        <h3 className="text-xl font-bold text-slate-800 mb-2">Sending Document...</h3>
-                                        <p className="text-slate-500">Dispatching to all signers securely.</p>
+                                        <div className="relative mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50">
+                                            <div className="absolute inset-0 rounded-2xl border-4 border-indigo-100 border-t-indigo-600 animate-spin" />
+                                            <Send size={23} className="text-indigo-600" />
+                                        </div>
+                                        <h3 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">Sending your document</h3>
+                                        <p className="max-w-sm text-sm leading-6 text-slate-500">We’re securely creating the signing request and preparing an email invitation for each signer.</p>
+                                        <div className="mt-7 flex items-center gap-2 rounded-xl border border-indigo-100 bg-indigo-50/70 px-4 py-3 text-left text-xs text-indigo-800">
+                                            <span className="h-2 w-2 shrink-0 rounded-full bg-indigo-500 animate-pulse" />
+                                            Please keep this window open while we finish sending.
+                                        </div>
                                     </>
                                 )}
                                 {sendSuccess && (
                                     <>
-                                        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-6">
-                                            <CheckCircle size={32} />
+                                        <motion.div
+                                            initial={{ scale: 0.5, rotate: -20 }}
+                                            animate={{ scale: 1, rotate: 0 }}
+                                            transition={{ type: 'spring', stiffness: 380, damping: 16, delay: 0.1 }}
+                                            className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600"
+                                        >
+                                            <CheckCircle size={34} />
+                                        </motion.div>
+                                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-600">Ready to sign</p>
+                                        <h3 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">Document sent successfully</h3>
+                                        <p className="max-w-sm text-sm leading-6 text-slate-500">Your signers will receive secure email invitations. You can track every signature, reminder, and completion from Sent documents.</p>
+
+                                        <div className="mt-7 w-full space-y-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-left text-sm text-slate-600">
+                                            <p className="flex items-center gap-3"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[11px] font-bold text-white">1</span> Signing request created</p>
+                                            <p className="flex items-center gap-3"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500 text-[11px] font-bold text-white">2</span> Invitations are being delivered</p>
+                                            <p className="flex items-center gap-3"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-300 text-[11px] font-bold text-white">3</span> Track progress in Sent documents</p>
                                         </div>
-                                        <h3 className="text-xl font-bold text-slate-800 mb-2">Sent Successfully!</h3>
-                                        <div className="w-full max-w-xs h-1.5 bg-slate-100 rounded-full overflow-hidden mb-4 mt-2">
-                                            <motion.div className="h-full bg-emerald-500" style={{ width: `${redirectProgress}%` }} />
+
+                                        <div className="mt-7 w-full">
+                                            <div className="mb-2 flex items-center justify-between text-xs font-medium text-slate-500">
+                                                <span>Opening your sent documents</span>
+                                                <span>5 seconds</span>
+                                            </div>
+                                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                                <motion.div
+                                                    initial={{ width: '0%' }}
+                                                    animate={{ width: '100%' }}
+                                                    transition={{ duration: 5, ease: 'linear' }}
+                                                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500"
+                                                />
+                                            </div>
                                         </div>
-                                        <button onClick={() => navigate('/signatures/list')} className="text-sm font-bold text-indigo-600">Redirecting...</button>
+                                        <button onClick={() => navigate('/signatures/list')} className="mt-5 text-sm font-bold text-indigo-600 transition-colors hover:text-indigo-700">Go to Sent documents now</button>
                                     </>
                                 )}
                                 {sendError && (

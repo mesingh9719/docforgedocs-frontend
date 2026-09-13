@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import StatusBadge from '../../../components/ui/StatusBadge';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { Plus, Search, Filter, LayoutGrid, List as ListIcon, Trash2, RotateCcw, ChevronLeft, ChevronRight, X, Eye, Download, FileText, User, CheckCircle, Clock, CheckSquare } from 'lucide-react';
 import { getDocumentShares, duplicateDocument, exportDocuments } from '../../../api/documents';
 import TemplateModal from '../../../components/Dashboard/TemplateModal';
@@ -10,6 +11,7 @@ import DashboardPageHeader from '../../../components/Dashboard/DashboardPageHead
 import toast from 'react-hot-toast';
 import axios from '../../../api/axios';
 import DashboardPage from '../../../components/Dashboard/DashboardPage';
+import './documents.css';
 
 // Sub-components
 import DocumentSkeleton from './components/DocumentSkeleton';
@@ -38,6 +40,7 @@ const DocumentList = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState(() => localStorage.getItem('documentViewMode') || 'list');
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [documents, setDocuments] = useState([]);
 
     // Advanced Features State
@@ -54,6 +57,30 @@ const DocumentList = () => {
     const [activeMenuId, setActiveMenuId] = useState(null);
     const [activeDrawer, setActiveDrawer] = useState(null);
     const [drawerDoc, setDrawerDoc] = useState(null);
+    const drawerRef = useRef(null);
+    useEffect(() => {
+        if (!activeDrawer) return;
+        const previousFocus = document.activeElement;
+        const overflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        drawerRef.current?.querySelector('button')?.focus();
+        const onKeyDown = (event) => {
+            if (event.key === 'Escape') setActiveDrawer(null);
+            if (event.key !== 'Tab') return;
+            const controls = drawerRef.current?.querySelectorAll('button:not(:disabled), a[href], input, select');
+            if (!controls?.length) return;
+            const first = controls[0];
+            const last = controls[controls.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.body.style.overflow = overflow;
+            document.removeEventListener('keydown', onKeyDown);
+            previousFocus?.focus();
+        };
+    }, [activeDrawer]);
 
     // Filter States
     const [filters, setFilters] = useState({
@@ -84,6 +111,7 @@ const DocumentList = () => {
     const fetchDocuments = useCallback(async (page = 1) => {
         try {
             setIsLoading(true);
+            setLoadError(false);
             const params = {
                 page,
                 per_page: pagination.per_page,
@@ -108,6 +136,7 @@ const DocumentList = () => {
         } catch (error) {
             console.error("Failed to fetch documents", error);
             setDocuments([]);
+            setLoadError(true);
         } finally {
             setIsLoading(false);
         }
@@ -130,16 +159,7 @@ const DocumentList = () => {
 
     const handleFilterChange = useCallback((key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
-    }, []);
-
-    const getStatusStyle = useCallback((status) => {
-        switch (status) {
-            case 'draft': return 'bg-slate-100 text-slate-700 border-slate-200';
-            case 'sent': return 'bg-blue-50 text-blue-700 border-blue-200';
-            case 'signed': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-            case 'completed': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-            default: return 'bg-slate-100 text-slate-700 border-slate-200';
-        }
+        setSelectedIds([]);
     }, []);
 
     // Handlers wrapped in useCallback for child memoization
@@ -163,7 +183,7 @@ const DocumentList = () => {
             const response = await axios.get(`/documents/${docId}`);
             setDrawerDoc(response.data.data);
             setActiveDrawer(type);
-        } catch (error) {
+        } catch {
             toast.error("Failed to load document details");
         }
     }, []);
@@ -173,7 +193,7 @@ const DocumentList = () => {
     }, [navigate]);
 
     const handleView = useCallback((doc) => {
-        const typeSlug = doc.type?.slug || 'general';
+        const typeSlug = doc.document_type?.slug || doc.type?.slug || 'general';
         const hasBlocks = doc.content && doc.content.blocks && doc.content.blocks.length > 0;
 
         // 1. Standard Documents (NDA, Proposal, Invoice, or any doc with content blocks) -> Editor
@@ -200,7 +220,7 @@ const DocumentList = () => {
             await axios.delete(`/documents/${id}`);
             toast.success('Document moved to trash', { id: 'doc-delete' });
             fetchDocuments(pagination.current_page);
-        } catch (error) {
+        } catch {
             toast.error('Failed to delete document', { id: 'doc-delete-error' });
         }
     }, [fetchDocuments, pagination.current_page]);
@@ -210,7 +230,7 @@ const DocumentList = () => {
             await axios.post(`/documents/${id}/restore`);
             toast.success('Document restored', { id: 'doc-restore' });
             fetchDocuments(pagination.current_page);
-        } catch (error) {
+        } catch {
             toast.error('Failed to restore document', { id: 'doc-restore-error' });
         }
     }, [fetchDocuments, pagination.current_page]);
@@ -236,7 +256,7 @@ const DocumentList = () => {
             toast.success(`${selectedIds.length} documents moved to trash`, { id: 'bulk-delete' });
             setSelectedIds([]);
             fetchDocuments(pagination.current_page);
-        } catch (error) {
+        } catch {
             toast.error('Failed to bulk delete', { id: 'bulk-delete-error' });
         }
     };
@@ -257,7 +277,7 @@ const DocumentList = () => {
             toast.success(`Duplicated "${doc.name}"`);
             fetchDocuments(pagination.current_page);
             setActiveMenuId(null);
-        } catch (error) {
+        } catch {
             toast.error('Failed to duplicate document');
         }
     };
@@ -290,16 +310,17 @@ const DocumentList = () => {
 
 
     return (
-        <DashboardPage>
+        <DashboardPage className="documents-module">
             <DashboardPageHeader
-                title="Documents"
-                subtitle="Manage, organize, and track your legal documents."
+                title={trashMode ? "Document trash" : "Documents"}
+                subtitle={trashMode ? "Review deleted documents and restore the ones you need." : "Create, organize, and keep track of your workspace documents."}
             >
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <button
                         onClick={handleExport}
                         className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all bg-white"
                         title="Export filtered list to CSV"
+                        aria-label="Export filtered list to CSV"
                     >
                         <Download size={16} />
                         <span className="hidden sm:inline">Export CSV</span>
@@ -323,7 +344,7 @@ const DocumentList = () => {
                     {permissions.canCreate && !trashMode && (
                         <button
                             onClick={() => setIsModalOpen(true)}
-                            className="px-4 py-2 bg-slate-900 text-white rounded-lg font-semibold flex items-center gap-2 hover:bg-slate-800 transition-all shadow-lg shadow-slate-900/20 text-sm"
+                            className="px-4 py-2 bg-slate-900 text-white rounded-lg font-semibold flex items-center gap-2 hover:bg-slate-800 transition-all  text-sm"
                         >
                             <Plus size={18} strokeWidth={2.5} />
                             <span>New Document</span>
@@ -332,22 +353,24 @@ const DocumentList = () => {
                 </div>
             </DashboardPageHeader>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row gap-4 justify-between items-center mb-6">
-                <div className="relative flex-1 w-full xl:max-w-lg group">
+            <div className="documents-toolbar">
+                <div className="documents-search relative group">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-slate-600 transition-colors" size={18} />
                     <input
                         type="text"
                         value={filters.search}
                         onChange={(e) => handleFilterChange('search', e.target.value)}
-                        placeholder="Search documents..."
+                        aria-label="Search documents"
+                        placeholder="Search by document name…"
                         className="w-full pl-10 pr-4 py-2 bg-slate-50 border-transparent rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-slate-100 focus:border-slate-300 transition-all placeholder-slate-400 text-slate-900 outline-none"
                     />
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto items-center">
+                <div className="documents-filters">
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <Filter size={16} className="text-slate-400" />
                         <select
+                            aria-label="Document type"
                             value={filters.type}
                             onChange={(e) => handleFilterChange('type', e.target.value)}
                             className="px-3 py-2 bg-slate-50 border-transparent hover:bg-slate-100 rounded-lg text-sm text-slate-600 font-medium outline-none focus:ring-2 focus:ring-slate-100 cursor-pointer transition-colors w-full sm:w-auto"
@@ -356,12 +379,15 @@ const DocumentList = () => {
                             <option value="nda">NDA</option>
                             <option value="proposal">Proposal</option>
                             <option value="invoice">Invoice</option>
+                            <option value="offer-letter">Offer Letter</option>
+                            <option value="consulting-agreement">Consulting Agreement</option>
                         </select>
                     </div>
 
                     <div className="w-px h-6 bg-slate-200 hidden sm:block"></div>
 
                     <select
+                        aria-label="Document category"
                         value={filters.category}
                         onChange={(e) => handleFilterChange('category', e.target.value)}
                         className="px-3 py-2 bg-slate-50 border-transparent hover:bg-slate-100 rounded-lg text-sm text-slate-600 font-medium outline-none focus:ring-2 focus:ring-slate-100 cursor-pointer transition-colors w-full sm:w-auto"
@@ -374,6 +400,7 @@ const DocumentList = () => {
                     <div className="w-px h-6 bg-slate-200 hidden sm:block"></div>
 
                     <select
+                        aria-label="Document status"
                         value={filters.status}
                         onChange={(e) => handleFilterChange('status', e.target.value)}
                         className="px-3 py-2 bg-slate-50 border-transparent hover:bg-slate-100 rounded-lg text-sm text-slate-600 font-medium outline-none focus:ring-2 focus:ring-slate-100 cursor-pointer transition-colors w-full sm:w-auto"
@@ -382,32 +409,54 @@ const DocumentList = () => {
                         <option value="draft">Draft</option>
                         <option value="sent">Sent</option>
                         <option value="signed">Signed</option>
+                        <option value="completed">Completed</option>
                     </select>
 
                     <div className="w-px h-6 bg-slate-200 hidden sm:block"></div>
 
                     <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                         <button
+                            aria-label="List view" aria-pressed={viewMode === 'list'}
                             onClick={() => changeViewMode('list')}
                             className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-slate-700' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             <ListIcon size={16} />
                         </button>
                         <button
+                            aria-label="Grid view" aria-pressed={viewMode === 'grid'}
                             onClick={() => changeViewMode('grid')}
                             className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-slate-700' : 'text-slate-400 hover:text-slate-600'}`}
                         >
                             <LayoutGrid size={16} />
                         </button>
                     </div>
+
+                    {(filters.search || filters.type !== 'all' || filters.category !== 'all' || filters.status !== 'all') && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setFilters({ search: '', status: 'all', type: 'all', category: 'all' });
+                                setSelectedIds([]);
+                            }}
+                            className="self-start sm:self-auto px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                            Clear filters
+                        </button>
+                    )}
                 </div>
             </div>
 
+            <div className="documents-results" role="status" aria-live="polite">
+                <div><span className="font-semibold text-slate-800">{isLoading ? 'Loading documents…' : loadError ? 'Documents unavailable' : `${pagination.total.toLocaleString()} ${pagination.total === 1 ? 'document' : 'documents'}`}</span><span className="text-slate-500">{trashMode ? ' in trash' : ' in your library'}{Object.values(filters).some(value => value && value !== 'all') ? ' · Filtered results' : ''}</span></div>
+                <span className="text-slate-500 hidden sm:block">{viewMode === 'list' ? 'List view' : 'Grid view'}</span>
+            </div>
+
             {selectedIds.length > 0 && (
-                <div className="flex items-center gap-4 w-full bg-slate-50 p-2 rounded-lg border border-slate-200 animate-in fade-in slide-in-from-top-2 mb-4">
+                <div className="flex flex-wrap items-center gap-3 w-full bg-indigo-50 p-3 rounded-lg border border-indigo-100 mb-4">
                     <span className="text-sm font-semibold text-slate-700 ml-2">
                         {selectedIds.length} selected
                     </span>
+                    <button className="text-sm text-indigo-700 hover:underline" onClick={() => setSelectedIds([])}>Clear selection</button>
                     <div className="h-6 w-px bg-slate-300"></div>
                     {permissions.canDelete && (
                         <button
@@ -420,7 +469,7 @@ const DocumentList = () => {
                 </div>
             )}
 
-            <div className={`${viewMode === 'list' ? 'bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden' : ''}`}>
+            <div className={`${viewMode === 'list' ? 'bg-white rounded-xl border border-slate-200 shadow-sm overflow-visible' : ''}`}>
                 {isLoading ? (
                     <div className={`p-6 ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}`}>
                         {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -428,18 +477,18 @@ const DocumentList = () => {
                         ))}
                     </div>
                 ) : (
-                    <motion.div
+                    <Motion.div
                         key={viewMode}
                         variants={containerVariants}
                         initial="hidden"
                         animate="show"
-                        className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'overflow-x-auto'}
+                        className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'overflow-visible'}
                     >
                         {viewMode === 'list' ? (
                             <div className="w-full">
-                                <div className="hidden md:grid bg-slate-50/50 border-b border-slate-200 px-6 py-3 grid-cols-[auto_3fr_1fr_1fr_1fr_1fr_auto] gap-6 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                <div className="documents-table-header hidden xl:grid bg-slate-50/50 border-b border-slate-200 px-6 py-3 grid-cols-[24px_minmax(0,2.5fr)_minmax(0,1fr)_90px_100px_minmax(0,1fr)_72px] gap-4 text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     <div className="w-6 flex items-center justify-center">
-                                        <button onClick={toggleSelectAll}>
+                                        <button aria-label="Select all documents on this page" aria-pressed={documents.length > 0 && selectedIds.length === documents.length} onClick={toggleSelectAll}>
                                             {documents.length > 0 && selectedIds.length === documents.length
                                                 ? <CheckSquare size={18} className="text-slate-900" />
                                                 : <div className="w-[18px] h-[18px] border-2 border-slate-300 rounded mx-auto" />}
@@ -457,7 +506,6 @@ const DocumentList = () => {
                                         <DocumentListItem
                                             key={doc.id}
                                             doc={doc}
-                                            getStatusStyle={getStatusStyle}
                                             variants={itemVariants}
                                             onViewHistory={handleViewHistory}
                                             isSelected={selectedIds.includes(doc.id)}
@@ -480,24 +528,36 @@ const DocumentList = () => {
                                 <DocumentGridItem
                                     key={doc.id}
                                     doc={doc}
-                                    getStatusStyle={getStatusStyle}
                                     variants={itemVariants}
                                     onViewHistory={handleViewHistory}
                                     handleView={handleView}
                                 />
                             ))
                         )}
-                    </motion.div>
+                    </Motion.div>
                 )}
 
-                {!isLoading && documents.length === 0 && (
+                {!isLoading && loadError && (
+                    <div className="text-center py-24 col-span-full flex flex-col items-center justify-center">
+                        <div className="p-4 bg-red-50 rounded-full mb-4 border border-red-100">
+                            <FileText size={40} className="text-red-300" strokeWidth={1} />
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">Could not load documents</h3>
+                        <p className="text-slate-500 max-w-sm mx-auto mb-6 text-sm">Check your connection and try again.</p>
+                        <button onClick={() => fetchDocuments(1)} className="px-4 py-2 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 transition-all text-sm">
+                            Try again
+                        </button>
+                    </div>
+                )}
+
+                {!isLoading && !loadError && documents.length === 0 && (
                     <div className="text-center py-24 col-span-full flex flex-col items-center justify-center">
                         <div className="p-4 bg-slate-50 rounded-full mb-4 border border-slate-100">
                             <FileText size={40} className="text-slate-300" strokeWidth={1} />
                         </div>
                         <h3 className="text-lg font-bold text-slate-900 mb-2">No documents found</h3>
                         <p className="text-slate-500 max-w-sm mx-auto mb-6 text-sm">
-                            {trashMode ? "Trash is empty." : "Create a new document to get started."}
+                            {trashMode ? "Trash is empty." : Object.values(filters).some(value => value && value !== 'all') ? "Try another search or clear your filters to see more documents." : "Create a new document to get started."}
                         </p>
                         {permissions.canCreate && !trashMode && (
                             <button
@@ -512,7 +572,7 @@ const DocumentList = () => {
                 )}
             </div>
 
-            {pagination.total > 0 && (
+            {!loadError && !isLoading && pagination.total > 0 && (
                 <div className="border-t border-slate-200 p-4 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm mt-8 rounded-xl border border-t-0">
                     <div className="text-slate-500 font-medium">
                         Showing <span className="text-slate-900 font-bold">{pagination.from}</span> to <span className="text-slate-900 font-bold">{pagination.to}</span> of <span className="text-slate-900 font-bold">{pagination.total}</span> results
@@ -520,6 +580,7 @@ const DocumentList = () => {
 
                     <div className="flex items-center gap-4">
                         <select
+                            aria-label="Documents per page"
                             value={pagination.per_page}
                             onChange={(e) => setPagination(p => ({ ...p, per_page: Number(e.target.value), current_page: 1 }))}
                             className="border border-slate-200 rounded-lg text-sm py-1.5 pl-2 pr-8 bg-white focus:outline-none focus:ring-2 focus:ring-slate-200 cursor-pointer font-medium text-slate-600"
@@ -531,7 +592,8 @@ const DocumentList = () => {
 
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={() => fetchDocuments(pagination.current_page - 1)}
+                                aria-label="Previous page"
+                                onClick={() => { setSelectedIds([]); fetchDocuments(pagination.current_page - 1); }}
                                 disabled={pagination.current_page <= 1}
                                 className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
@@ -541,7 +603,8 @@ const DocumentList = () => {
                                 {pagination.current_page}
                             </span>
                             <button
-                                onClick={() => fetchDocuments(pagination.current_page + 1)}
+                                aria-label="Next page"
+                                onClick={() => { setSelectedIds([]); fetchDocuments(pagination.current_page + 1); }}
                                 disabled={pagination.current_page >= pagination.last_page}
                                 className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
@@ -564,29 +627,30 @@ const DocumentList = () => {
             <AnimatePresence>
                 {activeDrawer && drawerDoc && (
                     <>
-                        <motion.div
+                        <Motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
-                            onClick={() => setActiveDrawer(null)}
+                            className="fixed inset-0 bg-slate-900/40 z-[60]"
+                            aria-label="Close document preview" onClick={() => setActiveDrawer(null)}
                         />
-                        <motion.div
+                        <Motion.div
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="fixed inset-y-0 right-0 w-full max-w-lg bg-white shadow-2xl z-50 flex flex-col border-l border-slate-200"
+                            ref={drawerRef} role="dialog" aria-modal="true" aria-label="Document details"
+                            className="fixed inset-y-0 right-0 w-full max-w-lg bg-white shadow-xl z-[70] flex flex-col border-l border-slate-200"
                         >
                             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
                                 <div>
                                     <h3 className="text-xl font-bold text-slate-800">
                                         {activeDrawer === 'audit' ? 'Audit Trail' : 'Document Details'}
                                     </h3>
-                                    <p className="text-sm text-slate-500 mt-0.5 max-w-[300px] truncate">{drawerDoc.name}</p>
+                                    <p className="text-sm text-slate-500 mt-0.5 max-w-[calc(100vw-100px)] sm:max-w-[300px] truncate">{drawerDoc.name}</p>
                                 </div>
                                 <button
-                                    onClick={() => setActiveDrawer(null)}
+                                    aria-label="Close document preview" onClick={() => setActiveDrawer(null)}
                                     className="p-2 rounded-full hover:bg-slate-100 transition-all text-slate-400 hover:text-slate-700"
                                 >
                                     <X size={20} />
@@ -640,9 +704,7 @@ const DocumentList = () => {
                                         <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-slate-500 font-medium">Status</span>
-                                                <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-white border border-slate-200 text-slate-700`}>
-                                                    {drawerDoc.status}
-                                                </span>
+                                                <StatusBadge status={drawerDoc.status} />
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-slate-500 font-medium">Created On</span>
@@ -699,7 +761,7 @@ const DocumentList = () => {
                                     </div>
                                 )}
                             </div>
-                        </motion.div>
+                        </Motion.div>
                     </>
                 )}
             </AnimatePresence>

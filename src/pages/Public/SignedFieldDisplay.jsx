@@ -47,12 +47,11 @@ const SignedFieldDisplay = ({ field, onClick, pageWidth, pageHeight }) => {
             style={{
                 left: leftStyle,
                 top: topStyle,
-                width: `${widthPx}px`,
-                height: `${heightPx}px`,
+                width: `${Math.max(widthPx, 44)}px`,
+                height: `${Math.max(heightPx, 44)}px`,
+                minWidth: '44px',
+                minHeight: '44px',
                 zIndex: 10,
-                // Ensure minimum touch target size visually or via padding if possible, 
-                // but positioning is strict PDF coordinates. 
-                // We rely on the visual cue being strong.
             }}
         >
             {value ? (
@@ -69,7 +68,16 @@ const SignedFieldDisplay = ({ field, onClick, pageWidth, pageHeight }) => {
                             className="max-w-full max-h-full object-contain"
                         />
                     ) : (
-                        <span className={`${metadata.fieldType === 'text' || metadata.fieldType === 'date' ? 'font-sans text-sm font-medium' : 'font-handwriting text-xl'} text-slate-700`}>
+                        <span
+                            style={{
+                                fontFamily: metadata.fontFamily,
+                                color: metadata.color,
+                                fontSize: metadata.fontSize === 'small' ? '0.875rem' :
+                                    metadata.fontSize === 'large' ? '1.875rem' :
+                                        metadata.fontSize === 'xlarge' ? '3rem' : undefined
+                            }}
+                            className={`${metadata.fieldType === 'text' || metadata.fieldType === 'date' ? 'font-sans text-sm font-medium' : 'font-handwriting text-xl'} ${!metadata.color ? 'text-slate-700' : ''}`}
+                        >
                             {value}
                         </span>
                     )}
@@ -98,8 +106,9 @@ const SignedFieldDisplay = ({ field, onClick, pageWidth, pageHeight }) => {
                         <span className="text-xs text-slate-400 font-medium italic px-1 truncate">{signeeName || 'Pending'}</span>
                     )}
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };
 

@@ -6,7 +6,8 @@ import { DndContext, useSensor, useSensors, PointerSensor, TouchSensor, DragOver
 
 import NdaFormSidebar from './NdaFormSidebar';
 import NdaDocumentPreview from './NdaDocumentPreview';
-import VersionHistorySidebar from './VersionHistorySidebar';
+import UnifiedVersionHistory from '../../../components/DocumentEngine/Sidebar/UnifiedVersionHistory';
+import EditorHeader from '../../../components/DocumentEngine/EditorHeader';
 import SendDocumentModal from '../../../components/SendDocumentModal';
 import SignatureConfigModal from '../../../components/Nda/Signatures/SignatureConfigModal';
 
@@ -527,130 +528,41 @@ const NdaEditor = () => {
                 />
 
                 {/* Toolbar */}
-                <header className="no-print h-14 md:h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-4 md:px-6 flex items-center justify-between flex-shrink-0 z-30 shadow-sm relative transition-all duration-300">
-                    <div className="flex items-center gap-2 md:gap-4">
-                        <button
-                            onClick={handleBack}
-                            className="p-2 hover:bg-slate-100 rounded-full text-slate-500 transition-colors flex-shrink-0"
-                            title="Back to Documents"
-                        >
-                            <ArrowLeft size={20} />
-                        </button>
-                        <div className="min-w-0 relative group/input">
-                            <div className="flex items-center gap-2">
-                                <div className="relative">
-                                    <input
-                                        ref={nameInputRef}
-                                        type="text"
-                                        value={documentName}
-                                        onChange={(e) => {
-                                            setDocumentName(e.target.value);
-                                            if (nameError) setNameError(null); // Clear error on type
-                                        }}
-                                        className={`font-bold text-sm md:text-lg bg-transparent border-b-2 focus:ring-0 p-0 m-0 w-auto min-w-[150px] max-w-[300px] placeholder-slate-400 truncate transition-colors ${nameError ? 'border-red-500 text-slate-800 ring-4 ring-red-500/10 rounded-sm px-1 -mx-1' : 'border-transparent hover:border-slate-200 text-slate-800'}`}
-                                        placeholder="Enter Document Name"
-                                    />
-
-                                    {/* Inline Error/Suggestion Popover */}
-                                    {nameError && (
-                                        <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-red-100 z-50 p-3 animate-in fade-in slide-in-from-top-2">
-                                            <div className="flex items-start gap-2 text-red-600 mb-2">
-                                                <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
-                                                <p className="text-xs font-semibold leading-tight">{nameError}</p>
-                                            </div>
-
-                                            {nameSuggestion && (
-                                                <div className="bg-slate-50 rounded p-2 border border-slate-100">
-                                                    <p className="text-[10px] text-slate-500 mb-1 uppercase tracking-wide font-bold">Suggestion:</p>
-                                                    <button
-                                                        onClick={() => {
-                                                            setDocumentName(nameSuggestion);
-                                                            setNameError(null);
-                                                            setNameSuggestion(null);
-                                                        }}
-                                                        className="w-full text-left text-sm font-bold text-indigo-600 hover:text-indigo-700 hover:underline truncate"
-                                                        title="Click to use this name"
-                                                    >
-                                                        {nameSuggestion}
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Magic Wand Button */}
-                                <button
-                                    onClick={generateSmartName}
-                                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
-                                    title="Auto-generate name from Form Data"
-                                >
-                                    <Wand size={16} />
-                                </button>
-
-                                {sentAt && (
-                                    <span className="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium border border-emerald-100">
-                                        <Check size={10} /> Sent
-                                    </span>
-                                )}
+                <EditorHeader
+                    title={documentName}
+                    onTitleChange={setDocumentName}
+                    status={sentAt ? 'sent' : (id ? 'saved' : 'draft')} // infer status
+                    saveStatus={isSaving ? 'saving' : 'saved'}
+                    isSaving={isSaving}
+                    onSave={onSave}
+                    onBack={handleBack}
+                    onSend={handleSendEmail}
+                    onExport={handleExport}
+                    onPrint={handlePrint}
+                    showExport={true}
+                    showPrint={true}
+                    // Custom Actions for NdaEditor specific features
+                    customActions={
+                        <>
+                            {/* Zoom Controls (Desktop Only) */}
+                            <div className="hidden lg:flex items-center bg-slate-100 rounded-lg p-1 mr-2">
+                                <button onClick={handleZoomOut} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomOut size={16} /></button>
+                                <span className="text-xs font-semibold text-slate-600 w-10 text-center">{Math.round(zoom * 100)}%</span>
+                                <button onClick={handleZoomIn} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomIn size={16} /></button>
                             </div>
-                            <p className="text-[10px] md:text-xs text-slate-400 font-medium whitespace-nowrap hidden sm:block mt-0.5">
-                                {id ? 'Autosaved locally' : 'Draft'}
-                            </p>
-                        </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 md:gap-3">
-                        <div className="hidden lg:flex items-center bg-slate-100 rounded-lg p-1 mr-4">
-                            <button onClick={handleZoomOut} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomOut size={16} /></button>
-                            <span className="text-xs font-semibold text-slate-600 w-12 text-center">{Math.round(zoom * 100)}%</span>
-                            <button onClick={handleZoomIn} className="p-1.5 hover:bg-white hover:shadow-sm rounded-md text-slate-500 transition-all"><ZoomIn size={16} /></button>
-                        </div>
-
-                        <button
-                            onClick={() => setShowHistory(true)}
-                            className="hidden lg:flex items-center gap-2 px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"
-                            title="Version History"
-                        >
-                            <Clock size={18} />
-                            <span>History</span>
-                        </button>
-
-                        <button
-                            onClick={handlePrint}
-                            disabled={isGeneratingPdf}
-                            className="hidden lg:flex items-center gap-2 px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
-                        >
-                            {isGeneratingPdf ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
-                            <span>{isGeneratingPdf ? 'Generating...' : 'Print'}</span>
-                        </button>
-
-                        <button
-                            onClick={handleSendEmail}
-                            className={`hidden lg:flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-transparent transition-all ${sentAt ? 'text-amber-600 hover:bg-amber-50 hover:border-amber-200' : 'text-slate-600 hover:bg-slate-50 hover:border-slate-200'}`}
-                        >
-                            {sentAt ? <Bell size={18} /> : <Mail size={18} />}
-                            <span>{sentAt ? 'Remind' : 'Send'}</span>
-                        </button>
-
-                        <button
-                            onClick={handleExport}
-                            disabled={isExporting}
-                            className="hidden lg:flex items-center gap-2 px-4 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all disabled:opacity-50"
-                        >
-                            {isExporting ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                            <span>{isExporting ? 'Exporting...' : 'Export'}</span>
-                        </button>
-
-                        <button
-                            onClick={onSave}
-                            className={`hidden lg:flex items-center gap-2 px-5 py-2 rounded-lg text-white font-medium shadow-md transition-all ${isSaving ? 'bg-emerald-500' : 'bg-indigo-600 hover:bg-indigo-700'}`}
-                        >
-                            {isSaving ? <Check size={18} /> : <Save size={18} />}
-                            <span>{isSaving ? 'Saved!' : 'Save'}</span>
-                        </button>
-                    </div>
-                </header>
+                            {/* History Button */}
+                            <button
+                                onClick={() => setShowHistory(true)}
+                                className="hidden lg:flex items-center gap-2 px-3 py-2 text-slate-600 text-sm font-medium hover:bg-slate-50 rounded-lg border border-transparent hover:border-slate-200 transition-all"
+                                title="Version History"
+                            >
+                                <Clock size={18} />
+                                <span className="hidden xl:inline">History</span>
+                            </button>
+                        </>
+                    }
+                />
 
                 {/* MainContent */}
                 <div className="flex flex-col lg:flex-row flex-1 overflow-hidden relative pb-[70px] lg:pb-0">
@@ -714,8 +626,9 @@ const NdaEditor = () => {
                     </div>
                 </div>
 
-                <VersionHistorySidebar
+                <UnifiedVersionHistory
                     documentId={id}
+                    type="sidebar"
                     isOpen={showHistory}
                     onClose={() => setShowHistory(false)}
                     onPreview={onPreviewVersion}

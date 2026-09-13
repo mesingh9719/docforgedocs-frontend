@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { Send } from 'lucide-react';
 import api from '../../api/axios';
 import { toast } from 'react-hot-toast';
@@ -13,6 +14,8 @@ const Contact = () => {
         message: ''
     });
 
+    const { executeRecaptcha } = useGoogleReCaptcha();
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -20,8 +23,17 @@ const Contact = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+
+        if (!executeRecaptcha) {
+            console.log('Execute recaptcha not yet available');
+            setLoading(false);
+            return;
+        }
+
         try {
-            await api.post('/public/contact', formData);
+            const token = await executeRecaptcha('contact_submit');
+
+            await api.post('/public/contact', { ...formData, recaptcha_token: token });
             setSubmitted(true);
             toast.success('Message sent successfully!');
             setFormData({ name: '', email: '', subject: '', message: '' });
@@ -74,7 +86,7 @@ const Contact = () => {
                                     placeholder="john@example.com"
                                 />
                             </div>
-                        </div>
+                        </div >
                         <div className="mb-6">
                             <label className="block text-sm font-semibold text-slate-700 mb-2">Subject</label>
                             <input
@@ -98,6 +110,11 @@ const Contact = () => {
                                 required
                                 placeholder="Tell us more..."
                             ></textarea>
+                            <div className="text-xs text-slate-400 mt-2 text-center">
+                                This site is protected by reCAPTCHA and the Google
+                                <a href="https://policies.google.com/privacy" className="text-indigo-600 hover:underline mx-1" target="_blank" rel="noreferrer">Privacy Policy</a> and
+                                <a href="https://policies.google.com/terms" className="text-indigo-600 hover:underline mx-1" target="_blank" rel="noreferrer">Terms of Service</a> apply.
+                            </div>
                         </div>
                         <button
                             type="submit"
@@ -113,10 +130,10 @@ const Contact = () => {
                                 </>
                             )}
                         </button>
-                    </form>
+                    </form >
                 )}
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

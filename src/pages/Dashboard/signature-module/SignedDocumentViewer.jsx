@@ -68,12 +68,12 @@ const SignedDocumentViewer = () => {
             setDocument(doc);
             setAuditLogs(response.data.audit_logs || []);
 
-            const storageUrl = doc.final_pdf_url || doc.pdf_url;
-            if (!storageUrl) {
+            if (!doc.final_pdf_url && !doc.pdf_url) {
                 setError('PDF URL not available. Document may not have been completed yet.');
                 return;
             }
-            setPdfUrl(storageUrl);
+            const pdfResponse = await api.get(`/signatures/${documentId}/download-pdf`, { responseType: 'blob' });
+            setPdfUrl(URL.createObjectURL(pdfResponse.data));
         } catch (err) {
             console.error("Failed to load signed document", err);
             setError("Document not found or not completed yet.");
@@ -86,12 +86,18 @@ const SignedDocumentViewer = () => {
         setNumPages(numPages);
     };
 
-    const handleDownloadSigned = () => {
-        if (document?.final_pdf_url) {
-            const downloadUrl = document.final_pdf_url.startsWith('http')
-                ? document.final_pdf_url
-                : `${API_BASE_URL}${document.final_pdf_url}`;
-            window.location.href = downloadUrl;
+    const handleDownloadSigned = async () => {
+        if (!document?.final_pdf_url) return;
+        try {
+            const response = await api.get(`/signatures/${documentId}/download-pdf`, { responseType: 'blob' });
+            const url = URL.createObjectURL(response.data);
+            const link = window.document.createElement('a');
+            link.href = url;
+            link.download = `${document.name || 'signed-document'}.pdf`;
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            setError('Unable to download the signed document.');
         }
     };
 

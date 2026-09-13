@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import StatusBadge from '../../../components/ui/StatusBadge';
+import { usePermissions } from '../../../hooks/usePermissions';
+import './signatures.css';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 import {
     Search, Plus, FileText, CheckCircle, Clock,
     Download, Trash2, Eye, History, X, CheckSquare, Square,
@@ -16,6 +19,10 @@ import SignatureTableRow from './components/SignatureTableRow';
 import SignatureMobileCard from './components/SignatureMobileCard';
 
 const SignatureDocumentList = () => {
+    const { can } = usePermissions();
+    const canDelete = can('document.delete');
+    const [loadError, setLoadError] = useState(false);
+    const [actionBusy, setActionBusy] = useState(false);
     const [documents, setDocuments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -30,12 +37,14 @@ const SignatureDocumentList = () => {
     // Fetch Data
     const fetchDocuments = useCallback(async () => {
         setIsLoading(true);
+        setLoadError(false);
         try {
             const response = await api.get('/signatures');
             const data = response.data.data || response.data;
             setDocuments(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Error fetching documents:", error);
+            setLoadError(true);
             toast.error("Failed to refresh documents");
         } finally {
             setIsLoading(false);
@@ -53,10 +62,8 @@ const SignatureDocumentList = () => {
         // 1. Filter by Status
         if (statusFilter !== 'all') {
             docs = docs.filter(doc => {
-                let status = 'draft';
-                if (doc.status === 'completed') status = 'completed';
-                else if (doc.signers?.length > 0) status = 'pending';
-                return status === statusFilter;
+                if (statusFilter === 'pending') return ['sent', 'viewed'].includes(doc.status);
+                return doc.status === statusFilter;
             });
         }
 
@@ -65,7 +72,7 @@ const SignatureDocumentList = () => {
             const lowerQuery = searchQuery.toLowerCase();
             docs = docs.filter(doc =>
                 (doc.name || '').toLowerCase().includes(lowerQuery) ||
-                doc.signers?.some(s => s.email.toLowerCase().includes(lowerQuery))
+                doc.signers?.some(s => (s.email || '').toLowerCase().includes(lowerQuery))
             );
         }
 
@@ -102,39 +109,56 @@ const SignatureDocumentList = () => {
             setDocuments(prev => prev.filter(d => d.id !== id));
             setSelectedDocs(prev => prev.filter(d => d !== id));
             toast.success('Document deleted');
-        } catch (error) {
+        } catch {
             toast.error('Failed to delete document');
         }
     }, []);
 
     const handleBulkDelete = async () => {
-        if (!confirm(`Delete ${selectedDocs.length} documents?`)) return;
+        if (!canDelete || actionBusy || !confirm(`Move ${selectedDocs.length} documents to trash?`)) return;
+        setActionBusy(true);
         try {
+            await api.post('/documents/bulk-delete', { ids: selectedDocs });
             setDocuments(prev => prev.filter(d => !selectedDocs.includes(d.id)));
             setSelectedDocs([]);
-            toast.success(`${selectedDocs.length} Documents deleted`);
-        } catch (err) {
-            toast.error("Bulk delete failed");
-        }
+            toast.success('Selected documents moved to trash');
+        } catch {
+            toast.error('Could not delete documents. Please try again.');
+        } finally { setActionBusy(false); }
     };
 
-    const handleResendReminder = useCallback(async (docId) => {
-        toast.promise(
-            new Promise(resolve => setTimeout(resolve, 1000)),
-            {
-                loading: 'Sending reminders...',
-                success: 'Reminders sent to pending signers!',
-                error: 'Failed to send'
-            }
-        );
-    }, []);
+    const handleResendReminder = useCallback(async (docId, email) => {
+        const doc = documents.find(item => item.id === docId);
+        const recipients = email ? [email] : [...new Set((doc?.signers || []).filter(signer => signer.status !== 'signed' && signer.email).map(signer => signer.email))];
+        if (!recipients.length || actionBusy) return;
+        setActionBusy(true);
+        try {
+            const results = await Promise.allSettled(recipients.map(recipient => api.post(`/documents/${docId}/remind`, { email: recipient })));
+            const sent = results.filter(result => result.status === 'fulfilled').length;
+            if (sent === recipients.length) toast.success('Reminder requests accepted');
+            else toast.error(`${sent} of ${recipients.length} reminder requests accepted. Please try again for the remaining signers.`);
+        } finally { setActionBusy(false); }
+    }, [documents, actionBusy]);
 
-    // Helpers
-    const getStatusInfo = useCallback((doc) => {
-        if (doc.status === 'completed') return { label: 'Completed', color: 'bg-emerald-100 text-emerald-700 border-emerald-200', icon: CheckCircle };
-        if (doc.signers?.length > 0) return { label: 'In Progress', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: Clock };
-        return { label: 'Draft', color: 'bg-slate-100 text-slate-600 border-slate-200', icon: FileText };
-    }, []);
+    const drawerRef = useRef(null);
+    useEffect(() => {
+        if (!activeDrawer) return;
+        const previousFocus = document.activeElement;
+        const overflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        drawerRef.current?.querySelector('button')?.focus();
+        const onKey = event => {
+            if (event.key === 'Escape') setActiveDrawer(null);
+            if (event.key !== 'Tab') return;
+            const items = drawerRef.current?.querySelectorAll('button:not(:disabled), a[href]');
+            if (!items?.length) return;
+            const first = items[0], last = items[items.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        };
+        document.addEventListener('keydown', onKey);
+        return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', onKey); previousFocus?.focus(); };
+    }, [activeDrawer]);
 
     const getProgress = useCallback((signers) => {
         if (!signers?.length) return 0;
@@ -143,22 +167,23 @@ const SignatureDocumentList = () => {
     }, []);
 
     return (
-        <DashboardPage>
+        <DashboardPage className="signatures-module">
             <DashboardPageHeader
                 title="Signature Requests"
-                subtitle="Manage your digital agreements and track progress"
+                subtitle="Track every request, follow up with signers, and access completed agreements."
             >
                 <div className="flex items-center gap-3">
                     <button
                         onClick={fetchDocuments}
                         className="p-2.5 bg-white border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200 rounded-xl transition-all shadow-sm hover:shadow"
+                        aria-label="Refresh signature requests" disabled={isLoading}
                         title="Refresh List"
                     >
                         <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
                     </button>
                     <Link
                         to="/signatures"
-                        className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-indigo-600/20"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all "
                     >
                         <Plus size={20} />
                         New Request
@@ -166,16 +191,16 @@ const SignatureDocumentList = () => {
                 </div>
             </DashboardPageHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="signature-metrics grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {[
-                    { label: 'Pending Signatures', value: documents.filter(d => d.signers?.length > 0 && d.status !== 'completed').length, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                    { label: 'Pending Signatures', value: documents.filter(d => ['sent', 'viewed'].includes(d.status)).length, color: 'text-indigo-600', bg: 'bg-indigo-50' },
                     { label: 'Completed', value: documents.filter(d => d.status === 'completed').length, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                     { label: 'Total Documents', value: documents.length, color: 'text-slate-600', bg: 'bg-slate-50' },
                 ].map((stat, i) => (
                     <div key={i} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                         <div>
-                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wide">{stat.label}</p>
-                            <p className="text-2xl font-bold text-slate-800 mt-1">{stat.value}</p>
+                            <p className="text-slate-500 text-xs font-medium">{stat.label}</p>
+                            <p className="text-2xl font-bold text-slate-800 mt-1">{isLoading ? '…' : loadError ? '—' : stat.value}</p>
                         </div>
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.bg} ${stat.color}`}>
                             <FileText size={20} />
@@ -184,24 +209,26 @@ const SignatureDocumentList = () => {
                 ))}
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-4 bg-white p-2 rounded-xl shadow-sm border border-slate-200 mb-6">
+            <div className="signature-toolbar">
                 <div className="relative flex-1">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <input
                         type="text"
-                        placeholder="Search by document name, signer email..."
+                        aria-label="Search signature requests"
+                        placeholder="Search by document name or signer email…"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => { setSearchQuery(e.target.value); setSelectedDocs([]); }}
                         className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-100 focus:border-slate-300 focus:bg-white outline-none transition-all placeholder:text-slate-400 font-medium text-slate-700"
                     />
                 </div>
 
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 lg:pb-0">
-                    <div className="bg-slate-100 p-1 rounded-lg flex">
-                        {['all', 'pending', 'completed'].map((status) => (
+                <div className="signature-filter-row">
+                    <div className="signature-status-tabs">
+                        {['all', 'draft', 'prepared', 'pending', 'completed', 'declined', 'cancelled', 'expired'].map((status) => (
                             <button
                                 key={status}
-                                onClick={() => setStatusFilter(status)}
+                                aria-pressed={statusFilter === status}
+                                onClick={() => { setStatusFilter(status); setSelectedDocs([]); }}
                                 className={`px-4 py-1.5 rounded-md text-sm font-semibold capitalize transition-all ${statusFilter === status
                                     ? 'bg-white text-slate-800 shadow-sm'
                                     : 'text-slate-500 hover:text-slate-700'
@@ -215,6 +242,7 @@ const SignatureDocumentList = () => {
                     <div className="h-8 w-px bg-slate-200 mx-2 hidden lg:block" />
 
                     <select
+                        aria-label="Sort signature requests"
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
                         className="px-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
@@ -226,49 +254,31 @@ const SignatureDocumentList = () => {
                 </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden relative min-h-[400px]">
+            <div className="signature-results" role="status"><span>{isLoading ? 'Loading requests…' : loadError ? 'Requests unavailable' : `${processedDocs.length} of ${documents.length} requests`}</span>{(searchQuery || statusFilter !== 'all') && <button onClick={() => { setSearchQuery(''); setStatusFilter('all'); setSelectedDocs([]); }}>Clear filters</button>}</div>
+            {loadError && <div role="alert" className="signature-error">Couldn’t refresh signature requests. Use Refresh to try again.{documents.length > 0 && ' Previously loaded requests are shown below.'}</div>}
+            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden relative min-h-[300px]">
                 <AnimatePresence>
                     {selectedDocs.length > 0 && (
-                        <motion.div
+                        <Motion.div
                             initial={{ y: 50, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 50, opacity: 0 }}
-                            className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-6"
+                            className="signature-selection"
                         >
-                            <span className="text-sm font-semibold text-slate-300 border-r border-slate-700 pr-4">
-                                {selectedDocs.length} Selected
-                            </span>
-                            <div className="flex items-center gap-2">
-                                <button className="p-2 hover:bg-slate-800 rounded-full transition-colorsAsync text-slate-300 hover:text-white" title="Download All">
-                                    <Download size={18} />
-                                </button>
-                                <button className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-300 hover:text-white" title="Archive">
-                                    <Archive size={18} />
-                                </button>
-                                <button
-                                    onClick={handleBulkDelete}
-                                    className="p-2 hover:bg-red-900/50 rounded-full transition-colors text-red-300 hover:text-red-200"
-                                    title="Delete Selected"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                            <button
-                                onClick={() => setSelectedDocs([])}
-                                className="ml-2 text-xs font-bold text-slate-400 hover:text-white"
-                            >
-                                Cancel
-                            </button>
-                        </motion.div>
+                            <span>{selectedDocs.length} selected</span>
+                            {canDelete && <button onClick={handleBulkDelete} disabled={actionBusy} className="text-red-700 flex items-center gap-2"><Trash2 size={16} />{actionBusy ? 'Working…' : 'Move to trash'}</button>}
+                            <button onClick={() => setSelectedDocs([])}>Clear selection</button>
+                        </Motion.div>
                     )}
                 </AnimatePresence>
 
-                <div className="hidden md:block overflow-x-auto">
+                <div className="hidden xl:block overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/50 border-b border-slate-200">
                                 <th className="px-6 py-3 w-12 text-center">
                                     <button
+                                        aria-label="Select all matching requests" aria-pressed={processedDocs.length > 0 && selectedDocs.length === processedDocs.length}
                                         onClick={toggleSelectAll}
                                         className="text-slate-400 hover:text-indigo-600 transition-colors flex justify-center"
                                     >
@@ -302,7 +312,7 @@ const SignatureDocumentList = () => {
                                         <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                                             <FileText size={32} className="text-slate-300" strokeWidth={1} />
                                         </div>
-                                        <h3 className="text-lg font-bold text-slate-800">No documents found</h3>
+                                        <h3 className="text-lg font-bold text-slate-800">{loadError ? 'Requests unavailable' : 'No requests found'}</h3>
                                         <p className="text-slate-400 text-sm mt-1">Try adjusting your search or filters.</p>
                                     </td>
                                 </tr>
@@ -313,7 +323,7 @@ const SignatureDocumentList = () => {
                                         doc={doc}
                                         isSelected={selectedDocs.includes(doc.id)}
                                         toggleSelect={toggleSelect}
-                                        getStatusInfo={getStatusInfo}
+                                        canDelete={canDelete} actionBusy={actionBusy}
                                         getProgress={getProgress}
                                         handleResendReminder={handleResendReminder}
                                         handleDelete={handleDelete}
@@ -326,7 +336,7 @@ const SignatureDocumentList = () => {
                     </table>
                 </div>
 
-                <div className="md:hidden">
+                <div className="xl:hidden">
                     {isLoading ? (
                         <div className="p-12 text-center flex flex-col items-center">
                             <div className="w-8 h-8 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
@@ -337,14 +347,14 @@ const SignatureDocumentList = () => {
                             <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <FileText size={32} className="text-slate-300" strokeWidth={1} />
                             </div>
-                            <p className="text-slate-500 font-medium">No documents found.</p>
+                            <p className="text-slate-500 font-medium">{loadError ? 'Requests unavailable' : 'No requests found'}.</p>
                         </div>
                     ) : (
                         processedDocs.map((doc) => (
                             <SignatureMobileCard
                                 key={doc.id}
                                 doc={doc}
-                                getStatusInfo={getStatusInfo}
+                                canDelete={canDelete} actionBusy={actionBusy}
                                 getProgress={getProgress}
                                 setSelectedDoc={setSelectedDoc}
                                 setActiveDrawer={setActiveDrawer}
@@ -357,29 +367,30 @@ const SignatureDocumentList = () => {
             <AnimatePresence>
                 {activeDrawer && selectedDoc && (
                     <>
-                        <motion.div
+                        <Motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40"
+                            className="fixed inset-0 bg-slate-900/40 z-[60]"
                             onClick={() => setActiveDrawer(null)}
                         />
-                        <motion.div
+                        <Motion.div
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="fixed inset-y-0 right-0 w-full max-w-lg bg-white shadow-2xl z-50 flex flex-col border-l border-slate-200"
+                            ref={drawerRef} role="dialog" aria-modal="true" aria-label="Signature request details"
+                            className="fixed inset-y-0 right-0 w-full max-w-lg bg-white shadow-xl z-[70] flex flex-col border-l border-slate-200"
                         >
                             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white">
                                 <div>
                                     <h3 className="text-xl font-bold text-slate-800">
                                         {activeDrawer === 'audit' ? 'Audit Trail' : 'Document Details'}
                                     </h3>
-                                    <p className="text-sm text-slate-500 mt-0.5 truncate max-w-[300px]">{selectedDoc.name}</p>
+                                    <p className="text-sm text-slate-500 mt-0.5 truncate max-w-[calc(100vw-100px)] sm:max-w-[300px]">{selectedDoc.name}</p>
                                 </div>
                                 <button
-                                    onClick={() => setActiveDrawer(null)}
+                                    aria-label="Close signature details" onClick={() => setActiveDrawer(null)}
                                     className="p-2 rounded-full hover:bg-slate-50 transition-all text-slate-400 hover:text-slate-700"
                                 >
                                     <X size={20} />
@@ -401,7 +412,7 @@ const SignatureDocumentList = () => {
                                             {selectedDoc.pdf_url && (
                                                 <a
                                                     href={selectedDoc.pdf_url}
-                                                    target="_blank"
+                                                    target="_blank" rel="noopener noreferrer"
                                                     className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl font-medium transition-all"
                                                 >
                                                     <FileText size={18} /> Original PDF
@@ -444,9 +455,7 @@ const SignatureDocumentList = () => {
                                         <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-slate-500 font-medium">Status</span>
-                                                <span className={`px-2 py-1 rounded-md text-xs font-bold uppercase tracking-wider bg-white border border-slate-200 text-slate-700`}>
-                                                    {selectedDoc.status}
-                                                </span>
+                                                <StatusBadge status={selectedDoc.status} />
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-slate-500 font-medium">Created On</span>
@@ -472,9 +481,9 @@ const SignatureDocumentList = () => {
                                                     <div key={idx} className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl shadow-sm">
                                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${signer.status === 'signed' ? 'bg-emerald-500' : 'bg-slate-400'
                                                             }`}>
-                                                            {signer.name.charAt(0)}
+                                                            {signer.name?.charAt(0) || '?'}
                                                         </div>
-                                                        <div className="flex-1">
+                                                        <div className="flex-1 min-w-0 break-words">
                                                             <p className="font-semibold text-slate-800 text-sm">{signer.name}</p>
                                                             <p className="text-xs text-slate-400">{signer.email}</p>
                                                         </div>
@@ -482,7 +491,8 @@ const SignatureDocumentList = () => {
                                                             <CheckCircle size={18} className="text-emerald-500" />
                                                         ) : (
                                                             <button
-                                                                onClick={() => handleResendReminder(selectedDoc.id)}
+                                                                disabled={actionBusy || !['sent', 'viewed'].includes(selectedDoc.status)}
+                                                                onClick={() => handleResendReminder(selectedDoc.id, signer.email)}
                                                                 className="text-xs text-slate-600 hover:text-slate-900 font-medium bg-slate-100 px-2 py-1 rounded transition-colors"
                                                             >
                                                                 Resend
@@ -527,7 +537,7 @@ const SignatureDocumentList = () => {
                                     </div>
                                 )}
                             </div>
-                        </motion.div>
+                        </Motion.div>
                     </>
                 )}
             </AnimatePresence>

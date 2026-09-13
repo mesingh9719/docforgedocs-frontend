@@ -24,19 +24,19 @@ function DashboardLayout() {
     }, []);
 
     return (
-        <div className="flex bg-slate-50 min-h-screen">
+        <div className="dashboard-shell flex bg-slate-50 min-h-screen">
             <Sidebar business={business} mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
 
             {/* Mobile Backdrop */}
             {mobileMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden backdrop-blur-sm"
+                    className="fixed inset-0 bg-slate-900/40 z-40 lg:hidden"
                     onClick={() => setMobileMenuOpen(false)}
                 />
             )}
 
             <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative overflow-x-hidden">
-                <TopBar business={business} onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
+                <TopBar mobileMenuOpen={mobileMenuOpen} onMenuClick={() => setMobileMenuOpen(!mobileMenuOpen)} />
                 <main className="flex-1 overflow-y-auto p-4 md:p-8">
                     <Outlet />
                 </main>

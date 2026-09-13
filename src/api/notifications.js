@@ -9,5 +9,9 @@ export const markAllNotificationsRead = () => {
 };
 
 export const markNotificationRead = (id) => {
-    return api.post(`/notifications/${id}/read`);
+    return api.put(`/notifications/${id}/read`);
+};
+
+export const getUnreadCount = () => {
+    return api.get('/notifications/unread-count');
 };

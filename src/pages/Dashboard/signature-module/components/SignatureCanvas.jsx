@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PenTool, Type, Upload as UploadIcon, Trash2, Check, X, RotateCcw } from 'lucide-react';
+import { PenTool, Type, Upload as UploadIcon, Trash2, Check, RotateCcw } from 'lucide-react';
+import { convertTextToImage, getLineWidthFromSize } from '../../../../utils/signatureUtils';
 
 const SignatureCanvas = ({ signatures, pdfUrl, onComplete, onBack }) => {
     const [currentSignatureIndex, setCurrentSignatureIndex] = useState(0);
@@ -16,6 +17,12 @@ const SignatureCanvas = ({ signatures, pdfUrl, onComplete, onBack }) => {
     const fileInputRef = useRef(null);
 
     const currentSignature = signatures[currentSignatureIndex];
+    const { fontFamily, fontSize, color } = currentSignature.metadata || {};
+
+    // Initialize defaults from metadata
+    useEffect(() => {
+        if (fontFamily) setSelectedFont(fontFamily);
+    }, [fontFamily]);
     const progress = ((currentSignatureIndex + 1) / signatures.length) * 100;
 
     // Fonts for typed signatures
@@ -39,11 +46,13 @@ const SignatureCanvas = ({ signatures, pdfUrl, onComplete, onBack }) => {
             const context = canvas.getContext('2d');
             context.scale(2, 2);
             context.lineCap = 'round';
-            context.strokeStyle = '#1e293b';
-            context.lineWidth = 2;
+            context.strokeStyle = color || '#1e293b';
+
+            // Map fontSize to lineWidth
+            context.lineWidth = getLineWidthFromSize(fontSize);
             contextRef.current = context;
         }
-    }, [signatureMethod]);
+    }, [signatureMethod, color, fontSize]);
 
     // Drawing handlers
     const startDrawing = ({ nativeEvent }) => {
@@ -63,7 +72,7 @@ const SignatureCanvas = ({ signatures, pdfUrl, onComplete, onBack }) => {
     const stopDrawing = () => {
         contextRef.current.closePath();
         setIsDrawing(false);
-        
+
         // Save the drawn signature
         if (canvasRef.current) {
             setDrawnSignature(canvasRef.current.toDataURL());
@@ -99,9 +108,17 @@ const SignatureCanvas = ({ signatures, pdfUrl, onComplete, onBack }) => {
                 data: drawnSignature
             };
         } else if (signatureMethod === 'type' && typedSignature.trim()) {
+
+            // Convert to image for consistency
+            const font = selectedFont; // User selected font in this UI
+            const color = currentSignature.metadata?.color || '#1e293b';
+            const size = currentSignature.metadata?.fontSize || 'medium';
+
+            const imageValue = convertTextToImage(typedSignature, font, color, size);
+
             signatureData = {
-                type: 'typed',
-                data: typedSignature,
+                type: 'typed', // Keep type as typed but data is image
+                data: imageValue || typedSignature, // Fallback if canvas fails
                 font: selectedFont
             };
         } else if (signatureMethod === 'upload' && uploadedSignature) {
@@ -194,33 +211,30 @@ const SignatureCanvas = ({ signatures, pdfUrl, onComplete, onBack }) => {
                         <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-6">
                             <button
                                 onClick={() => setSignatureMethod('draw')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium text-sm transition-all ${
-                                    signatureMethod === 'draw'
-                                        ? 'bg-white text-indigo-600 shadow-sm'
-                                        : 'text-slate-600 hover:text-slate-800'
-                                }`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium text-sm transition-all ${signatureMethod === 'draw'
+                                    ? 'bg-white text-indigo-600 shadow-sm'
+                                    : 'text-slate-600 hover:text-slate-800'
+                                    }`}
                             >
                                 <PenTool size={18} />
                                 Draw
                             </button>
                             <button
                                 onClick={() => setSignatureMethod('type')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium text-sm transition-all ${
-                                    signatureMethod === 'type'
-                                        ? 'bg-white text-indigo-600 shadow-sm'
-                                        : 'text-slate-600 hover:text-slate-800'
-                                }`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium text-sm transition-all ${signatureMethod === 'type'
+                                    ? 'bg-white text-indigo-600 shadow-sm'
+                                    : 'text-slate-600 hover:text-slate-800'
+                                    }`}
                             >
                                 <Type size={18} />
                                 Type
                             </button>
                             <button
                                 onClick={() => setSignatureMethod('upload')}
-                                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium text-sm transition-all ${
-                                    signatureMethod === 'upload'
-                                        ? 'bg-white text-indigo-600 shadow-sm'
-                                        : 'text-slate-600 hover:text-slate-800'
-                                }`}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-medium text-sm transition-all ${signatureMethod === 'upload'
+                                    ? 'bg-white text-indigo-600 shadow-sm'
+                                    : 'text-slate-600 hover:text-slate-800'
+                                    }`}
                             >
                                 <UploadIcon size={18} />
                                 Upload
@@ -283,7 +297,11 @@ const SignatureCanvas = ({ signatures, pdfUrl, onComplete, onBack }) => {
                                             value={typedSignature}
                                             onChange={(e) => setTypedSignature(e.target.value)}
                                             placeholder="John Doe"
-                                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                            style={{
+                                                fontFamily: selectedFont,
+                                                color: color || '#1e293b'
+                                            }}
+                                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all text-2xl"
                                         />
                                     </div>
 
@@ -296,11 +314,10 @@ const SignatureCanvas = ({ signatures, pdfUrl, onComplete, onBack }) => {
                                                 <button
                                                     key={font.name}
                                                     onClick={() => setSelectedFont(font.name)}
-                                                    className={`p-4 border-2 rounded-xl text-center transition-all ${
-                                                        selectedFont === font.name
-                                                            ? 'border-indigo-500 bg-indigo-50'
-                                                            : 'border-slate-200 hover:border-slate-300'
-                                                    }`}
+                                                    className={`p-4 border-2 rounded-xl text-center transition-all ${selectedFont === font.name
+                                                        ? 'border-indigo-500 bg-indigo-50'
+                                                        : 'border-slate-200 hover:border-slate-300'
+                                                        }`}
                                                 >
                                                     <p
                                                         style={{ fontFamily: font.name }}
@@ -317,8 +334,15 @@ const SignatureCanvas = ({ signatures, pdfUrl, onComplete, onBack }) => {
                                         <div className="p-6 bg-slate-50 border-2 border-slate-200 rounded-xl">
                                             <p className="text-xs font-medium text-slate-500 mb-3">Preview:</p>
                                             <p
-                                                style={{ fontFamily: selectedFont }}
-                                                className="text-4xl text-center text-slate-800"
+                                                style={{
+                                                    fontFamily: selectedFont,
+                                                    color: color || '#1e293b'
+                                                }}
+                                                className={`text-center transition-all ${fontSize === 'small' ? 'text-2xl' :
+                                                    fontSize === 'large' ? 'text-6xl' :
+                                                        fontSize === 'xlarge' ? 'text-8xl' :
+                                                            'text-4xl'
+                                                    }`}
                                             >
                                                 {typedSignature}
                                             </p>
@@ -417,11 +441,10 @@ const SignatureCanvas = ({ signatures, pdfUrl, onComplete, onBack }) => {
                             {signatures.slice(currentSignatureIndex).map((sig, index) => (
                                 <div
                                     key={sig.id}
-                                    className={`p-3 rounded-lg border ${
-                                        index === 0
-                                            ? 'border-indigo-300 bg-indigo-50'
-                                            : 'border-slate-200 bg-slate-50'
-                                    }`}
+                                    className={`p-3 rounded-lg border ${index === 0
+                                        ? 'border-indigo-300 bg-indigo-50'
+                                        : 'border-slate-200 bg-slate-50'
+                                        }`}
                                 >
                                     <p className="text-sm font-medium text-slate-700">
                                         {sig.metadata.signeeName}

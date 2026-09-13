@@ -82,9 +82,10 @@ function LoginForm() {
             const payload = { ...formData, recaptcha_token: token };
             const data = await login(payload);
             setToken(data.token);
+            const redirectParam = new URLSearchParams(location.search).get('redirect');
             if (data.data.business) {
                 toast.dismiss();
-                navigate('/dashboard');
+                navigate(redirectParam || '/dashboard');
             } else {
                 toast.dismiss();
                 navigate('/onboarding');

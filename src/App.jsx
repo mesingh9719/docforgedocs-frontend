@@ -1,7 +1,7 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
+import { BrowserRouter as Router, Route, Routes, useParams, Navigate } from 'react-router-dom'
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3'
 import { HelmetProvider } from 'react-helmet-async'
-import { AuthProvider } from './context/AuthContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/LandingPage/Layout'
 import Welcome from './pages/Welcome'
 import Login from './pages/auth/Login'
@@ -42,8 +42,6 @@ import BlogList from './pages/Landing/BlogList'
 import BlogPost from './pages/Landing/BlogPost'
 import PublicDocumentViewer from './pages/PublicDocumentViewer'
 import SignDocument from './pages/Public/SignDocument'
-// import Landing from './pages/Public/document-generator/Landing'
-import GuestEditor from './pages/Public/document-generator/GuestEditor'
 
 // SEO Landing Pages
 import NdaLanding from './pages/Landing/Tools/NdaLanding'
@@ -60,7 +58,27 @@ import { Toaster } from 'react-hot-toast'
 import { NotificationProvider } from './context/NotificationContext';
 import NotificationsPage from './pages/Dashboard/Notifications/NotificationsPage';
 
-// ...
+const TEMPLATE_ROUTE_MAP = {
+  nda: '/documents/nda',
+  proposal: '/documents/proposal',
+  'business-proposal': '/documents/proposal',
+  'consulting-agreement': '/documents/consulting-agreement',
+  invoice: '/documents/invoice',
+  'invoice-generator': '/documents/invoice',
+  'offer-letter': '/documents/offer-letter',
+  signature: '/signatures',
+  'electronic-signature': '/signatures'
+};
+
+const LegacyCreateDocumentRedirect = () => {
+  const { template } = useParams();
+  const { token } = useAuth();
+  const target = TEMPLATE_ROUTE_MAP[template] || '/documents';
+  if (token) {
+    return <Navigate to={target} replace />;
+  }
+  return <Navigate to={`/register?redirect=${encodeURIComponent(target)}`} replace />;
+};
 
 function App() {
   return (
@@ -143,9 +161,8 @@ function App() {
                 <Route path="/view/:token" element={<PublicDocumentViewer />} />
                 <Route path="/sign/:token" element={<SignDocument />} />
 
-                {/* Guest Document Generator */}
-                {/* Route path="/create-document" element={<Landing />}  REMOVED - Merged into Welcome */}
-                <Route path="/create-document/:template" element={<GuestEditor />} />
+                {/* Legacy Guest Document Generator - Redirect to Register with Target Blueprint */}
+                <Route path="/create-document/:template" element={<LegacyCreateDocumentRedirect />} />
 
                 {/* Auth Routes - Redirect if logged in */}
                 <Route element={<GuestRoute />}>

@@ -1,0 +1,21 @@
+{
+  "name": "DocForge",
+  "short_name": "DocForge",
+  "description": "Professional document creation and e-signature platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/images/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/images/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

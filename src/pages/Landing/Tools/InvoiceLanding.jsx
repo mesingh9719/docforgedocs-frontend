@@ -1,128 +1,112 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, DollarSign, PieChart, Send, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Receipt, DollarSign, PieChart, Send, ArrowRight, CheckCircle2, Sparkles, CreditCard } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import SEO from '../../../components/SEO';
+import { useDocumentLaunch } from '../../../hooks/useDocumentLaunch';
 
 const InvoiceLanding = () => {
+    const navigate = useNavigate();
+    const { launchDocument, AuthModalComponent } = useDocumentLaunch();
+
     return (
-        <div className="bg-white">
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-600 selection:text-white pt-32 pb-24 relative overflow-x-hidden">
             <SEO
-                title="Free Invoice Generator & Management"
-                description="Create professional invoices, track payments, and manage expenses. Sign up for free to streamline your billing process."
-                keywords="free invoice generator, online invoicing, billing software, create invoice, invoice template, expense tracking"
+                title="Free Professional Invoice Generator | DocForge"
+                description="Create print-ready, itemized invoices in seconds. Automated tax calculation, discounts, payment terms, and vector PDF download."
+                keywords="free invoice generator, invoice maker, create invoice online, billing software for freelancers, itemized invoice pdf"
             />
 
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-20 overflow-hidden bg-slate-50">
-                <div className="absolute inset-0 bg-white z-0"></div>
-                <div className="max-w-7xl mx-auto px-6 relative z-10">
-                    <div className="flex flex-col lg:flex-row items-center gap-16">
-                        <div className="flex-1 text-center lg:text-left">
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.6 }}
-                            >
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6 border border-blue-200">
-                                    <DollarSign size={14} /> Get Paid Faster
-                                </div>
-                                <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-6 tracking-tight leading-tight">
-                                    Professional Invoicing <br />
-                                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Made Simple</span>
-                                </h1>
-                                <p className="text-lg md:text-xl text-slate-600 mb-8 leading-relaxed">
-                                    Create, send, and track invoices in seconds. Look professional and get paid on time with our intuitive billing platform.
-                                </p>
+            {/* Ambient Background Glows */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-0 right-1/4 w-[700px] h-[700px] bg-amber-100/40 rounded-full blur-[140px] -translate-y-1/2" />
+                <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-orange-100/30 rounded-full blur-[120px]" />
+                <div className="absolute inset-0 bg-grid-pattern opacity-40" />
+            </div>
 
-                                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                                    <Link
-                                        to="/register"
-                                        className="px-8 py-4 bg-blue-600 text-white rounded-xl text-lg font-bold hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
-                                    >
-                                        Create Free Invoice <ArrowRight size={20} />
-                                    </Link>
-                                    <Link
-                                        to="/register"
-                                        className="px-8 py-4 bg-white text-slate-700 rounded-xl text-lg font-bold hover:bg-slate-50 transition-all border border-slate-200 hover:border-slate-300"
-                                    >
-                                        Explore Features
-                                    </Link>
-                                </div>
-                            </motion.div>
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+                {/* Hero Section */}
+                <div className="text-center max-w-4xl mx-auto mb-16">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold uppercase tracking-wider mb-6">
+                            <Receipt size={14} className="text-amber-600" /> Free Billing Utility
                         </div>
-                        <div className="flex-1 w-full max-w-lg lg:max-w-none">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ duration: 0.8 }}
-                                className="relative rounded-2xl shadow-2xl bg-white p-2 border border-slate-100 rotate-2 hover:rotate-0 transition-transform duration-500"
-                            >
-                                {/* Mock Invoice Preview - Replace with actual image later or CSS Mockup */}
-                                <div className="aspect-[3/4] bg-slate-50 rounded-lg p-6 flex flex-col">
-                                    <div className="flex justify-between items-center mb-8">
-                                        <div className="w-32 h-8 bg-blue-600/20 rounded animate-pulse"></div>
-                                        <div className="text-right">
-                                            <div className="w-24 h-6 bg-slate-200 rounded mb-2"></div>
-                                            <div className="w-16 h-4 bg-slate-100 rounded ml-auto"></div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4 mb-8">
-                                        <div className="w-full h-24 bg-white rounded border border-slate-200 p-4">
-                                            <div className="w-1/2 h-4 bg-slate-100 rounded mb-2"></div>
-                                            <div className="w-1/3 h-4 bg-slate-100 rounded"></div>
-                                        </div>
-                                    </div>
-                                    <div className="mt-auto pt-4 border-t border-slate-200 flex justify-between items-center">
-                                        <div className="text-sm text-slate-400">Total Amount</div>
-                                        <div className="text-xl font-bold text-slate-900">$2,450.00</div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+                        <h1 className="text-4xl sm:text-6xl font-black text-slate-900 mb-6 tracking-tight leading-tight">
+                            Professional Invoicing That Gets <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600">
+                                You Paid 2x Faster
+                            </span>
+                        </h1>
+                        <p className="text-base sm:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
+                            Create, calculate, and download clean, professional invoices in under 60 seconds. Includes automated line items, sales tax, discounts, and payment instructions.
+                        </p>
 
-            {/* Feature Highlights */}
-            <section className="py-20 bg-white">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[
-                            {
-                                icon: Send,
-                                title: "Instant Delivery",
-                                description: "Send invoices directly via email or get a shareable link instantly. No huge attachments."
-                            },
-                            {
-                                icon: CreditCard,
-                                title: "Payment Integration",
-                                description: "Accept payments faster by integrating your preferred payment gateways directly into the invoice."
-                            },
-                            {
-                                icon: PieChart,
-                                title: "Financial Insights",
-                                description: "Track paid, pending, and overdue invoices with our built-in dashboard analytics."
-                            }
-                        ].map((feature, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.1 }}
-                                className="p-8 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all group"
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <button
+                                onClick={() => launchDocument('invoice')}
+                                className="w-full sm:w-auto px-8 py-4 bg-slate-900 hover:bg-amber-600 text-white rounded-2xl font-bold text-base md:text-lg shadow-xl shadow-slate-900/15 transition-all flex items-center justify-center gap-2 cursor-pointer group"
                             >
-                                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                    <feature.icon size={24} />
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
-                                <p className="text-slate-600 leading-relaxed">{feature.description}</p>
-                            </motion.div>
-                        ))}
-                    </div>
+                                <Receipt size={18} />
+                                <span>Create Free Invoice Now</span>
+                                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </button>
+                            <button
+                                onClick={() => navigate('/register')}
+                                className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-2xl font-bold text-base md:text-lg shadow-sm transition-all cursor-pointer"
+                            >
+                                Track Paid & Pending Invoices
+                            </button>
+                        </div>
+
+                        <div className="flex items-center justify-center gap-6 mt-6 text-xs text-slate-500 font-semibold">
+                            <span className="flex items-center gap-1"><CheckCircle2 size={14} className="text-emerald-500" /> Auto Tax & Discounts</span>
+                            <span className="flex items-center gap-1"><CheckCircle2 size={14} className="text-emerald-500" /> Vector PDF Downloads</span>
+                            <span className="flex items-center gap-1"><CheckCircle2 size={14} className="text-emerald-500" /> Bank & Wire Instructions</span>
+                        </div>
+                    </motion.div>
                 </div>
-            </section>
+
+                {/* Features Value Pillars */}
+                <div className="mb-24 grid md:grid-cols-3 gap-8">
+                    {[
+                        { icon: Send, title: 'Instant PDF & Email Delivery', desc: 'Download clean vector PDFs or send instant shareable links directly to client finance departments.' },
+                        { icon: CreditCard, title: 'Payment Gateway Directions', desc: 'Embed your bank wire info, Stripe links, PayPal, or ACH instructions directly on every bill.' },
+                        { icon: PieChart, title: 'Real-Time Financial Metrics', desc: 'Track overdue invoices, pending balances, and total collected revenue across all client accounts.' }
+                    ].map((feat, i) => {
+                        const Icon = feat.icon;
+                        return (
+                            <div key={i} className="p-8 rounded-3xl bg-white border border-slate-200 shadow-xl shadow-slate-200/40">
+                                <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center mb-6">
+                                    <Icon size={24} />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">{feat.title}</h3>
+                                <p className="text-sm text-slate-600 leading-relaxed">{feat.desc}</p>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Final Launch Banner */}
+                <div className="text-center py-16 bg-slate-900 rounded-3xl text-white p-8 border border-slate-800 shadow-2xl">
+                    <h2 className="text-3xl md:text-4xl font-black mb-4">Send a Polished Invoice in 60 Seconds</h2>
+                    <p className="text-slate-400 text-sm max-w-xl mx-auto mb-8">
+                        No credit card required. Fast, free invoice drafting engine.
+                    </p>
+                    <button
+                        onClick={() => launchDocument('invoice')}
+                        className="px-8 py-4 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-base shadow-xl transition-all cursor-pointer"
+                    >
+                        Launch Free Invoice Generator →
+                    </button>
+                </div>
+            </main>
+
+            {/* Auth Required Modal */}
+            <AuthModalComponent />
         </div>
     );
 };

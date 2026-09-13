@@ -1,141 +1,182 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { FileText, TrendingUp, Users, CheckCircle, ArrowRight, Star } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Zap, TrendingUp, Users, CheckCircle2, ArrowRight, Sparkles, ChevronDown, DollarSign, FileText, Star } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import SEO from '../../../components/SEO';
+import { useDocumentLaunch } from '../../../hooks/useDocumentLaunch';
+
+const proposalSections = [
+    {
+        title: 'Executive Summary & Project Scope',
+        desc: 'Concise, compelling overview defining client pain points, strategic objectives, and the high-level roadmap.'
+    },
+    {
+        title: 'Detailed Deliverables & Milestone Timeline',
+        desc: 'Phase-by-phase breakdown of tangible assets, sprint goals, revision cycles, and estimated completion dates.'
+    },
+    {
+        title: 'Transparent Pricing & Fee Structure',
+        desc: 'Itemized tables with fixed-fee, hourly, or retainer models with automated milestone payment calculations.'
+    },
+    {
+        title: 'Client Responsibilities & Assumptions',
+        desc: 'Clarifies feedback turnarounds, asset handoffs, and third-party dependencies to prevent scope creep.'
+    },
+    {
+        title: 'Terms of Acceptance & Digital Signature',
+        desc: 'Standard legal terms of engagement, payment terms, and integrated signature block for instant client sign-off.'
+    }
+];
 
 const ProposalLanding = () => {
+    const navigate = useNavigate();
+    const [openClause, setOpenClause] = useState(0);
+    const { launchDocument, AuthModalComponent } = useDocumentLaunch();
+
     return (
-        <div className="bg-white">
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-600 selection:text-white pt-32 pb-24 relative overflow-x-hidden">
             <SEO
-                title="Free Business Proposal Template & Generator"
-                description="Create winning business proposals with our free professional template. Customize, download, and send proposals that convert. No signup required."
-                keywords="business proposal template, free proposal generator, project proposal, sales proposal, freelance proposal, create proposal online"
+                title="Free Business Proposal Generator & Template | DocForge"
+                description="Design winning client proposals with our free professional builder. Structured project scopes, milestone pricing tables, and instant eSignatures."
+                keywords="business proposal template, free proposal generator, client proposal creator, agency sales proposal, project proposal builder"
             />
 
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-20 overflow-hidden bg-white">
-                <div className="absolute top-0 right-0 -mr-40 -mt-40 w-[600px] h-[600px] bg-indigo-50 rounded-full mix-blend-multiply filter blur-3xl opacity-70"></div>
-                <div className="absolute bottom-0 left-0 -ml-40 -mb-40 w-[600px] h-[600px] bg-purple-50 rounded-full mix-blend-multiply filter blur-3xl opacity-70"></div>
+            {/* Ambient Background Glows */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-0 right-1/4 w-[700px] h-[700px] bg-indigo-100/40 rounded-full blur-[140px] -translate-y-1/2" />
+                <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-purple-100/30 rounded-full blur-[120px]" />
+                <div className="absolute inset-0 bg-grid-pattern opacity-40" />
+            </div>
 
-                <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+                {/* Hero Section */}
+                <div className="text-center max-w-4xl mx-auto mb-16">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
+                        transition={{ duration: 0.5 }}
                     >
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-sm font-medium mb-6 border border-amber-200">
-                            <Star size={14} className="fill-amber-500 text-amber-500" /> Premium Template
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-6">
+                            <Zap size={14} className="text-indigo-600" /> High-Converting Sales Engine
                         </div>
-                        <h1 className="text-4xl md:text-6xl font-bold text-slate-900 mb-6 tracking-tight leading-tight">
-                            Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Winning Proposals</span> <br />
-                            That Close Deals
+                        <h1 className="text-4xl sm:text-6xl font-black text-slate-900 mb-6 tracking-tight leading-tight">
+                            Create Winning Client Proposals That <br />
+                            <span className="shimmer-text">Close Deals 3x Faster</span>
                         </h1>
-                        <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-                            Stop wrestling with Word documents. Use our professional proposal builder to create stunning, persuasive proposals in minutes.
+                        <p className="text-base sm:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
+                            Stop wrestling with clunky Word docs. Build persuasive, beautifully structured proposals with itemized pricing and instant digital sign-off.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link
-                                to="/create-document/proposal"
-                                className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-xl text-lg font-bold hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2"
+                            <button
+                                onClick={() => launchDocument('proposal')}
+                                className="w-full sm:w-auto px-8 py-4 bg-slate-900 hover:bg-indigo-600 text-white rounded-2xl font-bold text-base md:text-lg shadow-xl shadow-slate-900/15 transition-all flex items-center justify-center gap-2 cursor-pointer group"
                             >
-                                <FileText size={20} />
-                                Create Business Proposal
-                            </Link>
-                            <Link
-                                to="/register"
-                                className="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 rounded-xl text-lg font-bold hover:bg-slate-50 transition-all border border-slate-200 hover:border-slate-300 flex items-center justify-center gap-2"
+                                <FileText size={18} />
+                                <span>Create Free Proposal Now</span>
+                                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </button>
+                            <button
+                                onClick={() => navigate('/register')}
+                                className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-2xl font-bold text-base md:text-lg shadow-sm transition-all cursor-pointer"
                             >
-                                Sign Up Free
-                            </Link>
+                                Sign Up for Free
+                            </button>
+                        </div>
+
+                        <div className="flex items-center justify-center gap-6 mt-6 text-xs text-slate-500 font-semibold">
+                            <span className="flex items-center gap-1"><CheckCircle2 size={14} className="text-emerald-500" /> Interactive Milestones</span>
+                            <span className="flex items-center gap-1"><CheckCircle2 size={14} className="text-emerald-500" /> Instant PDF Export</span>
+                            <span className="flex items-center gap-1"><CheckCircle2 size={14} className="text-emerald-500" /> Integrated eSignature</span>
                         </div>
                     </motion.div>
                 </div>
-            </section>
 
-            {/* Features Grid */}
-            <section className="py-20 bg-slate-50">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-4">Why use our Proposal Builder?</h2>
-                        <p className="text-slate-600 max-w-2xl mx-auto">Standardize your sales process and impress clients with professionally structured documents.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[
-                            {
-                                icon: TrendingUp,
-                                title: "Increase Conversion",
-                                description: "Clear, structured proposals help clients understand value instantly, leading to higher acceptance rates."
-                            },
-                            {
-                                icon: FileText,
-                                title: "Professional Formatting",
-                                description: "Forget about alignment issues. Our editor ensures your document looks perfect on any device."
-                            },
-                            {
-                                icon: Users,
-                                title: "Client-Centric",
-                                description: "Templates designed to focus on your client's needs, proposed solutions, and clear pricing."
-                            }
-                        ].map((feature, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.1 }}
-                                className="p-8 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all"
-                            >
-                                <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 mb-6">
-                                    <feature.icon size={24} />
+                {/* Features Value Pillars */}
+                <div className="mb-24 grid md:grid-cols-3 gap-8">
+                    {[
+                        { icon: TrendingUp, title: 'Higher Win Rates', desc: 'Present clean deliverables and clear payment structures that reduce client friction and close deals quickly.' },
+                        { icon: DollarSign, title: 'Itemized Pricing Tables', desc: 'Dynamic tables for one-time project fees, phased milestones, or monthly retainers with auto-calculated totals.' },
+                        { icon: Users, title: 'Integrated Client Sign-Off', desc: 'Clients can accept and electronically sign directly on the proposal without needing third-party tools.' }
+                    ].map((feat, i) => {
+                        const Icon = feat.icon;
+                        return (
+                            <div key={i} className="p-8 rounded-3xl bg-white border border-slate-200 shadow-xl shadow-slate-200/40">
+                                <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center mb-6">
+                                    <Icon size={24} />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
-                                <p className="text-slate-600 leading-relaxed">{feature.description}</p>
-                            </motion.div>
-                        ))}
-                    </div>
+                                <h3 className="text-xl font-bold text-slate-900 mb-2">{feat.title}</h3>
+                                <p className="text-sm text-slate-600 leading-relaxed">{feat.desc}</p>
+                            </div>
+                        );
+                    })}
                 </div>
-            </section>
 
-            {/* SEO Content */}
-            <section className="py-20 bg-white">
-                <div className="max-w-4xl mx-auto px-6">
-                    <div className="prose prose-lg prose-indigo text-slate-600 mx-auto">
-                        <h2 className="text-3xl font-bold text-slate-900 mb-6">The Elements of a Perfect Business Proposal</h2>
-                        <p>
-                            A business proposal is more than just a price quote. It's a strategic document that outlines how your company can solve a specific problem for a client. To be effective, every proposal should include:
-                        </p>
-                        <ol className="list-decimal pl-6 space-y-4 mb-8">
-                            <li>
-                                <strong>Executive Summary:</strong> A high-level overview of the client's problem and your proposed solution. This is often the most read section.
-                            </li>
-                            <li>
-                                <strong>Problem Statement:</strong> Demonstrate that you clearly understand the client's pain points and requirements.
-                            </li>
-                            <li>
-                                <strong>Proposed Solution:</strong> Detail your approach, methodology, and deliverables. Be specific about what you will provide.
-                            </li>
-                            <li>
-                                <strong>Pricing & Timeline:</strong> Clear, transparent costs and a realistic schedule for project completion.
-                            </li>
-                        </ol>
-                        <p>
-                            DocForge's proposal generator provides pre-built sections for all of these elements, allowing you to focus on the content rather than the layout.
+                {/* Proposal Structure Breakdown */}
+                <div className="mb-24 max-w-4xl mx-auto">
+                    <div className="text-center mb-12">
+                        <h2 className="text-2xl md:text-4xl font-black text-slate-900 mb-3 tracking-tight">
+                            Key Sections of an Effective Proposal
+                        </h2>
+                        <p className="text-slate-500 text-sm md:text-base">
+                            Built-in building blocks designed to win high-ticket consulting and agency contracts.
                         </p>
                     </div>
 
-                    <div className="mt-16 flex justify-center">
-                        <Link
-                            to="/create-document/proposal"
-                            className="inline-flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-xl text-lg font-bold hover:bg-slate-800 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1"
-                        >
-                            Start Your Proposal <ArrowRight size={20} />
-                        </Link>
+                    <div className="bg-white rounded-3xl p-6 md:p-10 border border-slate-200 shadow-xl shadow-slate-200/40 space-y-3">
+                        {proposalSections.map((sec, idx) => {
+                            const isOpen = openClause === idx;
+                            return (
+                                <div key={idx} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+                                    <button
+                                        onClick={() => setOpenClause(isOpen ? -1 : idx)}
+                                        className="w-full py-4 flex items-center justify-between text-left focus:outline-none cursor-pointer group"
+                                    >
+                                        <span className="text-sm md:text-base font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors flex items-center gap-2.5">
+                                            <CheckCircle2 size={16} className="text-indigo-600 shrink-0" />
+                                            {sec.title}
+                                        </span>
+                                        <span className={`p-1.5 rounded-lg bg-slate-100 group-hover:bg-indigo-50 text-slate-500 transition-all ${isOpen ? 'rotate-180 bg-indigo-50 text-indigo-600' : ''}`}>
+                                            <ChevronDown size={16} />
+                                        </span>
+                                    </button>
+                                    <AnimatePresence>
+                                        {isOpen && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <p className="pb-4 pl-6 text-xs md:text-sm text-slate-600 leading-relaxed font-normal">
+                                                    {sec.desc}
+                                                </p>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
-            </section>
+
+                {/* Final Launch Banner */}
+                <div className="text-center py-16 bg-slate-900 rounded-3xl text-white p-8 border border-slate-800 shadow-2xl">
+                    <h2 className="text-3xl md:text-4xl font-black mb-4">Ready to Win Your Next Big Client?</h2>
+                    <p className="text-slate-400 text-sm max-w-xl mx-auto mb-8">
+                        Generate and customize your professional business proposal in under 3 minutes.
+                    </p>
+                    <button
+                        onClick={() => launchDocument('proposal')}
+                        className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-xl text-base shadow-xl transition-all cursor-pointer"
+                    >
+                        Launch Free Proposal Builder →
+                    </button>
+                </div>
+            </main>
+
+            {/* Auth Required Modal */}
+            <AuthModalComponent />
         </div>
     );
 };

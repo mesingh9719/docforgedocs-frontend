@@ -2,63 +2,90 @@ import React, { Suspense } from 'react';
 import SEO from '../components/SEO';
 import HeroSection from './Landing/components/HeroSection';
 
-// Lazy load non-critical sections
-const SocialProof = React.lazy(() => import('./Landing/components/SocialProof'));
+// Lazy load non-critical sections for fast initial load
+const LogoMarquee = React.lazy(() => import('./Landing/components/LogoMarquee'));
 const TemplatesGrid = React.lazy(() => import('./Landing/components/TemplatesGrid'));
+const DocumentPlayground = React.lazy(() => import('./Landing/components/DocumentPlayground'));
 const FeatureShowcase = React.lazy(() => import('./Landing/components/FeatureShowcase'));
-const DigitalSignatureUpsell = React.lazy(() => import('./Landing/components/DigitalSignatureUpsell'));
+const SignaturePadDemo = React.lazy(() => import('./Landing/components/SignaturePadDemo'));
+const RoiCalculator = React.lazy(() => import('./Landing/components/RoiCalculator'));
+const TestimonialsSection = React.lazy(() => import('./Landing/components/TestimonialsSection'));
+const SecurityCompliance = React.lazy(() => import('./Landing/components/SecurityCompliance'));
 const FAQSection = React.lazy(() => import('./Landing/components/FAQSection'));
 const FinalCTA = React.lazy(() => import('./Landing/components/FinalCTA'));
 
-// Loading fallback
+// Sleek loading fallback
 const SectionLoader = () => (
     <div className="py-20 flex justify-center">
-        <div className="w-8 h-8 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
     </div>
 );
 
 const Welcome = () => {
     return (
-        <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-900 overflow-x-hidden">
+        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-indigo-600 selection:text-white overflow-x-hidden">
             <SEO
-                title="DocForge - Free NDA & Proposal Generator"
-                description="The operating system for modern agencies. Generate professional NDAs, Proposals, and Invoices for free. No signup required to start."
-                keywords="Free NDA Generator, Business Proposal Creator, Consulting Agreement Template, Online Legal Documents, Agency Software"
+                title="DocForge - Modern Document & Legally Enforceable eSignature OS"
+                description="The operating system for modern agencies and freelancers. Generate professional NDAs, Proposals, and Invoices with legally binding eSignatures. 100% free to start."
+                keywords="Free NDA Generator, Business Proposal Creator, Consulting Agreement Template, Electronic Signatures, Online Legal Documents, Agency Operating System"
             />
 
-            {/* Background Effects - Optimized with simple CSS/SVG */}
+            {/* Background Ambient Glows */}
             <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-50/50 rounded-full blur-[100px] opacity-60 -translate-y-1/2 translate-x-1/4 will-change-transform" />
-                <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-blue-50/50 rounded-full blur-[100px] opacity-40 -translate-y-1/2 -translate-x-1/4 will-change-transform" />
-                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150" />
+                <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-100/40 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4" />
+                <div className="absolute top-1/3 left-0 w-[600px] h-[600px] bg-blue-100/30 rounded-full blur-[100px] -translate-x-1/4" />
+                <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] bg-purple-100/30 rounded-full blur-[140px]" />
+                <div className="absolute inset-0 bg-grid-pattern opacity-50" />
             </div>
 
-            <main className="relative z-10 pt-32 pb-20 px-4 sm:px-6 max-w-7xl mx-auto">
-                <HeroSection />
+            <main className="relative z-10 pt-28 sm:pt-32">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                    <HeroSection />
+                </div>
 
-                <Suspense fallback={<div className="h-24"></div>}>
-                    <SocialProof />
+                <Suspense fallback={<div className="h-20" />}>
+                    <LogoMarquee />
+                </Suspense>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                    <Suspense fallback={<SectionLoader />}>
+                        <TemplatesGrid />
+                    </Suspense>
+
+                    <Suspense fallback={<SectionLoader />}>
+                        <DocumentPlayground />
+                    </Suspense>
+
+                    <Suspense fallback={<SectionLoader />}>
+                        <FeatureShowcase />
+                    </Suspense>
+                </div>
+
+                <Suspense fallback={<SectionLoader />}>
+                    <SignaturePadDemo />
                 </Suspense>
 
                 <Suspense fallback={<SectionLoader />}>
-                    <TemplatesGrid />
+                    <RoiCalculator />
                 </Suspense>
 
                 <Suspense fallback={<SectionLoader />}>
-                    <FeatureShowcase />
+                    <TestimonialsSection />
                 </Suspense>
 
                 <Suspense fallback={<SectionLoader />}>
-                    <DigitalSignatureUpsell />
+                    <SecurityCompliance />
                 </Suspense>
 
-                <Suspense fallback={<SectionLoader />}>
-                    <FAQSection />
-                </Suspense>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                    <Suspense fallback={<SectionLoader />}>
+                        <FAQSection />
+                    </Suspense>
 
-                <Suspense fallback={<SectionLoader />}>
-                    <FinalCTA />
-                </Suspense>
+                    <Suspense fallback={<SectionLoader />}>
+                        <FinalCTA />
+                    </Suspense>
+                </div>
             </main>
         </div>
     );

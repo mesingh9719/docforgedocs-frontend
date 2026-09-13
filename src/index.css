@@ -1,61 +1,136 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 /* Premium Design System */
 @theme {
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-inter: 'Inter', sans-serif;
+  --font-handwriting: 'Caveat', cursive;
 
   /* Semantic Colors */
-  --color-brand-50: var(--color-indigo-50);
-  --color-brand-100: var(--color-indigo-100);
-  --color-brand-500: var(--color-indigo-500);
-  --color-brand-600: var(--color-indigo-600);
-  --color-brand-700: var(--color-indigo-700);
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-500: #6366f1;
+  --color-brand-600: #4f46e5;
+  --color-brand-700: #4338ca;
   
-  --color-surface-50: var(--color-slate-50);
-  --color-surface-100: var(--color-slate-100);
-  --color-surface-800: var(--color-slate-800);
-  --color-surface-900: var(--color-slate-900);
+  --color-surface-50: #f8fafc;
+  --color-surface-100: #f1f5f9;
+  --color-surface-800: #1e293b;
+  --color-surface-900: #0f172a;
+  --color-surface-950: #0a0f1d;
 
   /* Shadows */
-  --shadow-premium: 0 4px 20px -5px rgba(0, 0, 0, 0.1), 0 2px 8px -2px rgba(0, 0, 0, 0.05);
-  --shadow-premium-hover: 0 10px 25px -5px rgba(79, 70, 229, 0.15), 0 8px 10px -6px rgba(79, 70, 229, 0.1);
+  --shadow-premium: 0 4px 20px -5px rgba(0, 0, 0, 0.08), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
+  --shadow-premium-hover: 0 20px 35px -10px rgba(99, 102, 241, 0.15), 0 10px 15px -5px rgba(99, 102, 241, 0.08);
+  --shadow-glow: 0 0 50px -10px rgba(99, 102, 241, 0.3);
+  --shadow-glow-emerald: 0 0 50px -10px rgba(16, 185, 129, 0.3);
   --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 
   /* Animations */
   --animate-fade-in: fade-in 0.5s ease-out;
   --animate-slide-up: slide-up 0.5s ease-out;
-  --animate-blob: blob 7s infinite;
+  --animate-blob: blob 9s infinite;
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-pulse-slow: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-shimmer: shimmer 2.5s infinite linear;
+  --animate-marquee: marquee 35s linear infinite;
+  --animate-marquee-reverse: marquee-reverse 35s linear infinite;
   
   @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
   }
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(14px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.03); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes marquee {
+    0% { transform: translateX(0%); }
+    100% { transform: translateX(-50%); }
+  }
+  @keyframes marquee-reverse {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0%); }
   }
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-  @apply antialiased text-slate-700 bg-slate-50;
+  font-family: var(--font-sans);
+  @apply antialiased text-slate-800 bg-slate-50 selection:bg-indigo-600 selection:text-white;
+}
+
+/* Typography font helper for signatures */
+.font-handwriting {
+  font-family: 'Caveat', cursive;
 }
 
 /* Glassmorphism Utilities */
 @utility glass {
-  @apply backdrop-blur-md bg-white/80 border border-white/20;
+  @apply backdrop-blur-xl bg-white/80 border border-white/40 shadow-sm;
+}
+
+@utility glass-card {
+  @apply backdrop-blur-xl bg-white/90 border border-slate-200/80 shadow-xl shadow-slate-200/50;
 }
 
 @utility glass-dark {
-  @apply backdrop-blur-md bg-slate-900/90 border border-slate-800/50;
+  @apply backdrop-blur-xl bg-slate-900/90 border border-slate-800/80 shadow-2xl shadow-black/40 text-white;
+}
+
+/* Background Gradients */
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px);
+}
+
+.bg-grid-dark {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+.bg-radial-gradient {
+  background: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+}
+
+.gradient-border {
+  position: relative;
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.4));
+  padding: 1px;
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, #4f46e5 0%, #9333ea 50%, #4f46e5 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer 4s linear infinite;
 }
 
 /* Custom Scrollbar for a premium feel */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
@@ -68,11 +143,6 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-slate-400;
-}
-
-/* Premium Selection Color */
-::selection {
-  @apply bg-indigo-600 text-white;
 }
 
 /* Print Styles Preserved */
@@ -95,13 +165,13 @@ body {
 /* Custom Animations */
 @keyframes blob {
   0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
+  33% { transform: translate(30px, -40px) scale(1.08); }
+  66% { transform: translate(-25px, 20px) scale(0.94); }
   100% { transform: translate(0px, 0px) scale(1); }
 }
 
 .animate-blob {
-  animation: blob 7s infinite;
+  animation: blob 9s infinite;
 }
 
 .animation-delay-2000 {
@@ -112,26 +182,12 @@ body {
   animation-delay: 4s;
 }
 
-@keyframes gradient-x {
-  0%, 100% {
-      background-size: 200% 200%;
-      background-position: left center;
-  }
-  50% {
-      background-size: 200% 200%;
-      background-position: right center;
-  }
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 30s linear infinite;
 }
 
-.animate-gradient-x {
-  animation: gradient-x 15s ease infinite;
-}
-
-@keyframes infinite-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-100%); }
-}
-
-.animate-infinite-scroll {
-  animation: infinite-scroll 25s linear infinite;
+.animate-marquee:hover {
+  animation-play-state: paused;
 }

@@ -1,139 +1,194 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Shield, Lock, FileText, CheckCircle, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, Lock, FileText, CheckCircle2, ArrowRight, Sparkles, ChevronDown, Clock, Download, Eye, Check } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import SEO from '../../../components/SEO';
+import { useDocumentLaunch } from '../../../hooks/useDocumentLaunch';
+
+const essentialClauses = [
+    {
+        title: 'Definition of Confidential Information',
+        desc: 'Broad yet enforceable definition covering technical data, trade secrets, software code, customer lists, business plans, and financial records.'
+    },
+    {
+        title: 'Exclusions from Confidentiality',
+        desc: 'Standard legal exceptions for information already public, independently developed, or rightfully received without restriction.'
+    },
+    {
+        title: 'Non-Disclosure & Non-Circumvention Obligations',
+        desc: 'Binding restrictions prohibiting unauthorized sharing, replication, or bypassing the disclosing party to engage directly with clients or partners.'
+    },
+    {
+        title: 'Term & Survival Duration',
+        desc: 'Configurable term of protection (1 to 5 years, or perpetual for trade secrets) ensuring post-termination confidentiality survival.'
+    },
+    {
+        title: 'Remedies & Injunctive Relief',
+        desc: 'Affirmative right to seek immediate injunctive relief and monetary damages without posting a bond in the event of an unauthorized breach.'
+    },
+    {
+        title: 'Governing Law & Dispute Resolution',
+        desc: 'Explicit jurisdiction clause specifying governing state/country courts and legal venue to eliminate jurisdictional ambiguity.'
+    }
+];
 
 const NdaLanding = () => {
+    const navigate = useNavigate();
+    const [openClause, setOpenClause] = useState(0);
+    const { launchDocument, AuthModalComponent } = useDocumentLaunch();
+
     return (
-        <div className="bg-white">
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-600 selection:text-white pt-32 pb-24 relative overflow-x-hidden">
             <SEO
-                title="Free Non-Disclosure Agreement (NDA) Generator"
-                description="Create a professional Non-Disclosure Agreement (NDA) in seconds. Protect your confidential information with our free, secure, and legally binding template generator. No signup required."
-                keywords="free nda generator, non-disclosure agreement template, confidential disclosure agreement, create nda online, legal contracts"
+                title="Free Non-Disclosure Agreement (NDA) Generator | DocForge"
+                description="Create a legally binding Non-Disclosure Agreement (NDA) in under 2 minutes. Free mutual and unilateral confidentiality agreements with vector PDF export."
+                keywords="free nda generator, non-disclosure agreement template, mutual nda template, confidentiality agreement online, create nda pdf"
             />
 
-            {/* Hero Section */}
-            <section className="relative pt-32 pb-20 overflow-hidden bg-slate-900 text-white">
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-800 z-0"></div>
-                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-                <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+            {/* Ambient Background Glows */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-0 right-1/4 w-[700px] h-[700px] bg-emerald-100/40 rounded-full blur-[140px] -translate-y-1/2" />
+                <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-indigo-100/30 rounded-full blur-[120px]" />
+                <div className="absolute inset-0 bg-grid-pattern opacity-40" />
+            </div>
 
-                <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+                {/* Hero Section */}
+                <div className="text-center max-w-4xl mx-auto mb-16">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
+                        transition={{ duration: 0.5 }}
                     >
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-sm font-medium mb-6 border border-indigo-500/30">
-                            <Shield size={16} /> Free Legal Tool
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-6">
+                            <Shield size={14} className="text-emerald-600" /> Free Verified Legal Tool
                         </div>
-                        <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight leading-tight">
-                            Protect Your Ideas with a <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Professional NDA</span>
+                        <h1 className="text-4xl sm:text-6xl font-black text-slate-900 mb-6 tracking-tight leading-tight">
+                            Protect Your Intellectual Property with a <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-500">
+                                Legally Enforceable NDA
+                            </span>
                         </h1>
-                        <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-                            Generate a legally binding Non-Disclosure Agreement in minutes.
-                            Secure your business relationships and intellectual property instantly.
+                        <p className="text-base sm:text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
+                            Generate a customized, professional Non-Disclosure Agreement in under 2 minutes. Protect trade secrets, investor discussions, and client deliverables.
                         </p>
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                            <Link
-                                to="/create-document/nda"
-                                className="w-full sm:w-auto px-8 py-4 bg-indigo-600 rounded-xl text-lg font-bold hover:bg-indigo-500 transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2"
+                            <button
+                                onClick={() => launchDocument('nda')}
+                                className="w-full sm:w-auto px-8 py-4 bg-slate-900 hover:bg-emerald-600 text-white rounded-2xl font-bold text-base md:text-lg shadow-xl shadow-slate-900/15 transition-all flex items-center justify-center gap-2 cursor-pointer group"
                             >
-                                <FileText size={20} />
-                                Create Free NDA
-                            </Link>
-                            <Link
-                                to="/register"
-                                className="w-full sm:w-auto px-8 py-4 bg-slate-800 text-white rounded-xl text-lg font-bold hover:bg-slate-700 transition-all border border-slate-700 hover:border-slate-600 flex items-center justify-center gap-2"
+                                <FileText size={18} />
+                                <span>Create Free NDA Now</span>
+                                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </button>
+                            <button
+                                onClick={() => navigate('/register')}
+                                className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-2xl font-bold text-base md:text-lg shadow-sm transition-all cursor-pointer"
                             >
-                                Sign Up for Full Access
-                            </Link>
+                                Sign Up for eSignature Suite
+                            </button>
                         </div>
 
-                        <p className="mt-6 text-sm text-slate-500">
-                            No credit card required • Instant download • Legally binding
-                        </p>
+                        <div className="flex items-center justify-center gap-6 mt-6 text-xs text-slate-500 font-semibold">
+                            <span className="flex items-center gap-1"><CheckCircle2 size={14} className="text-emerald-500" /> 100% Free to Draft</span>
+                            <span className="flex items-center gap-1"><CheckCircle2 size={14} className="text-emerald-500" /> Instant PDF Download</span>
+                            <span className="flex items-center gap-1"><CheckCircle2 size={14} className="text-emerald-500" /> Enforceable Worldwide</span>
+                        </div>
                     </motion.div>
                 </div>
-            </section>
 
-            {/* Value Props */}
-            <section className="py-20 bg-white">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* 3 Step Visual Process */}
+                <div className="mb-24 bg-white rounded-3xl p-8 md:p-12 border border-slate-200 shadow-xl shadow-slate-200/40">
+                    <div className="text-center max-w-2xl mx-auto mb-12">
+                        <h2 className="text-2xl md:text-4xl font-black text-slate-900 mb-3 tracking-tight">
+                            How It Works in 3 Simple Steps
+                        </h2>
+                        <p className="text-slate-500 text-sm md:text-base">
+                            No complicated legal jargon. Generate standard contracts without paying $500 in attorney fees.
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8">
                         {[
-                            {
-                                icon: Lock,
-                                title: "Bank-Grade Security",
-                                description: "Your data is encrypted and secure. We prioritize your privacy and confidentiality above all else."
-                            },
-                            {
-                                icon: Shield,
-                                title: "Legally Sound",
-                                description: "Our templates are drafted by legal professionals to ensure your agreements are enforceable."
-                            },
-                            {
-                                icon: CheckCircle,
-                                title: "Instant Export",
-                                description: "Generate PDF documents instantly. Download, print, or share your NDA directly from the platform."
-                            }
-                        ].map((feature, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.1 }}
-                                className="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:shadow-lg transition-all"
-                            >
-                                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-indigo-600 shadow-sm mb-6">
-                                    <feature.icon size={24} />
-                                </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
-                                <p className="text-slate-600 leading-relaxed">{feature.description}</p>
-                            </motion.div>
+                            { num: '01', title: 'Enter Party Information', desc: 'Specify disclosing and recipient parties, governing state, and confidentiality duration.' },
+                            { num: '02', title: 'Define Protection Scope', desc: 'Select standard or customized confidentiality clauses covering IP, code, and financial data.' },
+                            { num: '03', title: 'Export & eSign Instantly', desc: 'Download high-resolution PDF or send for secure digital signature with full audit logs.' }
+                        ].map((step, idx) => (
+                            <div key={idx} className="p-6 rounded-2xl bg-slate-50 border border-slate-200/80 relative">
+                                <div className="text-3xl font-black text-emerald-600 font-mono mb-4">{step.num}</div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2">{step.title}</h3>
+                                <p className="text-xs md:text-sm text-slate-600 leading-relaxed">{step.desc}</p>
+                            </div>
                         ))}
                     </div>
                 </div>
-            </section>
 
-            {/* How it Works / Content for SEO */}
-            <section className="py-20 bg-slate-50">
-                <div className="max-w-4xl mx-auto px-6">
-                    <h2 className="text-3xl font-bold text-slate-900 mb-8">Why do you need a Non-Disclosure Agreement?</h2>
-                    <div className="prose prose-lg prose-indigo text-slate-600">
-                        <p>
-                            A Non-Disclosure Agreement (NDA), also known as a confidentiality agreement, is a legal contract between at least two parties that outlines confidential material, knowledge, or information that the parties wish to share with one another for certain purposes, but wish to restrict access to.
-                        </p>
-                        <p>
-                            NDAs are commonly used when:
-                        </p>
-                        <ul className="list-disc pl-6 space-y-2 mb-6">
-                            <li>Presenting an invention or business idea to a potential partner, investor, or distributor.</li>
-                            <li>Sharing financial, marketing, and other business information with a prospective buyer.</li>
-                            <li>Showing a new product or technology to a prospective buyer or licensee.</li>
-                            <li>Receiving services from a company or individual who may have access to sensitive information in providing those services.</li>
-                        </ul>
-                        <p>
-                            With DocForge, you can create a customized NDA that fits your specific needs without the high cost of legal fees. Our intuitive editor guides you through each section, ensuring you cover all critical aspects of confidentiality.
+                {/* Essential Clauses Checklist Accordion */}
+                <div className="mb-24 max-w-4xl mx-auto">
+                    <div className="text-center mb-12">
+                        <h2 className="text-2xl md:text-4xl font-black text-slate-900 mb-3 tracking-tight">
+                            Essential Clauses Included in DocForge NDAs
+                        </h2>
+                        <p className="text-slate-500 text-sm md:text-base">
+                            Every template is drafted to balance rigorous legal protection with standard enforceability.
                         </p>
                     </div>
 
-                    <div className="mt-12 p-8 bg-indigo-600 rounded-2xl text-white text-center">
-                        <h3 className="text-2xl font-bold mb-4">Ready to protect your business?</h3>
-                        <p className="text-indigo-100 mb-8">Start creating your NDA now. It takes less than 2 minutes.</p>
-                        <Link
-                            to="/create-document/nda"
-                            className="inline-flex items-center gap-2 px-8 py-3 bg-white text-indigo-600 rounded-xl font-bold hover:bg-indigo-50 transition-colors"
-                        >
-                            Create NDA for Free <ArrowRight size={18} />
-                        </Link>
+                    <div className="bg-white rounded-3xl p-6 md:p-10 border border-slate-200 shadow-xl shadow-slate-200/40 space-y-3">
+                        {essentialClauses.map((clause, idx) => {
+                            const isOpen = openClause === idx;
+                            return (
+                                <div key={idx} className="border-b border-slate-100 last:border-0 pb-3 last:pb-0">
+                                    <button
+                                        onClick={() => setOpenClause(isOpen ? -1 : idx)}
+                                        className="w-full py-4 flex items-center justify-between text-left focus:outline-none cursor-pointer group"
+                                    >
+                                        <span className="text-sm md:text-base font-extrabold text-slate-900 group-hover:text-emerald-600 transition-colors flex items-center gap-2.5">
+                                            <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                                            {clause.title}
+                                        </span>
+                                        <span className={`p-1.5 rounded-lg bg-slate-100 group-hover:bg-emerald-50 text-slate-500 transition-all ${isOpen ? 'rotate-180 bg-emerald-50 text-emerald-600' : ''}`}>
+                                            <ChevronDown size={16} />
+                                        </span>
+                                    </button>
+                                    <AnimatePresence>
+                                        {isOpen && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="overflow-hidden"
+                                            >
+                                                <p className="pb-4 pl-6 text-xs md:text-sm text-slate-600 leading-relaxed font-normal">
+                                                    {clause.desc}
+                                                </p>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
-            </section>
+
+                {/* Final Launch Banner */}
+                <div className="text-center py-16 bg-slate-900 rounded-3xl text-white p-8 border border-slate-800 shadow-2xl">
+                    <h2 className="text-3xl md:text-4xl font-black mb-4">Protect Your Ideas in Under 2 Minutes</h2>
+                    <p className="text-slate-400 text-sm max-w-xl mx-auto mb-8">
+                        Generate, preview, and download your customized Non-Disclosure Agreement.
+                    </p>
+                    <button
+                        onClick={() => launchDocument('nda')}
+                        className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-base shadow-xl transition-all cursor-pointer"
+                    >
+                        Launch Free NDA Generator →
+                    </button>
+                </div>
+            </main>
+
+            {/* Auth Required Modal */}
+            <AuthModalComponent />
         </div>
     );
 };

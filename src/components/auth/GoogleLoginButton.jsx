@@ -11,7 +11,7 @@ const GoogleLoginButton = ({ text = "Continue with Google" }) => {
     const [loading, setLoading] = useState(false);
     const [gisLoaded, setGisLoaded] = useState(false);
 
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '803668558316-5onu9tove6rs0ndae68mnogc00kgrosm.apps.googleusercontent.com';
+    const clientId = import.meta.env.GOOGLE_CLIENT_ID || '803668558316-5onu9tove6rs0ndae68mnogc00kgrosm.apps.googleusercontent.com';
     const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
     const backendUrl = apiBase.replace(/\/api\/v1\/?$/, '');
 

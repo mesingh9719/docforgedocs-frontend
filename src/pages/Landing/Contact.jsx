@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { Send, Mail, MessageSquare, ShieldCheck, Clock, CheckCircle2, Sparkles, PhoneCall, Building2 } from 'lucide-react';
 import api from '../../api/axios';
 import { toast } from 'react-hot-toast';
@@ -15,8 +14,6 @@ const Contact = () => {
         message: ''
     });
 
-    const { executeRecaptcha } = useGoogleReCaptcha();
-
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -25,15 +22,8 @@ const Contact = () => {
         e.preventDefault();
         setLoading(true);
 
-        if (!executeRecaptcha) {
-            console.log('Execute recaptcha not yet available');
-            setLoading(false);
-            return;
-        }
-
         try {
-            const token = await executeRecaptcha('contact_submit');
-            await api.post('/public/contact', { ...formData, recaptcha_token: token });
+            await api.post('/public/contact', formData);
             setSubmitted(true);
             toast.success('Message sent successfully! Our team will respond shortly.');
             setFormData({ name: '', email: '', subject: '', message: '' });
@@ -158,7 +148,7 @@ const Contact = () => {
                                             onChange={handleChange}
                                             required
                                             placeholder="Jane Doe"
-                                            className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all bg-slate-50/50 hover:bg-white focus:bg-white"
+                                            className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium text-slate-900 placeholder-slate-400 transition-all"
                                         />
                                     </div>
                                     <div>
@@ -172,7 +162,7 @@ const Contact = () => {
                                             onChange={handleChange}
                                             required
                                             placeholder="jane@company.com"
-                                            className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all bg-slate-50/50 hover:bg-white focus:bg-white"
+                                            className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium text-slate-900 placeholder-slate-400 transition-all"
                                         />
                                     </div>
                                 </div>
@@ -188,7 +178,7 @@ const Contact = () => {
                                         onChange={handleChange}
                                         required
                                         placeholder="Question about agency plans or enterprise features..."
-                                        className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all bg-slate-50/50 hover:bg-white focus:bg-white"
+                                        className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium text-slate-900 placeholder-slate-400 transition-all"
                                     />
                                 </div>
 
@@ -203,18 +193,18 @@ const Contact = () => {
                                         onChange={handleChange}
                                         required
                                         placeholder="How can we assist your workflow today?"
-                                        className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all bg-slate-50/50 hover:bg-white focus:bg-white"
+                                        className="w-full px-4 py-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-sm font-medium text-slate-900 placeholder-slate-400 transition-all"
                                     ></textarea>
                                 </div>
 
                                 <div className="text-[11px] text-slate-400 text-center leading-relaxed">
-                                    Protected by Google reCAPTCHA Enterprise • <a href="/privacy" className="text-indigo-600 hover:underline">Privacy</a> &amp; <a href="/terms" className="text-indigo-600 hover:underline">Terms</a>
+                                    <a href="/privacy" className="text-indigo-600 hover:underline">Privacy</a> &amp; <a href="/terms" className="text-indigo-600 hover:underline">Terms</a>
                                 </div>
 
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-4 bg-slate-900 hover:bg-indigo-600 text-white font-bold text-sm rounded-xl transition-all shadow-xl shadow-slate-900/15 flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer group"
+                                    className="w-full py-4 bg-slate-900 hover:bg-indigo-600 text-white font-bold text-sm rounded-xl transition-all shadow-xl shadow-slate-900/15 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     {loading ? (
                                         <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

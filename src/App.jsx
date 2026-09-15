@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Route, Routes, useParams, Navigate } from 'react-router-dom'
-import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3'
 import { HelmetProvider } from 'react-helmet-async'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/LandingPage/Layout'
@@ -89,158 +88,148 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <HelmetProvider>
-          <GoogleReCaptchaProvider
-            reCaptchaKey={import.meta.env.RECAPTCHA_SITE_KEY}
-            scriptProps={{
-              async: false,
-              defer: false,
-              appendTo: 'head',
-              nonce: undefined,
-            }}
-          >
-            <Router>
-              <ScrollToTop />
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                  className: 'text-sm font-medium text-slate-800',
-                  style: {
-                    background: '#ffffff',
-                    color: '#1e293b',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-                    border: '1px solid #e2e8f0',
-                    padding: '12px 16px',
-                    borderRadius: '8px',
+          <Router>
+            <ScrollToTop />
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                className: 'text-sm font-medium text-slate-800',
+                style: {
+                  background: '#ffffff',
+                  color: '#1e293b',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+                  border: '1px solid #e2e8f0',
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                },
+                success: {
+                  iconTheme: {
+                    primary: '#10b981',
+                    secondary: '#fff',
                   },
-                  success: {
-                    iconTheme: {
-                      primary: '#10b981',
-                      secondary: '#fff',
-                    },
+                },
+                error: {
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#fff',
                   },
-                  error: {
-                    iconTheme: {
-                      primary: '#ef4444',
-                      secondary: '#fff',
-                    },
-                  },
-                }}
-              />
-              <Routes>
-                <Route element={<Layout />} >
-                  <Route path="/" element={<Welcome />} />
-                  <Route path="/features" element={<Features />} />
-                  <Route path="/pricing" element={<Pricing />} />
-                  <Route path="/about" element={<About />} />
+                },
+              }}
+            />
+            <Routes>
+              <Route element={<Layout />} >
+                <Route path="/" element={<Welcome />} />
+                <Route path="/features" element={<Features />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/about" element={<About />} />
 
-                  {/* Footer Links */}
-                  <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/careers" element={<Careers />} />
-                  <Route path="/changelog" element={<Changelog />} />
-                  <Route path="/blog" element={<BlogList />} />
-                  <Route path="/blog/:slug" element={<BlogPost />} />
+                {/* Footer Links */}
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/careers" element={<Careers />} />
+                <Route path="/changelog" element={<Changelog />} />
+                <Route path="/blog" element={<BlogList />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
 
-                  <Route path="/accept-invite" element={<AcceptInvite />} />
-                  <Route path="/verify-email" element={<VerifyEmailHandler />} />
-                  <Route path="/verify-email-message" element={<VerifyEmailMessage />} />
+                <Route path="/accept-invite" element={<AcceptInvite />} />
+                <Route path="/verify-email" element={<VerifyEmailHandler />} />
+                <Route path="/verify-email-message" element={<VerifyEmailMessage />} />
 
-                  {/* SEO Landing Pages (Tools) */}
-                  <Route path="/tools/nda" element={<NdaLanding />} />
-                  <Route path="/tools/business-proposal" element={<ProposalLanding />} />
-                  <Route path="/tools/consulting-agreement" element={<ConsultingAgreementLanding />} />
-                  <Route path="/tools/invoice-generator" element={<InvoiceLanding />} />
-                  <Route path="/tools/electronic-signature" element={<SignatureLanding />} />
-                  <Route path="/tools/offer-letter" element={<OfferLetterLanding />} />
-                </Route>
+                {/* SEO Landing Pages (Tools) */}
+                <Route path="/tools/nda" element={<NdaLanding />} />
+                <Route path="/tools/business-proposal" element={<ProposalLanding />} />
+                <Route path="/tools/consulting-agreement" element={<ConsultingAgreementLanding />} />
+                <Route path="/tools/invoice-generator" element={<InvoiceLanding />} />
+                <Route path="/tools/electronic-signature" element={<SignatureLanding />} />
+                <Route path="/tools/offer-letter" element={<OfferLetterLanding />} />
+              </Route>
 
-                {/* Protected Onboarding */}
-                <Route element={<ProtectedRoute redirectPath="/login" />}>
-                  <Route path="/onboarding" element={<Onboarding />} />
-                </Route>
+              {/* Protected Onboarding */}
+              <Route element={<ProtectedRoute redirectPath="/login" />}>
+                <Route path="/onboarding" element={<Onboarding />} />
+              </Route>
 
-                {/* Public Viewer Route */}
-                <Route path="/view/:token" element={<PublicDocumentViewer />} />
-                <Route path="/sign/:token" element={<SignDocument />} />
+              {/* Public Viewer Route */}
+              <Route path="/view/:token" element={<PublicDocumentViewer />} />
+              <Route path="/sign/:token" element={<SignDocument />} />
 
-                {/* Legacy Guest Document Generator - Redirect to Register with Target Blueprint */}
-                <Route path="/create-document/:template" element={<LegacyCreateDocumentRedirect />} />
+              {/* Legacy Guest Document Generator - Redirect to Register with Target Blueprint */}
+              <Route path="/create-document/:template" element={<LegacyCreateDocumentRedirect />} />
 
-                {/* Auth Routes - Redirect if logged in */}
-                <Route element={<GuestRoute />}>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/password-reset/:token" element={<ResetPassword />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
-                </Route>
+              {/* Auth Routes - Redirect if logged in */}
+              <Route element={<GuestRoute />}>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/password-reset/:token" element={<ResetPassword />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+              </Route>
 
-                {/* Dashboard Routes - Protected */}
-                <Route element={<ProtectedRoute />}>
-                  <Route element={<DashboardLayout />} >
-                    <Route path='/dashboard' element={<DashboardHome />} />
-                    <Route path='/notifications' element={<NotificationsPage />} />
+              {/* Dashboard Routes - Protected */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<DashboardLayout />} >
+                  <Route path='/dashboard' element={<DashboardHome />} />
+                  <Route path='/notifications' element={<NotificationsPage />} />
 
-                    {/* Templates Hub & Visual Builders */}
-                    <Route element={<ProtectedRoute permission="document.view" />}>
-                      <Route path='/templates' element={<TemplatesPage />} />
-                      <Route path='/templates/builder' element={<TemplateBuilder />} />
-                      <Route path='/templates/builder/:id' element={<TemplateBuilder />} />
-                      <Route path='/templates/pdf-editor' element={<PdfTemplateEditor />} />
-                      <Route path='/templates/pdf-editor/:id' element={<PdfTemplateEditor />} />
+                  {/* Templates Hub & Visual Builders */}
+                  <Route element={<ProtectedRoute permission="document.view" />}>
+                    <Route path='/templates' element={<TemplatesPage />} />
+                    <Route path='/templates/builder' element={<TemplateBuilder />} />
+                    <Route path='/templates/builder/:id' element={<TemplateBuilder />} />
+                    <Route path='/templates/pdf-editor' element={<PdfTemplateEditor />} />
+                    <Route path='/templates/pdf-editor/:id' element={<PdfTemplateEditor />} />
+                  </Route>
+
+                  {/* Documents - View Permission */}
+                  <Route element={<ProtectedRoute permission="document.view" />}>
+                    <Route path='/documents' element={<DocumentList />} />
+
+                    {/* Create/Edit Pages - Guarded */}
+                    <Route element={<ProtectedRoute permission="document.create" />}>
+                      <Route path='/documents/nda' element={<NdaEditor />} />
+                      <Route path='/documents/proposal' element={<ProposalEditor />} />
+                      <Route path='/documents/invoice' element={<InvoiceEditor />} />
+                      <Route path='/documents/offer-letter' element={<OfferLetterEditor />} />
+                      <Route path='/documents/consulting-agreement' element={<ConsultingAgreementEditor />} />
                     </Route>
 
-                    {/* Documents - View Permission */}
-                    <Route element={<ProtectedRoute permission="document.view" />}>
-                      <Route path='/documents' element={<DocumentList />} />
+                    {/* Edit Pages - Guarded (Technically edit permission, using generalized check or component level) */}
+                    {/* For simplicity we allow view access to editor but save buttons will be disabled if no edit permission */}
+                    <Route path='/documents/nda/:id' element={<NdaEditor />} />
+                    <Route path='/documents/proposal/:id' element={<ProposalEditor />} />
+                    <Route path='/documents/invoice/:id' element={<InvoiceEditor />} />
+                    <Route path='/documents/offer-letter/:id' element={<OfferLetterEditor />} />
+                    <Route path='/documents/consulting-agreement/:id' element={<ConsultingAgreementEditor />} />
+                    <Route path='/documents/general/:id' element={<DocumentEditor />} />
+                    <Route path='/documents/pdf-editor/:id' element={<PdfTemplateEditor />} />
+                  </Route>
 
-                      {/* Create/Edit Pages - Guarded */}
-                      <Route element={<ProtectedRoute permission="document.create" />}>
-                        <Route path='/documents/nda' element={<NdaEditor />} />
-                        <Route path='/documents/proposal' element={<ProposalEditor />} />
-                        <Route path='/documents/invoice' element={<InvoiceEditor />} />
-                        <Route path='/documents/offer-letter' element={<OfferLetterEditor />} />
-                        <Route path='/documents/consulting-agreement' element={<ConsultingAgreementEditor />} />
-                      </Route>
+                  {/* Team - View Permission */}
+                  <Route element={<ProtectedRoute permission="team.view" />}>
+                    <Route path='/team' element={<Team />} />
+                  </Route>
 
-                      {/* Edit Pages - Guarded (Technically edit permission, using generalized check or component level) */}
-                      {/* For simplicity we allow view access to editor but save buttons will be disabled if no edit permission */}
-                      <Route path='/documents/nda/:id' element={<NdaEditor />} />
-                      <Route path='/documents/proposal/:id' element={<ProposalEditor />} />
-                      <Route path='/documents/invoice/:id' element={<InvoiceEditor />} />
-                      <Route path='/documents/offer-letter/:id' element={<OfferLetterEditor />} />
-                      <Route path='/documents/consulting-agreement/:id' element={<ConsultingAgreementEditor />} />
-                      <Route path='/documents/general/:id' element={<DocumentEditor />} />
-                      <Route path='/documents/pdf-editor/:id' element={<PdfTemplateEditor />} />
-                    </Route>
+                  {/* Signatures - Manage Permission */}
+                  <Route element={<ProtectedRoute permission="settings.signature" />}>
+                    <Route path='/signatures' element={<SignatureModule />} />
+                    <Route path='/signatures/:id/edit' element={<SignatureModule />} />
+                    <Route path='/signatures/list' element={<SignatureDocumentList />} />
+                    <Route path='/signatures/:documentId/view-signed' element={<SignedDocumentViewer />} />
+                  </Route>
 
-                    {/* Team - View Permission */}
-                    <Route element={<ProtectedRoute permission="team.view" />}>
-                      <Route path='/team' element={<Team />} />
-                    </Route>
+                  {/* Unified Engine Test Route */}
+                  <Route path='/document-engine/test' element={<DocumentEditor />} />
 
-                    {/* Signatures - Manage Permission */}
-                    <Route element={<ProtectedRoute permission="settings.signature" />}>
-                      <Route path='/signatures' element={<SignatureModule />} />
-                      <Route path='/signatures/:id/edit' element={<SignatureModule />} />
-                      <Route path='/signatures/list' element={<SignatureDocumentList />} />
-                      <Route path='/signatures/:documentId/view-signed' element={<SignedDocumentViewer />} />
-                    </Route>
-
-                    {/* Unified Engine Test Route */}
-                    <Route path='/document-engine/test' element={<DocumentEditor />} />
-
-                    {/* Settings - Manage Permission */}
-                    <Route element={<ProtectedRoute permission="settings.view" />}>
-                      <Route path='/settings' element={<Settings />} />
-                    </Route>
+                  {/* Settings - Manage Permission */}
+                  <Route element={<ProtectedRoute permission="settings.view" />}>
+                    <Route path='/settings' element={<Settings />} />
                   </Route>
                 </Route>
-              </Routes>
-            </Router>
-          </GoogleReCaptchaProvider>
+              </Route>
+            </Routes>
+          </Router>
         </HelmetProvider>
       </NotificationProvider>
     </AuthProvider>

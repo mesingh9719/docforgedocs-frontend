@@ -7,13 +7,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AuthInput from './AuthInput';
 import GoogleLoginButton from './GoogleLoginButton';
 import toast from 'react-hot-toast';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 function LoginForm() {
     const location = useLocation();
     const navigate = useNavigate();
     const { setToken } = useAuth();
-    const { executeRecaptcha } = useGoogleReCaptcha();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -69,17 +67,10 @@ function LoginForm() {
             return;
         }
 
-        if (!executeRecaptcha) {
-            setGeneralError("ReCAPTCHA not ready. Please try again.");
-            return;
-        }
-
         setLoading(true);
 
         try {
-            const token = await executeRecaptcha('login');
-
-            const payload = { ...formData, recaptcha_token: token };
+            const payload = formData;
             const data = await login(payload);
             setToken(data.token);
             const redirectParam = new URLSearchParams(location.search).get('redirect');
@@ -180,7 +171,7 @@ function LoginForm() {
                     whileTap={{ scale: 0.98 }}
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-slate-900 text-white font-bold py-4 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-slate-900/20"
+                    className="w-full bg-slate-900 text-white font-bold py-4 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {loading ? (
                         <>

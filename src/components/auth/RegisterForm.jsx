@@ -6,7 +6,6 @@ import { useAuth } from '../../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthInput from './AuthInput';
 import GoogleLoginButton from './GoogleLoginButton';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 function RegisterForm() {
     const [formData, setFormData] = useState({
@@ -20,7 +19,6 @@ function RegisterForm() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const { setToken } = useAuth();
-    const { executeRecaptcha } = useGoogleReCaptcha();
 
     const nameRef = useRef(null);
     const emailRef = useRef(null);
@@ -79,17 +77,10 @@ function RegisterForm() {
             return;
         }
 
-        if (!executeRecaptcha) {
-            setGeneralError("ReCAPTCHA not ready. Please try again.");
-            return;
-        }
-
         setLoading(true);
 
         try {
-            const token = await executeRecaptcha('register');
-            const payload = { ...formData, recaptcha_token: token };
-
+            const payload = formData;
             const data = await register(payload);
             setToken(data.token);
             navigate(redirectPath || '/verify-email-message');
@@ -208,7 +199,7 @@ function RegisterForm() {
                     whileTap={{ scale: 0.98 }}
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-slate-900 text-white font-bold py-4 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4 relative overflow-hidden active:scale-[0.98] shadow-lg shadow-slate-900/20"
+                    className="w-full bg-slate-900 text-white font-bold py-4 px-4 rounded-xl hover:bg-slate-800 transition-all focus:ring-4 focus:ring-slate-900/20 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                     {loading ? (
                         <>

@@ -27,6 +27,10 @@ import SignatureModule from './pages/Dashboard/signature-module/SignatureModule'
 import SignatureDocumentList from './pages/Dashboard/signature-module/SignatureDocumentList'
 import SignedDocumentViewer from './pages/Dashboard/signature-module/SignedDocumentViewer';
 
+import TemplatesPage from './pages/Dashboard/templates-hub/TemplatesPage';
+import TemplateBuilder from './pages/Dashboard/templates-hub/TemplateBuilder';
+import PdfTemplateEditor from './pages/Dashboard/templates-hub/PdfTemplateEditor';
+
 import DocumentEditor from './components/DocumentEngine/DocumentEditor'
 import AuthLayout from './components/auth/AuthLayout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -179,6 +183,15 @@ function App() {
                     <Route path='/dashboard' element={<DashboardHome />} />
                     <Route path='/notifications' element={<NotificationsPage />} />
 
+                    {/* Templates Hub & Visual Builders */}
+                    <Route element={<ProtectedRoute permission="document.view" />}>
+                      <Route path='/templates' element={<TemplatesPage />} />
+                      <Route path='/templates/builder' element={<TemplateBuilder />} />
+                      <Route path='/templates/builder/:id' element={<TemplateBuilder />} />
+                      <Route path='/templates/pdf-editor' element={<PdfTemplateEditor />} />
+                      <Route path='/templates/pdf-editor/:id' element={<PdfTemplateEditor />} />
+                    </Route>
+
                     {/* Documents - View Permission */}
                     <Route element={<ProtectedRoute permission="document.view" />}>
                       <Route path='/documents' element={<DocumentList />} />
@@ -200,6 +213,7 @@ function App() {
                       <Route path='/documents/offer-letter/:id' element={<OfferLetterEditor />} />
                       <Route path='/documents/consulting-agreement/:id' element={<ConsultingAgreementEditor />} />
                       <Route path='/documents/general/:id' element={<DocumentEditor />} />
+                      <Route path='/documents/pdf-editor/:id' element={<PdfTemplateEditor />} />
                     </Route>
 
                     {/* Team - View Permission */}

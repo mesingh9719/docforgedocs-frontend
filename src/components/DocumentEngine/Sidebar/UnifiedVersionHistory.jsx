@@ -32,8 +32,10 @@ const UnifiedVersionHistory = ({ documentId, isOpen, onClose, onRestore, onPrevi
                 getDocumentShares(documentId)
             ]);
 
-            const versions = versionsRes.status === 'fulfilled' ? versionsRes.value.data.data : [];
-            const shares = sharesRes.status === 'fulfilled' ? sharesRes.value.data : [];
+            const rawVersions = versionsRes.status === 'fulfilled' ? (versionsRes.value.data?.data || versionsRes.value.data || []) : [];
+            const versions = Array.isArray(rawVersions) ? rawVersions : [];
+            const rawShares = sharesRes.status === 'fulfilled' ? (sharesRes.value.data?.data || sharesRes.value.data || []) : [];
+            const shares = Array.isArray(rawShares) ? rawShares : [];
 
             // Standardize and Merge
             const formattedVersions = versions.map(v => ({

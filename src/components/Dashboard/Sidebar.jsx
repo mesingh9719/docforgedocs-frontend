@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Building2, ChevronDown, ChevronLeft, ChevronRight, FileText, LayoutDashboard, LogOut, ScrollText, Settings, Users, X } from 'lucide-react';
+import { Building2, ChevronDown, ChevronLeft, ChevronRight, FileText, LayoutDashboard, LayoutTemplate, LogOut, ScrollText, Settings, Users, X } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { usePermissions } from '../../hooks/usePermissions';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -69,6 +69,7 @@ const Sidebar = ({ business, mobileMenuOpen, setMobileMenuOpen }) => {
     ).filter(item => !item.children || item.children.length);
     const navItems = filterItems([
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+        { icon: LayoutTemplate, label: 'Templates', path: '/templates', permission: 'document.view' },
         { icon: FileText, label: 'Documents', path: '/documents', permission: 'document.view' },
         { icon: ScrollText, label: 'Signatures', path: '/signatures/list', permission: 'settings.signature' },
         { icon: Users, label: 'Team', path: '/team', permission: 'team.view' },

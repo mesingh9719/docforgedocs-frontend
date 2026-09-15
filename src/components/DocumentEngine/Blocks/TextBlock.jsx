@@ -1,24 +1,25 @@
 import React from 'react';
+import { resolveVariables } from '../../../utils/variableResolver';
 
-const TextBlock = ({ data, onChange }) => {
-    const text = data.text || '';
-
-    // In a real implementation this would be a Rich Text Editor (Tiptap)
-    // For now we use a simple contentEditable div
+const TextBlock = ({ data = {}, onChange, readOnly = false, resolvedContext = null }) => {
+    const rawText = data.text || '';
+    const displayText = resolvedContext ? resolveVariables(rawText, resolvedContext) : rawText;
 
     const handleChange = (e) => {
-        onChange({ text: e.target.innerText });
+        if (!readOnly && onChange) {
+            onChange({ ...data, text: e.target.innerText });
+        }
     };
 
     return (
         <div
-            contentEditable
+            contentEditable={!readOnly}
             suppressContentEditableWarning
             onBlur={handleChange}
-            className="outline-none text-base text-slate-700 leading-relaxed min-h-[24px] empty:before:content-[attr(placeholder)] empty:before:text-slate-300 relative"
-            placeholder="Type something..."
+            className="outline-none text-sm md:text-base text-slate-700 leading-relaxed min-h-[28px] empty:before:content-[attr(placeholder)] empty:before:text-slate-300 relative whitespace-pre-wrap font-sans transition-colors"
+            placeholder="Type text or enter dynamic variables like {{client.name}}..."
         >
-            {text}
+            {displayText}
         </div>
     );
 };

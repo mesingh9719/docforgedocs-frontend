@@ -193,26 +193,48 @@ const DocumentList = () => {
     }, [navigate]);
 
     const handleView = useCallback((doc) => {
-        const typeSlug = doc.document_type?.slug || doc.type?.slug || 'general';
+        const rawSlug = doc.document_type?.slug || doc.type?.slug || 'general';
+        const typeSlug = rawSlug.replace(/_/g, '-');
         const hasBlocks = doc.content && doc.content.blocks && doc.content.blocks.length > 0;
 
-        // 1. Standard Documents (NDA, Proposal, Invoice, or any doc with content blocks) -> Editor
-        // We explicitly check types to ensure even empty drafts go to the editor
-        if (['nda', 'proposal', 'invoice'].includes(typeSlug) || hasBlocks) {
+        // 0. PDF-based Template Documents -> PDF Studio Editor
+        if (
+            typeSlug === 'pdf-template' ||
+            doc.document_type?.type === 'pdf_template' ||
+            (doc.content && doc.content.pdf_path) ||
+            (doc.content && doc.content.fields && doc.content.fields.length > 0)
+        ) {
+            navigate(`/documents/pdf-editor/${doc.id}`);
+            return;
+        }
+
+        // 1. Standard Specialized Form Editors (if no blocks)
+        const standardSpecializedTypes = ['nda', 'proposal', 'invoice', 'offer-letter', 'consulting-agreement'];
+        if (standardSpecializedTypes.includes(typeSlug) && !hasBlocks) {
             navigate(`/documents/${typeSlug}/${doc.id}`);
             return;
         }
 
-        // 2. Uploaded Signature Requests (General type + PDF + No content) -> Drawer
-        // If it has a PDF but no blocks, and isn't a known standard type, it's an uploaded doc.
+        // 2. Block-based documents or general custom documents -> Document Engine Editor
+        if (hasBlocks || typeSlug === 'general' || typeSlug === 'custom') {
+            navigate(`/documents/general/${doc.id}`);
+            return;
+        }
+
+        // 3. Uploaded Signature Requests (General type + PDF + No content) -> Drawer
         if (doc.pdf_url) {
             handleDrawerOpen(doc.id);
             return;
         }
 
-        // 3. Fallback (New/Empty General Docs) -> Editor
-        navigate(`/documents/${typeSlug}/${doc.id}`);
+        // 4. Fallback (New/Empty Docs)
+        if (standardSpecializedTypes.includes(typeSlug)) {
+            navigate(`/documents/${typeSlug}/${doc.id}`);
+        } else {
+            navigate(`/documents/general/${doc.id}`);
+        }
     }, [handleDrawerOpen, navigate]);
+
 
     const handleDelete = useCallback(async (id) => {
         if (!window.confirm('Are you sure you want to move this document to trash?')) return;
